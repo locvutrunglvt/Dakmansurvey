@@ -766,33 +766,43 @@ function renderQuestionsForSection(secName) {
                 </div>
             `;
         } else if (qType.includes('LK')) {
+            const lkOpts = (q.options && q.options.length === 5) ? q.options : [
+                { value: '1', label: 'Rất kém' },
+                { value: '2', label: 'Kém' },
+                { value: '3', label: 'Trung bình' },
+                { value: '4', label: 'Tốt' },
+                { value: '5', label: 'Rất tốt' }
+            ];
             inputHtml = `
                 <div class="likert-grid">
-                    ${[1, 2, 3, 4, 5].map(pt => {
-                        const isSelected = val == pt;
-                        const labelText = pt === 1 ? 'Rất kém' : (pt === 2 ? 'Kém' : (pt === 3 ? 'Trung bình' : (pt === 4 ? 'Tốt' : 'Rất tốt')));
+                    ${lkOpts.map(opt => {
+                        const isSelected = String(val) === String(opt.value);
                         return `
                             <button type="button" 
                                     class="likert-btn ${isSelected ? 'active' : ''}" 
                                     ${isViewer ? 'disabled' : ''}
-                                    onclick="setLikertAnswer('${code}', ${pt})">
-                                <div class="likert-num">${pt}</div>
-                                <div class="likert-desc">${labelText}</div>
+                                    onclick="setLikertAnswer('${code}', '${escapeQuotes(opt.value)}')">
+                                <div class="likert-num">${escapeHtml(opt.value)}</div>
+                                <div class="likert-desc">${escapeHtml(opt.label)}</div>
                             </button>
                         `;
                     }).join('')}
                 </div>
             `;
         } else if (qType.includes('SO') || qType.includes('NUM')) {
+            const minAttr = (q.min !== undefined && q.min !== '') ? `min="${escapeHtml(q.min)}"` : '';
+            const maxAttr = (q.max !== undefined && q.max !== '') ? `max="${escapeHtml(q.max)}"` : '';
             inputHtml = `
-                <div style="margin-top: 8px; max-width: 260px;">
+                <div style="margin-top: 8px; max-width: 320px; display: flex; align-items: center; gap: 8px;">
                     <input type="number" 
                            step="any" 
+                           ${minAttr} ${maxAttr}
                            class="form-control" 
                            value="${val}" 
                            ${isViewer ? 'disabled' : ''}
                            oninput="onAnswerChange('${code}', this, false)" 
                            placeholder="Nhập số lượng / giá trị...">
+                    ${q.unit ? `<span style="font-weight:700; color:#475569; white-space:nowrap;">${escapeHtml(q.unit)}</span>` : ''}
                 </div>
             `;
         } else if (qType.includes('DT') || qType.includes('DATE')) {
@@ -2065,27 +2075,71 @@ function loadAdminQuestionsTable() {
     `).join('');
 }
 
+function applyOptionPreset(preset) {
+    const el = document.getElementById('qEditOptions');
+    if (!el) return;
+    if (preset === 'yesno') el.value = '1=Có\n2=Không';
+    else if (preset === 'yesno_dk') el.value = '1=Có\n2=Không\n99=Không biết';
+    else if (preset === 'passfail') el.value = '1=Đạt\n2=Chưa đạt';
+    else if (preset === 'communes') el.value = '1=Ea Kiết\n2=Ea Tar\n3=Cư Dliê M\'nông';
+}
+
 function onQuestionTypeChange() {
     const t = (document.getElementById('qEditType')?.value || 'TX').toUpperCase();
     const wrap = document.getElementById('qEditOptionsWrap');
-    if (wrap) {
-        wrap.style.display = (['SC', 'DR', 'MO'].includes(t)) ? 'block' : 'none';
+    const numWrap = document.getElementById('qEditNumberWrap');
+    const presets = document.getElementById('qOptionPresets');
+    const lbl = document.getElementById('qEditOptionsLabel');
+    const optsEl = document.getElementById('qEditOptions');
+    const hintEl = document.getElementById('qEditHint');
+
+    if (wrap) wrap.style.display = (['SC', 'DR', 'MO', 'LK'].includes(t)) ? 'block' : 'none';
+    if (numWrap) numWrap.style.display = (t === 'SO') ? 'grid' : 'none';
+    if (presets) presets.style.display = (['SC', 'DR', 'MO'].includes(t)) ? 'flex' : 'none';
+
+    if (t === 'LK') {
+        if (lbl) lbl.innerHTML = 'Nhãn Thang Điểm Likert 1–5 (<code>mã=nhãn</code>)';
+        if (optsEl && !optsEl.value.trim()) {
+            optsEl.value = '1=Rất kém\n2=Kém\n3=Trung bình\n4=Tốt\n5=Rất tốt';
+        }
+    } else {
+        if (lbl) lbl.innerHTML = 'Danh Sách Đáp Án Mã Hóa (<code>mã=nhãn</code>, mỗi dòng 1 phương án)';
+    }
+
+    if (hintEl) {
+        if (t === 'TX') hintEl.placeholder = 'VD: Ghi chú chi tiết câu trả lời tự do...';
+        else if (t === 'DT') hintEl.placeholder = 'VD: Định dạng ngày DD/MM/YYYY';
+        else if (t === 'SO') hintEl.placeholder = 'VD: Nhập số dương, làm tròn 2 chữ số';
+        else hintEl.placeholder = 'Ghi chú thêm cho điều tra viên (nếu có)';
     }
 }
 
 function openAddQuestionForm() {
-    document.getElementById('questionEditorTitle').textContent = 'THÊM CÂU HỎI MỚI';
+    const toolCode = document.getElementById('adminQuestionToolSelect')?.value || currentTool || 'P1';
+    const existing = allQuestionsData[toolCode]?.questions || [];
+    let nextIdx = existing.length + 1;
+    let suggestedCode = `Q${String(nextIdx).padStart(2, '0')}`;
+    const used = new Set(existing.map(q => q.code));
+    while (used.has(suggestedCode)) {
+        nextIdx += 1;
+        suggestedCode = `Q${String(nextIdx).padStart(2, '0')}`;
+    }
+
+    document.getElementById('questionEditorTitle').textContent = `THÊM CÂU HỎI MỚI (${toolCode})`;
     document.getElementById('qEditOrigCode').value = '';
-    document.getElementById('qEditCode').value = '';
-    document.getElementById('qEditSection').value = '';
-    document.getElementById('qEditType').value = 'SC';
+    document.getElementById('qEditCode').value = suggestedCode;
+    document.getElementById('qEditSection').value = existing[existing.length - 1]?.section || 'Thông tin chung';
+    document.getElementById('qEditType').value = 'DR';
     document.getElementById('qEditText').value = '';
     document.getElementById('qEditOptions').value = '';
+    document.getElementById('qEditNumUnit').value = '';
+    document.getElementById('qEditNumMin').value = '';
+    document.getElementById('qEditNumMax').value = '';
     document.getElementById('qEditHint').value = '';
     document.getElementById('qEditCondition').value = '';
     onQuestionTypeChange();
     document.getElementById('questionEditorBox').style.display = 'block';
-    document.getElementById('qEditCode').focus();
+    document.getElementById('qEditText').focus();
 }
 
 function openEditQuestionForm(code) {
@@ -2111,6 +2165,9 @@ function openEditQuestionForm(code) {
     document.getElementById('qEditText').value = q.text || '';
     const optsLines = (q.options || []).map(o => `${o.value}=${o.label}`).join('\n');
     document.getElementById('qEditOptions').value = optsLines;
+    document.getElementById('qEditNumUnit').value = q.unit || '';
+    document.getElementById('qEditNumMin').value = q.min !== undefined ? q.min : '';
+    document.getElementById('qEditNumMax').value = q.max !== undefined ? q.max : '';
     document.getElementById('qEditHint').value = (!q.options?.length ? (q.options_raw || '') : '');
     document.getElementById('qEditCondition').value = q.condition || '';
     onQuestionTypeChange();
@@ -2153,9 +2210,19 @@ async function saveAdminQuestion(e) {
     const hint = document.getElementById('qEditHint').value.trim();
     const condition = document.getElementById('qEditCondition').value.trim();
 
-    const needsOpts = ['SC', 'DR', 'MO'].includes(qType);
+    const needsOpts = ['SC', 'DR', 'MO', 'LK'].includes(qType);
     const options = needsOpts ? parseOptionsTextarea(document.getElementById('qEditOptions').value) : [];
-    const options_raw = needsOpts ? options.map(o => `${o.value}=${o.label}`).join('; ') : hint;
+    const numUnit = (document.getElementById('qEditNumUnit')?.value || '').trim();
+    const numMin = (document.getElementById('qEditNumMin')?.value || '').trim();
+    const numMax = (document.getElementById('qEditNumMax')?.value || '').trim();
+    const options_raw = needsOpts
+        ? options.map(o => `${o.value}=${o.label}`).join('; ')
+        : (qType === 'SO' && numUnit ? `Đơn vị: ${numUnit}${hint ? ' — ' + hint : ''}` : hint);
+
+    if (['SC', 'DR', 'MO'].includes(qType) && options.length === 0) {
+        alert('Vui lòng nhập ít nhất 1 phương án đáp án cho câu hỏi lựa chọn!');
+        return;
+    }
 
     try {
         const res = await fetch(apiUrl('/api/admin/questions'), {
@@ -2175,6 +2242,9 @@ async function saveAdminQuestion(e) {
                     text,
                     options,
                     options_raw,
+                    unit: qType === 'SO' ? numUnit : '',
+                    min: qType === 'SO' ? numMin : '',
+                    max: qType === 'SO' ? numMax : '',
                     condition
                 }
             })

@@ -905,6 +905,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                             all_q_cols.append({
                                 'tool': tool_code,
                                 'code': code,
+                                'type': str(q.get('type') or 'TX').upper(),
                                 'header': f"[{code}] {short_text}"
                             })
 
@@ -924,8 +925,15 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                         val = ans.get(col['code'], '')
                         if isinstance(val, list):
                             row_vals.append("; ".join(str(v) for v in val))
-                        elif val is not None:
-                            row_vals.append(str(val))
+                        elif val is not None and val != '':
+                            if col['type'] in ('SO', 'NUM', 'LK'):
+                                try:
+                                    fval = float(val)
+                                    row_vals.append(int(fval) if fval.is_integer() else fval)
+                                except Exception:
+                                    row_vals.append(str(val))
+                            else:
+                                row_vals.append(str(val))
                         else:
                             row_vals.append("")
                     ws2.append(row_vals)
@@ -974,7 +982,39 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                                     cell.number_format = '0.0%'
                             r_target += 1
 
-                for ws in [ws1, ws2, ws3]:
+                # Sheet 4: Tu_dien_ma_hoa (Data Dictionary để matching mã câu hỏi & mã đáp án khi phân tích)
+                ws4 = wb.create_sheet(title="Tu_dien_ma_hoa")
+                ws4.views.sheetView[0].showGridLines = True
+                dict_headers = ["Công Cụ", "Mã Câu Hỏi", "Phần / Mục", "Nội Dung Câu Hỏi Đầy Đủ", "Kiểu Dữ Liệu", "Bảng Mã Hóa Đáp Án (Value = Label)", "Điều Kiện Hiển Thị"]
+                ws4.append(dict_headers)
+                for col_idx in range(1, len(dict_headers) + 1):
+                    c = ws4.cell(1, col_idx)
+                    c.font = font_header
+                    c.fill = fill_header
+                    c.alignment = Alignment(horizontal="center", vertical="center")
+
+                dict_row_idx = 2
+                for t_code, t_obj in q_data.items():
+                    for q in (t_obj.get('questions') or []):
+                        opts = q.get('options') or []
+                        opts_str = "; ".join(f"{o.get('value')}={o.get('label')}" for o in opts) if opts else (q.get('options_raw') or '')
+                        ws4.append([
+                            t_code,
+                            q.get('code', ''),
+                            q.get('section', ''),
+                            q.get('text', ''),
+                            q.get('type', 'TX'),
+                            opts_str,
+                            q.get('condition', '')
+                        ])
+                        for c_idx in range(1, 8):
+                            cell = ws4.cell(dict_row_idx, c_idx)
+                            cell.font = font_normal
+                            cell.border = thin_border
+                            cell.alignment = Alignment(horizontal="center" if c_idx in (1, 2, 5) else "left", vertical="center", wrap_text=True)
+                        dict_row_idx += 1
+
+                for ws in [ws1, ws2, ws3, ws4]:
                     for col in ws.columns:
                         max_len = max(len(str(cell.value or '')) for cell in col)
                         col_letter = get_column_letter(col[0].column)
@@ -1145,7 +1185,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 else:
                     q_in = data.get('question') or {}
                     orig_code = str(data.get('orig_code') or '').strip()
-                    new_code = str(q_in.get('code') or '').strip()
+                    raw_code = str(q_in.get('code') or '').strip()
+                    new_code = re.sub(r'[^A-Za-z0-9_]', '_', raw_code).strip('_')
                     q_text = str(q_in.get('text') or '').strip()
                     q_sec = str(q_in.get('section') or 'Thông tin chung').strip()
                     q_type = str(q_in.get('type') or 'TX').strip().upper()
@@ -1168,6 +1209,9 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                         'type': q_type,
                         'options_raw': q_opts_raw,
                         'options': q_opts,
+                        'unit': str(q_in.get('unit') or ''),
+                        'min': str(q_in.get('min') or ''),
+                        'max': str(q_in.get('max') or ''),
                         'condition': q_cond,
                         'indicator': str(q_in.get('indicator') or ''),
                         'dac': str(q_in.get('dac') or '')
