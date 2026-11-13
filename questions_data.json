@@ -441,7 +441,7 @@
         "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Loại đất trên vườn cà phê của anh/chị?",
         "type": "MO",
-        "options_raw": "Đất đỏ Bazan; Đất xám; Đất bô xít; Đất cát pha; Đất sỏi-đá; Đất khác",
+        "options_raw": "Đất đỏ Bazan; Đất xám; Đất cát pha; Đất sỏi-đá; Đất khác",
         "options": [
           {
             "value": "Đất đỏ Bazan",
@@ -450,10 +450,6 @@
           {
             "value": "Đất xám",
             "label": "Đất xám"
-          },
-          {
-            "value": "Đất bô xít",
-            "label": "Đất bô xít"
           },
           {
             "value": "Đất cát pha",
@@ -516,82 +512,12 @@
         "tool_code": "P1",
         "tool_name": "P1 - Phiếu hộ",
         "group": "Nhóm 1: Nông Dân",
-        "code": "LD07",
-        "orig_code": "plot_typography_percent",
-        "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "Tỷ lệ địa hình từng dạng địa hình đã chọn trên vườn?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "LD08",
-        "orig_code": "plot_typography_type",
-        "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "**QUAN SÁT** Điều tra viên nhận định những loại địa hình hiện có trên vườn",
-        "type": "MO",
-        "options_raw": "Địa hình tương đối bằng phẳng; Địa hình dốc thoải; Địa hình dốc đồi; Địa hình dốc cao; Địa hình dốc đứng; Địa hình uốn lượn",
-        "options": [
-          {
-            "value": "Địa hình tương đối bằng phẳng",
-            "label": "Địa hình tương đối bằng phẳng"
-          },
-          {
-            "value": "Địa hình dốc thoải",
-            "label": "Địa hình dốc thoải"
-          },
-          {
-            "value": "Địa hình dốc đồi",
-            "label": "Địa hình dốc đồi"
-          },
-          {
-            "value": "Địa hình dốc cao",
-            "label": "Địa hình dốc cao"
-          },
-          {
-            "value": "Địa hình dốc đứng",
-            "label": "Địa hình dốc đứng"
-          },
-          {
-            "value": "Địa hình uốn lượn",
-            "label": "Địa hình uốn lượn"
-          }
-        ],
-        "condition": "",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "LD09",
-        "orig_code": "plot_typography_percent",
-        "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "Tỷ lệ địa hình từng dạng địa hình đã chọn trên vườn?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
         "code": "LD10",
         "orig_code": "plot_water_type",
         "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Trên vườn anh/chị có những nguồn nước nào?",
         "type": "MO",
-        "options_raw": "Sông; Suối; Ao; Hồ/Đập; Nước giếng đào; Nước giếng khoan; Mua nước sử dụng; Không có nguồn nước",
+        "options_raw": "Sông; Suối; Ao; Hồ/Đập; Nước giếng đào; Nước giếng khoan; Hồ nổi (Mua bạt tạo hồ); Không có nguồn nước",
         "options": [
           {
             "value": "Sông",
@@ -618,8 +544,8 @@
             "label": "Nước giếng khoan"
           },
           {
-            "value": "Mua nước sử dụng",
-            "label": "Mua nước sử dụng"
+            "value": "Hồ nổi (Mua bạt tạo hồ)",
+            "label": "Hồ nổi (Mua bạt tạo hồ)"
           },
           {
             "value": "Không có nguồn nước",
@@ -637,10 +563,43 @@
         "code": "LD11",
         "orig_code": "plot_water_percent",
         "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "Tỷ lệ nguồn nước từng nguồn nước đã chọn trên vườn?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
+        "text": "Nguồn nước tưới chính của vườn cây?",
+        "type": "SC",
+        "options_raw": "Sông; Suối; Ao; Hồ/Đập; Nước giếng đào; Nước giếng khoan; Hồ nổi (Mua bạt tạo hồ); Không tưới / Không có nguồn nước",
+        "options": [
+          {
+            "value": "Sông",
+            "label": "Sông"
+          },
+          {
+            "value": "Suối",
+            "label": "Suối"
+          },
+          {
+            "value": "Ao",
+            "label": "Ao"
+          },
+          {
+            "value": "Hồ/Đập",
+            "label": "Hồ/Đập"
+          },
+          {
+            "value": "Nước giếng đào",
+            "label": "Nước giếng đào"
+          },
+          {
+            "value": "Nước giếng khoan",
+            "label": "Nước giếng khoan"
+          },
+          {
+            "value": "Hồ nổi (Mua bạt tạo hồ)",
+            "label": "Hồ nổi (Mua bạt tạo hồ)"
+          },
+          {
+            "value": "Không tưới / Không có nguồn nước",
+            "label": "Không tưới / Không có nguồn nước"
+          }
+        ],
         "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
