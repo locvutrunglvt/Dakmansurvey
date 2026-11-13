@@ -531,20 +531,21 @@
 
         .q-header {
             display: flex;
-            align-items: baseline;
-            justify-content: space-between;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 10px;
             margin-bottom: 6px;
         }
 
         .q-code {
             display: inline-block;
+            flex-shrink: 0;
             background: var(--primary);
             color: #ffffff;
             font-size: 0.76rem;
             font-weight: 700;
             padding: 2px 7px;
             border-radius: 2px;
-            margin-right: 8px;
             font-family: 'Segoe UI', monospace;
         }
 
@@ -562,6 +563,8 @@
 
         .question-title,
         .q-text {
+            flex: 1;
+            text-align: left;
             font-size: 0.90rem;
             font-weight: 700;
             color: var(--slate-900);
