@@ -723,6 +723,14 @@ function renderQuestionsForSection(secName) {
 
     container.innerHTML = questions.map((q, idx) => {
         const code = q.code;
+        if (code === 'A05' && !currentDraftAnswers['A05']) {
+            const topGps = document.getElementById('gpsInput')?.value?.trim();
+            if (topGps) currentDraftAnswers['A05'] = topGps;
+        }
+        if (code === 'A07' && !currentDraftAnswers['A07']) {
+            const topSurveyor = document.getElementById('surveyorIdInput')?.value?.trim() || currentUser?.surveyor_id;
+            if (topSurveyor) currentDraftAnswers['A07'] = topSurveyor;
+        }
         const val = currentDraftAnswers[code] || '';
         const qType = (q.type || 'TX').toUpperCase();
 
@@ -906,6 +914,33 @@ function renderQuestionsForSection(secName) {
  * - selected(CP08, '2') or selected(CP08, '3')
  * - CS14!=5...
  */
+function matchesConditionValue(qCode, actualVal, expVal) {
+    if (actualVal === undefined || actualVal === null || actualVal === '') return false;
+    const checkOne = (v) => {
+        const s = String(v).trim();
+        if (s === expVal) return true;
+        if (/^\d+$/.test(expVal)) {
+            const qList = allQuestionsData[currentTool]?.questions || [];
+            const refQ = qList.find(item => item.code === qCode);
+            const opts = refQ?.options || [];
+            if (opts.length === 2) {
+                const labels = opts.map(o => String(o.value).trim());
+                if (labels.includes('Không') && labels.includes('Có')) {
+                    if (expVal === '0' && s === 'Không') return true;
+                    if (expVal === '1' && s === 'Có') return true;
+                }
+            }
+            const idx = parseInt(expVal, 10) - 1;
+            if (idx >= 0 && idx < opts.length && s === String(opts[idx].value).trim()) {
+                return true;
+            }
+        }
+        return false;
+    };
+    if (Array.isArray(actualVal)) return actualVal.some(checkOne);
+    return checkOne(actualVal);
+}
+
 function checkConditionMet(condStr, answers) {
     if (!condStr || !condStr.trim()) return true;
     const cond = condStr.trim();
@@ -935,8 +970,7 @@ function checkConditionMet(condStr, answers) {
         const expVal = ineqMatch[3].trim();
         const actualVal = answers[qCode];
         if (actualVal === undefined || actualVal === null || actualVal === '') return false;
-        if (Array.isArray(actualVal)) return !actualVal.includes(expVal);
-        return String(actualVal).trim() !== expVal;
+        return !matchesConditionValue(qCode, actualVal, expVal);
     }
 
     // 5. Bằng (=)
@@ -944,9 +978,7 @@ function checkConditionMet(condStr, answers) {
     if (eqMatch) {
         const qCode = eqMatch[1];
         const expVal = eqMatch[2].trim();
-        const actualVal = answers[qCode];
-        if (Array.isArray(actualVal)) return actualVal.includes(expVal);
-        return String(actualVal || '').trim() === expVal;
+        return matchesConditionValue(qCode, answers[qCode], expVal);
     }
 
     // 6. selected(Q, 'val') hoặc Q có val
@@ -954,9 +986,7 @@ function checkConditionMet(condStr, answers) {
     if (selMatch && (selMatch[2] || selMatch[3])) {
         const qCode = selMatch[1];
         const expVal = (selMatch[2] || selMatch[3]).trim();
-        const actualVal = answers[qCode];
-        if (Array.isArray(actualVal)) return actualVal.includes(expVal);
-        return String(actualVal || '').trim() === expVal;
+        return matchesConditionValue(qCode, answers[qCode], expVal);
     }
 
     return true;
