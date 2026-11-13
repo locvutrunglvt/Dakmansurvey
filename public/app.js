@@ -513,7 +513,7 @@ function filterSampleHouseholds() {
         if (guide && h.guide !== guide) return false;
         if (commune && h.commune !== commune) return false;
         if (kw) {
-            const hay = `${h.id} ${h.name} ${h.phone} ${h.hamlet} ${h.commune} ${h.guide} ${h.clb}`.toLowerCase();
+            const hay = `${h.id} ${h.name} ${h.phone} ${h.hamlet} ${h.commune} ${h.guide} ${h.clb} ${h.ra || ''}`.toLowerCase();
             if (!hay.includes(kw)) return false;
         }
         return true;
@@ -540,6 +540,7 @@ function filterSampleHouseholds() {
              onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='#ffffff'">
             <div>
                 <strong style="color:#002060;">[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong>
+                ${h.ra ? '<span style="background:#dcfce7; color:#166534; border:1px solid #86efac; padding:1px 5px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:4px;">RA</span>' : ''}
                 <span style="color:#475569;"> — ${escapeHtml(h.address)}</span>
                 <div style="font-size:0.74rem; color:#64748b;">SĐT: ${escapeHtml(h.phone || '—')} • CLB: ${escapeHtml(h.clb || '—')} • Dẫn đường: <b>${escapeHtml(h.guide)}</b></div>
             </div>
@@ -574,13 +575,15 @@ function selectSampleHousehold(id) {
     currentDraftAnswers['_assigned_nv'] = h.interviewer || '';
     currentDraftAnswers['_phone'] = h.phone || '';
     currentDraftAnswers['_clb'] = h.clb || '';
+    currentDraftAnswers['_ra'] = h.ra || '';
 
     const box = document.getElementById('sampleResultList');
     if (box) box.style.display = 'none';
     const banner = document.getElementById('sampleSelectedBanner');
     if (banner) {
         banner.style.display = 'block';
-        banner.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đã điền tự động: <strong>[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong> (${escapeHtml(h.address)}) • SĐT: ${escapeHtml(h.phone || '—')} • Dẫn đường: <strong>${escapeHtml(h.guide)}</strong> • NV: <strong>${escapeHtml(h.interviewer)}</strong>`;
+        const raTag = h.ra ? ' • <span style="background:#166534;color:#fff;padding:1px 6px;border-radius:3px;font-weight:700;">Chứng nhận RA</span>' : '';
+        banner.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đã điền tự động: <strong>[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong> (${escapeHtml(h.address)})${raTag} • SĐT: ${escapeHtml(h.phone || '—')} • Dẫn đường: <strong>${escapeHtml(h.guide)}</strong> • NV: <strong>${escapeHtml(h.interviewer)}</strong>`;
     }
 
     if (currentSection) renderQuestionsForSection(currentSection);
