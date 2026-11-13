@@ -15,9 +15,71 @@ function apiUrl(path) {
     return API_BASE + (path.startsWith('/') ? path : '/' + path);
 }
 
+function getPdfExportUrl(surveyId) {
+    const role = encodeURIComponent(currentUser?.role || '');
+    const sid = encodeURIComponent(currentUser?.surveyor_id || '');
+    return apiUrl(`/api/surveys/${surveyId}/pdf?role=${role}&surveyor_id=${sid}`);
+}
+
 let currentHouseholdPhotoData = '';
 let currentHouseholdPhotoMeta = '';
 let editingSurveyId = null;
+let deferredInstallPrompt = null;
+
+// Đăng ký Service Worker cho chế độ Cài App (PWA) & lưu phiên đăng nhập bền vững
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    const btn = document.getElementById('btnInstallPwa');
+    if (btn) btn.style.display = 'inline-block';
+});
+
+window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    const btn = document.getElementById('btnInstallPwa');
+    if (btn) btn.style.display = 'none';
+});
+
+function isRunningStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+async function installPwaApp() {
+    if (isRunningStandalone()) {
+        alert('Ứng dụng Dakman Survey đã được cài đặt trên thiết bị của bạn.');
+        return;
+    }
+    if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice && choice.outcome === 'accepted') {
+            deferredInstallPrompt = null;
+        }
+        return;
+    }
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isIos) {
+        alert(
+            'HƯỚNG DẪN CÀI APP TRÊN IPHONE / IPAD (SAFARI):\n' +
+            '1. Bấm biểu tượng Chia sẻ (ô vuông có mũi tên lên ⬆️) ở thanh dưới trình duyệt.\n' +
+            '2. Cuộn xuống chọn "Thêm vào MH chính" (Add to Home Screen).\n' +
+            '3. Bấm "Thêm" — lần sau mở App từ màn hình chính sẽ tự giữ đăng nhập, không cần nhập lại mật khẩu.'
+        );
+    } else {
+        alert(
+            'HƯỚNG DẪN CÀI APP TRÊN ĐIỆN THOẠI ANDROID (CHROME):\n' +
+            '1. Bấm nút Menu (⋮) ở góc trên bên phải trình duyệt Chrome.\n' +
+            '2. Chọn "Cài đặt ứng dụng" (Install app) hoặc "Thêm vào màn hình chính" (Add to Home screen).\n' +
+            '3. Bấm "Cài đặt" — lần sau mở thẳng từ màn hình chính và không cần nhập lại mật khẩu.'
+        );
+    }
+}
 
 // Lá Chắn An Ninh Cấp Độ Cao: Chặn F12, Chặn Inspect, Chặn View-Source, Chặn Chuột Phải
 (function initSecurityShield() {
@@ -65,6 +127,10 @@ let currentUser = null;
 
 // Khởi chạy hệ thống
 document.addEventListener('DOMContentLoaded', async () => {
+    if (isRunningStandalone()) {
+        const pwaBtn = document.getElementById('btnInstallPwa');
+        if (pwaBtn) pwaBtn.style.display = 'none';
+    }
     document.querySelectorAll('a[href="/api/export/excel"]').forEach(a => {
         a.href = apiUrl('/api/export/excel');
     });
@@ -1271,9 +1337,9 @@ async function handleSurveySubmit(e) {
             const msg = isEditing
                 ? `THÀNH CÔNG!\nĐã cập nhật lại toàn bộ nội dung phiếu ${surveyCode} trên hệ thống.`
                 : `THÀNH CÔNG!\nPhiếu phỏng vấn ${surveyCode} đã được lưu an toàn lên hệ thống.`;
-            if (savedId && confirm(`${msg}\n\nBạn có muốn XUẤT BÁO CÁO PDF của hộ vừa phỏng vấn ngay bây giờ không?`)) {
-                window.open(apiUrl(`/api/surveys/${savedId}/pdf`), '_blank');
-            } else if (!savedId) {
+            if (savedId && (currentUser?.role === 'admin' || currentUser?.role === 'editor') && confirm(`${msg}\n\nBạn có muốn XUẤT BÁO CÁO PDF của hộ vừa phỏng vấn ngay bây giờ không?`)) {
+                window.open(getPdfExportUrl(savedId), '_blank');
+            } else {
                 alert(msg);
             }
 
@@ -1465,7 +1531,7 @@ async function loadSurveysList() {
 
         tbody.innerHTML = list.map(item => {
             const canEdit = (role === 'admin') || (role === 'editor' && (item.surveyor_id === curUserId || !item.surveyor_id));
-            const canDelete = (role === 'admin');
+            const canDelete = (role === 'admin') || (role === 'editor' && (item.surveyor_id === curUserId || !item.surveyor_id));
             const photoBadge = item.photo_path ? ' <i class="fa-solid fa-camera" style="color: #15803d;" title="Có ảnh hiện trường (Watermark)"></i>' : '';
 
             return `
@@ -1482,10 +1548,12 @@ async function loadSurveysList() {
                                 style="background: var(--slate-100); border: 1px solid var(--border); padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--primary); margin-right: 4px;" title="Xem nội dung chi tiết">
                             <i class="fa-solid fa-eye"></i> Xem
                         </button>
-                        <a href="${apiUrl(`/api/surveys/${item.id}/pdf`)}" target="_blank"
-                           style="display: inline-block; background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; font-size: 0.78rem; font-weight: 600; color: #b91c1c; text-decoration: none; margin-right: 4px;" title="Xuất báo cáo phỏng vấn PDF">
-                            <i class="fa-solid fa-file-pdf"></i> PDF
-                        </a>
+                        ${canEdit ? `
+                            <a href="${getPdfExportUrl(item.id)}" target="_blank"
+                               style="display: inline-block; background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; font-size: 0.78rem; font-weight: 600; color: #b91c1c; text-decoration: none; margin-right: 4px;" title="Xuất báo cáo phỏng vấn PDF">
+                                <i class="fa-solid fa-file-pdf"></i> PDF
+                            </a>
+                        ` : ''}
                         ${canEdit ? `
                             <button type="button" 
                                     onclick="openEditSurveyModal(${item.id})" 
@@ -1562,6 +1630,8 @@ async function viewSurveyDetail(id) {
             `;
         }
 
+        const canExportItem = (currentUser?.role === 'admin') || (currentUser?.role === 'editor' && (item.surveyor_id === currentUser?.surveyor_id || !item.surveyor_id));
+
         body.innerHTML = `
             <div style="background: var(--slate-50); padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px;">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; font-size: 0.84rem;">
@@ -1575,10 +1645,11 @@ async function viewSurveyDetail(id) {
             </div>
             <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                 <span>Dữ liệu chi tiết từng câu hỏi (${keys.length} câu đã trả lời):</span>
+                ${canExportItem ? `
                 <span style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <a href="${apiUrl(`/api/surveys/${item.id}/pdf`)}" target="_blank" style="background:#b91c1c;color:#fff;border:none;padding:5px 10px;border-radius:3px;font-size:0.78rem;text-decoration:none;font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Xuất Báo Cáo PDF</a>
-                    ${currentUser?.role !== 'viewer' ? `<button type="button" onclick="reloadSurveyIntoForm(${item.id})" style="background:#002060;color:#fff;border:none;padding:5px 10px;border-radius:3px;font-size:0.78rem;cursor:pointer;font-weight:600;"><i class="fa-solid fa-pen-to-square"></i> Mở lên Form để nhập liệu lại</button>` : ''}
-                </span>
+                    <a href="${getPdfExportUrl(item.id)}" target="_blank" style="background:#b91c1c;color:#fff;border:none;padding:5px 10px;border-radius:3px;font-size:0.78rem;text-decoration:none;font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Xuất Báo Cáo PDF</a>
+                    <button type="button" onclick="reloadSurveyIntoForm(${item.id})" style="background:#002060;color:#fff;border:none;padding:5px 10px;border-radius:3px;font-size:0.78rem;cursor:pointer;font-weight:600;"><i class="fa-solid fa-pen-to-square"></i> Mở lên Form để nhập liệu lại</button>
+                </span>` : ''}
             </h4>
             ${photoHtml}
             ${ansHtml}
@@ -1755,32 +1826,42 @@ async function handleEditSurveySubmit(e) {
 }
 
 async function deleteSurveyConfirm(id, surveyCode) {
-    if (currentUser?.role !== 'admin') {
-        alert('Chỉ tài khoản Quản Trị Viên (Admin) mới có quyền xóa phiếu.');
+    const role = currentUser?.role || 'viewer';
+    if (role === 'viewer') {
+        alert('Tài khoản Chỉ Xem không có quyền xóa phiếu.');
         return;
     }
 
-    const conf = confirm(`XÁC NHẬN XÓA PHIẾU:\nBạn có chắc chắn muốn xóa vĩnh viễn phiếu [${surveyCode}] khỏi hệ thống VPS?\nThao tác này không thể phục hồi.`);
-    if (!conf) return;
+    const pwd = prompt(
+        `XÁC NHẬN MẬT KHẨU ĐỂ XÓA PHIẾU [${surveyCode}]:\n` +
+        `Vui lòng nhập mật khẩu ${role === 'admin' ? 'Quản trị viên (Admin)' : 'tài khoản của bạn (hoặc mật khẩu Admin)'} để xác nhận:`
+    );
+    if (pwd === null) return;
+    if (!pwd.trim()) {
+        alert('Bạn phải nhập mật khẩu để xác nhận xóa phiếu!');
+        return;
+    }
 
     try {
         const res = await fetch(apiUrl(`/api/surveys/${id}`), {
             method: 'DELETE',
             headers: {
-                'X-Admin-Key': getAdminKey(),
-                'Authorization': getAdminKey()
+                'X-Delete-Password': pwd.trim(),
+                'X-User-Role': role,
+                'X-User-Id': currentUser?.surveyor_id || '',
+                'X-Admin-Key': pwd.trim()
             }
         });
 
+        const data = await res.json().catch(() => ({}));
         if (res.ok) {
-            alert(`Đã xóa thành công phiếu ${surveyCode}!`);
+            alert(data.message || `Đã chuyển phiếu ${surveyCode} vào Thùng rác lưu trữ!`);
             await loadSurveysList();
             if (typeof refreshDashboardData === 'function') {
                 refreshDashboardData();
             }
         } else {
-            const data = await res.json();
-            alert('Lỗi xóa phiếu: ' + (data.error || 'Thao tác không được phép'));
+            alert('Lỗi xóa phiếu: ' + (data.error || 'Mật khẩu không đúng hoặc thao tác không được phép'));
         }
     } catch (err) {
         alert('Lỗi kết nối máy chủ khi gửi yêu cầu xóa.');

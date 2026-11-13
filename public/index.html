@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="author" content="Lộc Vũ Trung">
+    <meta name="theme-color" content="#002060">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Dakman Survey">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="img/pwa-icon-192.png">
+    <link rel="icon" type="image/png" href="img/pwa-icon-192.png">
     <title>Hệ Thống Khảo Sát & Phỏng Vấn Hiện Trường — Dự Án Dakman Cư M'gar (2021–2026)</title>
     
     <!-- Google Fonts -->
@@ -1027,6 +1034,7 @@
             -webkit-touch-callout: none !important;
         }
         body.viewer-locked-mode a[href*="/api/export/excel"],
+        body.viewer-locked-mode a[href*="/pdf"],
         body.viewer-locked-mode .summary-link,
         body.viewer-locked-mode .download-btn,
         body.viewer-locked-mode #btnSubmitForm,
@@ -1050,6 +1058,9 @@
             <strong>DAKMAN CƯ M'GAR</strong> — Hệ thống khảo sát & đánh giá cuối kỳ dự án (2021–2026)
         </div>
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <button type="button" id="btnInstallPwa" onclick="installPwaApp()" style="background: #15803d; color: #fff; border: none; padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 700; cursor: pointer;" title="Cài đặt thành ứng dụng trên màn hình chính điện thoại">
+                <i class="fa-solid fa-mobile-screen-button"></i> Cài App
+            </button>
             <button type="button" id="btnAdminStaffManage" onclick="openStaffModal()" style="display: none; background: #dc2626; color: #fff; border: none; padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 700; cursor: pointer;">
                 <i class="fa-solid fa-users-gear"></i> Cấp TK Nhân Viên (Zalo)
             </button>

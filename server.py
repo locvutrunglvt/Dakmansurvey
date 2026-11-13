@@ -229,6 +229,7 @@ def build_survey_pdf(survey_row):
     from reportlab.pdfbase.ttfonts import TTFont
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.pdfgen import canvas as rl_canvas
     from PIL import Image as PILImage
 
     font_regular = 'Helvetica'
@@ -445,7 +446,38 @@ def build_survey_pdf(survey_row):
         ]))
         story.append(tbl)
 
-    doc.build(story)
+    class NumberedCanvas(rl_canvas.Canvas):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._saved_page_states = []
+
+        def showPage(self):
+            self._saved_page_states.append(dict(self.__dict__))
+            self._startPage()
+
+        def save(self):
+            num_pages = len(self._saved_page_states)
+            for state in self._saved_page_states:
+                self.__dict__.update(state)
+                self.draw_page_number(num_pages)
+                super().showPage()
+            super().save()
+
+        def draw_page_number(self, page_count):
+            page_w, _ = A4
+            self.saveState()
+            self.setStrokeColor(colors.HexColor('#CBD5E1'))
+            self.setLineWidth(0.5)
+            self.line(14 * mm, 11 * mm, page_w - 14 * mm, 11 * mm)
+            self.setFont(font_regular, 8)
+            self.setFillColor(colors.HexColor('#475569'))
+            self.drawString(14 * mm, 7 * mm, f"Mã phiếu: {survey_code} | Dự án Cảnh quan Cà phê Bền vững Cư M'gar")
+            self.setFont(font_bold, 8.5)
+            self.setFillColor(colors.HexColor('#002060'))
+            self.drawRightString(page_w - 14 * mm, 7 * mm, f"Trang {self._pageNumber} / {page_count}")
+            self.restoreState()
+
+    doc.build(story, canvasmaker=NumberedCanvas)
     return buf.getvalue()
 
 class SurveyRequestHandler(SimpleHTTPRequestHandler):
@@ -459,7 +491,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
         self.send_header('Content-Length', str(len(body)))
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Key')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Key, X-Delete-Password, X-User-Role, X-User-Id')
         self.end_headers()
         self.wfile.write(body)
 
@@ -467,7 +499,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Key')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Key, X-Delete-Password, X-User-Role, X-User-Id')
         self.end_headers()
 
     def do_HEAD(self):
@@ -723,6 +755,13 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
         elif path.startswith('/api/surveys/') and path.endswith('/pdf'):
             parts = [p for p in path.split('/') if p]
             if len(parts) == 4 and parts[0] == 'api' and parts[1] == 'surveys' and parts[3] == 'pdf':
+                role_param = (query.get('role', [''])[0] or self.headers.get('X-User-Role', '')).strip().lower()
+                auth_key = query.get('key', [''])[0] or self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+                cur_viewer_pass = get_setting('pass_viewer', PASS_VIEWER)
+                if role_param == 'viewer' or auth_key == cur_viewer_pass or auth_key == PASS_VIEWER or role_param not in ('admin', 'editor'):
+                    self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền xuất báo cáo PDF! Chỉ Admin hoặc Điều tra viên mới được phép.'}, 403)
+                    return
+
                 survey_id = parts[2]
                 conn = sqlite3.connect(DB_PATH)
                 conn.row_factory = sqlite3.Row
@@ -733,6 +772,12 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 if not row:
                     self._send_json({'error': 'Survey not found'}, 404)
                     return
+                if role_param == 'editor':
+                    sid_param = query.get('surveyor_id', [''])[0].strip()
+                    row_sid = str(row['surveyor_id'] or '').strip()
+                    if sid_param and row_sid and row_sid != sid_param:
+                        self._send_json({'error': 'Điều tra viên chỉ được xuất báo cáo PDF cho phiếu do mình thực hiện!'}, 403)
+                        return
                 try:
                     pdf_bytes = build_survey_pdf(dict(row))
                     safe_code = re.sub(r'[^A-Za-z0-9_-]', '_', str(row['survey_code'] or f'PHIEU_{survey_id}'))
@@ -1462,26 +1507,51 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
         elif path.startswith('/api/surveys/'):
             survey_id = path.split('/')[-1]
             cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
-            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
-                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xóa phiếu!'}, 403)
+            delete_pwd = (self.headers.get('X-Delete-Password', '') or self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')).strip()
+            role_hdr = self.headers.get('X-User-Role', '').strip().lower()
+            sid_hdr = self.headers.get('X-User-Id', '').strip()
+
+            if role_hdr == 'viewer':
+                self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền xóa phiếu!'}, 403)
                 return
+
             conn = sqlite3.connect(DB_PATH)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cur.execute('SELECT * FROM surveys WHERE id = ?', (survey_id,))
             s_row = cur.fetchone()
-            if s_row:
-                s_dict = dict(s_row)
-                cur.execute('''
-                    INSERT INTO deleted_surveys_archive (original_id, survey_code, tool_code, surveyor_id, respondent_name, deleted_by, row_json)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    s_dict.get('id'), s_dict.get('survey_code'), s_dict.get('tool_code'),
-                    s_dict.get('surveyor_id'), s_dict.get('respondent_name'), 'admin',
-                    json.dumps(s_dict, ensure_ascii=False)
-                ))
-                append_audit_event('DELETE_SURVEY', s_dict)
+            if not s_row:
+                conn.close()
+                self._send_json({'error': 'Không tìm thấy phiếu cần xóa!'}, 404)
+                return
+
+            s_dict = dict(s_row)
+            is_admin_pwd = bool(delete_pwd) and (delete_pwd == cur_admin_pass or delete_pwd == PASS_ADMIN)
+            is_owner_pwd = False
+            if not is_admin_pwd and role_hdr == 'editor' and sid_hdr and delete_pwd:
+                row_sid = str(s_dict.get('surveyor_id') or '').strip()
+                if not row_sid or row_sid == sid_hdr:
+                    cur.execute('SELECT password FROM users WHERE surveyor_id = ?', (sid_hdr,))
+                    u_row = cur.fetchone()
+                    expected_pwd = (u_row['password'] if u_row and u_row['password'] else PASS_EDITOR)
+                    if delete_pwd == expected_pwd or delete_pwd == PASS_EDITOR:
+                        is_owner_pwd = True
+
+            if not is_admin_pwd and not is_owner_pwd:
+                conn.close()
+                self._send_json({'error': 'Mật khẩu xác nhận không đúng hoặc bạn không có quyền xóa phiếu này!'}, 403)
+                return
+
+            deleted_by = 'admin' if is_admin_pwd else sid_hdr
+            cur.execute('''
+                INSERT INTO deleted_surveys_archive (original_id, survey_code, tool_code, surveyor_id, respondent_name, deleted_by, row_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                s_dict.get('id'), s_dict.get('survey_code'), s_dict.get('tool_code'),
+                s_dict.get('surveyor_id'), s_dict.get('respondent_name'), deleted_by,
+                json.dumps(s_dict, ensure_ascii=False)
+            ))
+            append_audit_event('DELETE_SURVEY', {'survey': s_dict, 'deleted_by': deleted_by})
             cur.execute('DELETE FROM surveys WHERE id = ?', (survey_id,))
             conn.commit()
             conn.close()

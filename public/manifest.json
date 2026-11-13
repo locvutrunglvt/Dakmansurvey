@@ -1,0 +1,25 @@
+{
+  "name": "Dakman Survey — Đánh Giá Cuối Kỳ Cư M'gar",
+  "short_name": "Dakman Survey",
+  "description": "Hệ thống thu thập dữ liệu & phỏng vấn hiện trường Dự án Cảnh quan Cà phê Bền vững Cư M'gar",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ececec",
+  "theme_color": "#002060",
+  "icons": [
+    {
+      "src": "img/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
