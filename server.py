@@ -219,6 +219,235 @@ def save_survey_photo(survey_code, photo_data):
         print(f"Error saving photo: {e}")
         return ''
 
+def build_survey_pdf(survey_row):
+    import io
+    from xml.sax.saxutils import escape as xml_escape
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib import colors
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from PIL import Image as PILImage
+
+    font_regular = 'Helvetica'
+    font_bold = 'Helvetica-Bold'
+    font_candidates = [
+        ('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
+        (r'C:\Windows\Fonts\arial.ttf', r'C:\Windows\Fonts\arialbd.ttf'),
+    ]
+    for reg_path, bold_path in font_candidates:
+        if os.path.exists(reg_path) and os.path.exists(bold_path):
+            if 'DakmanSans' not in pdfmetrics.getRegisteredFontNames():
+                pdfmetrics.registerFont(TTFont('DakmanSans', reg_path))
+                pdfmetrics.registerFont(TTFont('DakmanSans-Bold', bold_path))
+                pdfmetrics.registerFontFamily('DakmanSans', normal='DakmanSans', bold='DakmanSans-Bold')
+            font_regular = 'DakmanSans'
+            font_bold = 'DakmanSans-Bold'
+            break
+
+    buf = io.BytesIO()
+    survey_code = str(survey_row.get('survey_code') or f"PHIEU_{survey_row.get('id', '')}")
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=A4,
+        leftMargin=14 * mm,
+        rightMargin=14 * mm,
+        topMargin=12 * mm,
+        bottomMargin=14 * mm,
+        title=f"Báo cáo phỏng vấn {survey_code}",
+        author="Lộc Vũ Trung"
+    )
+
+    styles = getSampleStyleSheet()
+    st_org = ParagraphStyle('Org', parent=styles['Normal'], fontName=font_bold, fontSize=9.5, leading=12, textColor=colors.HexColor('#002060'))
+    st_proj = ParagraphStyle('Proj', parent=styles['Normal'], fontName=font_bold, fontSize=11, leading=14, textColor=colors.HexColor('#1B5E20'))
+    st_title = ParagraphStyle('TitleVN', parent=styles['Normal'], fontName=font_bold, fontSize=12, leading=15, textColor=colors.HexColor('#0f172a'))
+    st_meta = ParagraphStyle('Meta', parent=styles['Normal'], fontName=font_regular, fontSize=8.5, leading=11.5, textColor=colors.HexColor('#1e293b'))
+    st_sec = ParagraphStyle('Sec', parent=styles['Normal'], fontName=font_bold, fontSize=9.5, leading=12, textColor=colors.white)
+    st_th = ParagraphStyle('TH', parent=styles['Normal'], fontName=font_bold, fontSize=8.5, leading=11, textColor=colors.HexColor('#002060'))
+    st_td = ParagraphStyle('TD', parent=styles['Normal'], fontName=font_regular, fontSize=8.5, leading=11.5, textColor=colors.HexColor('#1e293b'))
+    st_td_bold = ParagraphStyle('TDB', parent=styles['Normal'], fontName=font_bold, fontSize=8.5, leading=11.5, textColor=colors.HexColor('#002060'))
+    st_cap = ParagraphStyle('Cap', parent=styles['Normal'], fontName=font_regular, fontSize=7.5, leading=10, textColor=colors.HexColor('#475569'), alignment=1)
+
+    def scaled_img(path, max_w, max_h):
+        with PILImage.open(path) as im:
+            iw, ih = im.size
+        ratio = min(max_w / float(iw), max_h / float(ih))
+        return RLImage(path, width=iw * ratio, height=ih * ratio)
+
+    # Top-left: Logos + Project/Company header + Household info
+    logo_cells = []
+    for logo_name in ['logo_dakman.png', 'logo_idh.png', 'logo_tcn_thumb.png']:
+        lp = os.path.join(PUBLIC_DIR, 'img', logo_name)
+        if os.path.exists(lp):
+            try:
+                logo_cells.append(scaled_img(lp, 26 * mm, 11 * mm))
+            except Exception:
+                pass
+
+    left_flow = []
+    if logo_cells:
+        logo_tbl = Table([logo_cells], colWidths=[28 * mm] * len(logo_cells))
+        logo_tbl.setStyle(TableStyle([
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        left_flow.append(logo_tbl)
+
+    left_flow.append(Paragraph(xml_escape("CÔNG TY TNHH DAKMAN VIỆT NAM — BAN QUẢN LÝ DỰ ÁN"), st_org))
+    left_flow.append(Paragraph(xml_escape("DỰ ÁN CẢNH QUAN CÀ PHÊ BỀN VỮNG HUYỆN CƯ M'GAR"), st_proj))
+    left_flow.append(Spacer(1, 2 * mm))
+    left_flow.append(Paragraph(xml_escape("BÁO CÁO KẾT QUẢ PHỎNG VẤN HỘ / ĐỐI TƯỢNG"), st_title))
+    left_flow.append(Spacer(1, 2 * mm))
+
+    gps_str = f"{survey_row.get('gps_lat')}, {survey_row.get('gps_lng')}" if survey_row.get('gps_lat') and survey_row.get('gps_lng') else "Chưa ghi nhận"
+    meta_lines = [
+        f"<b>Mã phiếu:</b> {xml_escape(survey_code)} &nbsp;|&nbsp; <b>Công cụ:</b> {xml_escape(str(survey_row.get('tool_code') or ''))}",
+        f"<b>Chủ hộ / Đối tượng:</b> {xml_escape(str(survey_row.get('respondent_name') or '—'))}",
+        f"<b>Địa bàn:</b> Xã {xml_escape(str(survey_row.get('commune') or '—'))} ({xml_escape(str(survey_row.get('hamlet') or '—'))})",
+        f"<b>Điều tra viên:</b> {xml_escape(str(survey_row.get('surveyor_name') or ''))} ({xml_escape(str(survey_row.get('surveyor_id') or ''))})",
+        f"<b>Ngày phỏng vấn:</b> {xml_escape(str(survey_row.get('survey_date') or '—'))} &nbsp;|&nbsp; <b>GPS:</b> {xml_escape(gps_str)}",
+    ]
+    for ml in meta_lines:
+        left_flow.append(Paragraph(ml, st_meta))
+
+    # Top-right: Watermark photo
+    right_flow = []
+    photo_name = str(survey_row.get('photo_path') or '').strip()
+    photo_full = os.path.join(UPLOADS_DIR, os.path.basename(photo_name)) if photo_name else ''
+    if photo_full and os.path.exists(photo_full):
+        try:
+            right_flow.append(scaled_img(photo_full, 62 * mm, 48 * mm))
+            right_flow.append(Spacer(1, 1.5 * mm))
+            right_flow.append(Paragraph(xml_escape("Ảnh hiện trường cùng chủ hộ (Watermark)"), st_cap))
+        except Exception:
+            right_flow.append(Paragraph(xml_escape("[Không thể đọc ảnh hiện trường]"), st_cap))
+    else:
+        right_flow.append(Spacer(1, 18 * mm))
+        right_flow.append(Paragraph(xml_escape("[Chưa đính kèm ảnh chụp]"), st_cap))
+
+    header_tbl = Table([[left_flow, right_flow]], colWidths=[114 * mm, 68 * mm])
+    header_tbl.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+        ('BOX', (1, 0), (1, 0), 0.75, colors.HexColor('#CBD5E1')),
+        ('BACKGROUND', (1, 0), (1, 0), colors.HexColor('#F8FAFC')),
+        ('LEFTPADDING', (0, 0), (0, 0), 0),
+        ('RIGHTPADDING', (0, 0), (0, 0), 6),
+        ('LEFTPADDING', (1, 0), (1, 0), 4),
+        ('RIGHTPADDING', (1, 0), (1, 0), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LINEBELOW', (0, 0), (-1, 0), 1.2, colors.HexColor('#002060')),
+    ]))
+
+    story = [header_tbl, Spacer(1, 4 * mm)]
+
+    # Load question definitions for tool_code
+    answers = json.loads(survey_row.get('answers_json') or '{}')
+    tool_code = str(survey_row.get('tool_code') or 'P1')
+    q_sections = {}
+    section_order = []
+    known_codes = set()
+    if os.path.exists(QUESTIONS_FILE):
+        with open(QUESTIONS_FILE, 'r', encoding='utf-8') as qf:
+            all_q = json.load(qf)
+        tool_qs = (all_q.get(tool_code) or {}).get('questions') or []
+        for q in tool_qs:
+            sec = q.get('section') or 'Thông tin chung'
+            if sec not in q_sections:
+                q_sections[sec] = []
+                section_order.append(sec)
+            q_sections[sec].append(q)
+            known_codes.add(q.get('code'))
+
+    def fmt_ans(val):
+        if val is None or val == '':
+            return '—'
+        if isinstance(val, list):
+            return ', '.join(str(x) for x in val) if val else '—'
+        if isinstance(val, dict):
+            return json.dumps(val, ensure_ascii=False)
+        return str(val)
+
+    for sec in section_order:
+        sec_banner = Table([[Paragraph(xml_escape(sec.upper()), st_sec)]], colWidths=[182 * mm])
+        sec_banner.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#002060')),
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        story.append(sec_banner)
+
+        rows = [[
+            Paragraph(xml_escape("Mã"), st_th),
+            Paragraph(xml_escape("Nội dung câu hỏi"), st_th),
+            Paragraph(xml_escape("Đáp án / Kết quả ghi nhận"), st_th),
+        ]]
+        for q in q_sections[sec]:
+            q_code = str(q.get('code') or '')
+            q_text = str(q.get('text') or q_code)
+            ans_str = fmt_ans(answers.get(q_code))
+            rows.append([
+                Paragraph(xml_escape(q_code), st_td_bold),
+                Paragraph(xml_escape(q_text), st_td),
+                Paragraph(xml_escape(ans_str).replace('\n', '<br/>'), st_td),
+            ])
+
+        tbl = Table(rows, colWidths=[20 * mm, 96 * mm, 66 * mm], repeatRows=1)
+        tbl.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#ECECEC')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8FAFC')]),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 5),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        story.append(tbl)
+        story.append(Spacer(1, 3 * mm))
+
+    extra_keys = [k for k in answers.keys() if k not in known_codes]
+    if extra_keys:
+        sec_banner = Table([[Paragraph(xml_escape("THÔNG TIN BỔ SUNG KHÁC"), st_sec)]], colWidths=[182 * mm])
+        sec_banner.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#1B5E20')),
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        story.append(sec_banner)
+        rows = [[
+            Paragraph(xml_escape("Mã"), st_th),
+            Paragraph(xml_escape("Giá trị ghi nhận"), st_th),
+        ]]
+        for k in extra_keys:
+            rows.append([
+                Paragraph(xml_escape(str(k)), st_td_bold),
+                Paragraph(xml_escape(fmt_ans(answers.get(k))).replace('\n', '<br/>'), st_td),
+            ])
+        tbl = Table(rows, colWidths=[40 * mm, 142 * mm], repeatRows=1)
+        tbl.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#ECECEC')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 5),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        story.append(tbl)
+
+    doc.build(story)
+    return buf.getvalue()
+
 class SurveyRequestHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=PUBLIC_DIR, **kwargs)
@@ -490,6 +719,34 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             else:
                 self._send_json({'error': 'Photo not found'}, 404)
             return
+
+        elif path.startswith('/api/surveys/') and path.endswith('/pdf'):
+            parts = [p for p in path.split('/') if p]
+            if len(parts) == 4 and parts[0] == 'api' and parts[1] == 'surveys' and parts[3] == 'pdf':
+                survey_id = parts[2]
+                conn = sqlite3.connect(DB_PATH)
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute('SELECT * FROM surveys WHERE id = ?', (survey_id,))
+                row = cur.fetchone()
+                conn.close()
+                if not row:
+                    self._send_json({'error': 'Survey not found'}, 404)
+                    return
+                try:
+                    pdf_bytes = build_survey_pdf(dict(row))
+                    safe_code = re.sub(r'[^A-Za-z0-9_-]', '_', str(row['survey_code'] or f'PHIEU_{survey_id}'))
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/pdf')
+                    self.send_header('Content-Disposition', f'attachment; filename="Bao_cao_phong_van_{safe_code}.pdf"')
+                    self.send_header('Content-Length', str(len(pdf_bytes)))
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write(pdf_bytes)
+                    return
+                except Exception as e:
+                    self._send_json({'error': f'Lỗi tạo PDF: {str(e)}'}, 500)
+                    return
 
         elif path.startswith('/api/surveys/'):
             survey_id = path.split('/')[-1]

@@ -1267,9 +1267,15 @@ async function handleSurveySubmit(e) {
 
         if (res.ok) {
             const data = await res.json();
-            alert(isEditing
+            const savedId = isEditing ? editingSurveyId : data.survey_id;
+            const msg = isEditing
                 ? `THÀNH CÔNG!\nĐã cập nhật lại toàn bộ nội dung phiếu ${surveyCode} trên hệ thống.`
-                : `THÀNH CÔNG!\nPhiếu phỏng vấn ${surveyCode} đã được lưu an toàn lên hệ thống.`);
+                : `THÀNH CÔNG!\nPhiếu phỏng vấn ${surveyCode} đã được lưu an toàn lên hệ thống.`;
+            if (savedId && confirm(`${msg}\n\nBạn có muốn XUẤT BÁO CÁO PDF của hộ vừa phỏng vấn ngay bây giờ không?`)) {
+                window.open(apiUrl(`/api/surveys/${savedId}/pdf`), '_blank');
+            } else if (!savedId) {
+                alert(msg);
+            }
 
             localStorage.removeItem(`dakman_draft_${currentTool}`);
             currentDraftAnswers = {};
@@ -1476,6 +1482,10 @@ async function loadSurveysList() {
                                 style="background: var(--slate-100); border: 1px solid var(--border); padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--primary); margin-right: 4px;" title="Xem nội dung chi tiết">
                             <i class="fa-solid fa-eye"></i> Xem
                         </button>
+                        <a href="${apiUrl(`/api/surveys/${item.id}/pdf`)}" target="_blank"
+                           style="display: inline-block; background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; font-size: 0.78rem; font-weight: 600; color: #b91c1c; text-decoration: none; margin-right: 4px;" title="Xuất báo cáo phỏng vấn PDF">
+                            <i class="fa-solid fa-file-pdf"></i> PDF
+                        </a>
                         ${canEdit ? `
                             <button type="button" 
                                     onclick="openEditSurveyModal(${item.id})" 
@@ -1565,7 +1575,10 @@ async function viewSurveyDetail(id) {
             </div>
             <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                 <span>Dữ liệu chi tiết từng câu hỏi (${keys.length} câu đã trả lời):</span>
-                ${currentUser?.role !== 'viewer' ? `<button type="button" onclick="reloadSurveyIntoForm(${item.id})" style="background:#002060;color:#fff;border:none;padding:5px 10px;border-radius:3px;font-size:0.78rem;cursor:pointer;font-weight:600;"><i class="fa-solid fa-pen-to-square"></i> Mở lên Form để nhập liệu lại</button>` : ''}
+                <span style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <a href="${apiUrl(`/api/surveys/${item.id}/pdf`)}" target="_blank" style="background:#b91c1c;color:#fff;border:none;padding:5px 10px;border-radius:3px;font-size:0.78rem;text-decoration:none;font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Xuất Báo Cáo PDF</a>
+                    ${currentUser?.role !== 'viewer' ? `<button type="button" onclick="reloadSurveyIntoForm(${item.id})" style="background:#002060;color:#fff;border:none;padding:5px 10px;border-radius:3px;font-size:0.78rem;cursor:pointer;font-weight:600;"><i class="fa-solid fa-pen-to-square"></i> Mở lên Form để nhập liệu lại</button>` : ''}
+                </span>
             </h4>
             ${photoHtml}
             ${ansHtml}
