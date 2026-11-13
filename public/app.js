@@ -1596,7 +1596,16 @@ function formatAnswerDisplay(val) {
 }
 
 function escapeQuotes(str) {
-    return (str || '').replace(/'/g, "\\'");
+    return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function escapeHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 // ========================================================
@@ -1746,7 +1755,11 @@ async function loadStaffList() {
         const res = await fetch(apiUrl('/api/admin/users'), {
             headers: { 'X-Admin-Key': getAdminKey() }
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #dc2626; padding: 14px;">${escapeHtml(errData.error || 'Không có quyền hoặc lỗi tải danh sách nhân viên.')}</td></tr>`;
+            return;
+        }
         const users = await res.json();
 
         if (!users || users.length === 0) {
@@ -1781,7 +1794,8 @@ async function loadStaffList() {
             </tr>
         `).join('');
     } catch (err) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #dc2626; padding: 14px;">Lỗi tải danh sách nhân viên từ VPS.</td></tr>';
+        console.error('Lỗi tải danh sách nhân viên:', err);
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #dc2626; padding: 14px;">Lỗi tải danh sách nhân viên.</td></tr>';
     }
 }
 
