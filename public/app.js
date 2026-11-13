@@ -728,7 +728,27 @@ function renderQuestionsForSection(secName) {
 
         let inputHtml = '';
 
-        if (q.options && q.options.length > 0 && (qType.includes('DR') || qType.includes('SELECT'))) {
+        if (qType.includes('MULTI_TX') || q.multi_rows) {
+            const rows = Array.isArray(val)
+                ? (val.length ? val : [''])
+                : (typeof val === 'string' && val.trim() ? val.split('\n') : ['']);
+            inputHtml = `
+                <div id="multiTx_${code}" class="multi-tx-list" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+                    ${rows.map((r, rIdx) => `
+                        <div class="multi-tx-row" style="display: flex; gap: 6px; align-items: center;">
+                            <input type="text"
+                                   class="form-control"
+                                   value="${escapeHtml(r)}"
+                                   ${isViewer ? 'disabled' : ''}
+                                   placeholder="Nhập dòng ${rIdx + 1}..."
+                                   oninput="onMultiTxChange('${code}')">
+                            ${!isViewer ? `<button type="button" class="btn-outline" style="padding: 6px 10px; color: #b91c1c; border-color: #fecaca; flex-shrink: 0;" title="Xóa dòng" onclick="removeMultiTxRow('${code}', this)"><i class="fa-solid fa-xmark"></i></button>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+                ${!isViewer ? `<button type="button" class="btn-outline" style="margin-top: 8px; font-size: 0.82rem; padding: 5px 12px;" onclick="addMultiTxRow('${code}')"><i class="fa-solid fa-plus"></i> Thêm dòng</button>` : ''}
+            `;
+        } else if (q.options && q.options.length > 0 && (qType.includes('DR') || qType.includes('SELECT'))) {
             inputHtml = `
                 <div style="margin-top: 8px; max-width: 420px;">
                     <select class="form-control"
@@ -764,6 +784,21 @@ function renderQuestionsForSection(secName) {
                         `;
                     }).join('')}
                 </div>
+                ${q.follow_up_on ? (() => {
+                    const showFollowUp = isMulti
+                        ? (Array.isArray(val) && val.includes(q.follow_up_on))
+                        : (String(val || '') === String(q.follow_up_on));
+                    const noteVal = currentDraftAnswers[code + '_note'] || '';
+                    return `
+                        <div id="followUp_${code}" data-follow-on="${escapeHtml(q.follow_up_on)}" style="margin-top: 8px; display: ${showFollowUp ? 'block' : 'none'};">
+                            <textarea class="form-control"
+                                      rows="2"
+                                      ${isViewer ? 'disabled' : ''}
+                                      placeholder="${escapeHtml(q.follow_up_placeholder || 'Ghi rõ nội dung chi tiết...')}"
+                                      oninput="onFollowUpChange('${code}', this.value)">${escapeHtml(noteVal)}</textarea>
+                        </div>
+                    `;
+                })() : ''}
             `;
         } else if (qType.includes('LK')) {
             const lkOpts = (q.options && q.options.length === 5) ? q.options : [
@@ -992,9 +1027,79 @@ function onAnswerChange(code, el, isMulti) {
         }
     }
 
+    const fuBox = document.getElementById(`followUp_${code}`);
+    if (fuBox) {
+        const target = fuBox.dataset.followOn || '';
+        const curVal = currentDraftAnswers[code];
+        const active = Array.isArray(curVal) ? curVal.includes(target) : (String(curVal || '') === target);
+        fuBox.style.display = active ? 'block' : 'none';
+        if (!active && currentDraftAnswers[code + '_note'] !== undefined) {
+            delete currentDraftAnswers[code + '_note'];
+        }
+    }
+
     saveDraftLocal(false);
     evaluateQuestionConditions();
     updateAnsweredSummaryBadge();
+}
+
+function onFollowUpChange(code, textVal) {
+    if (currentUser?.role === 'viewer') return;
+    if (textVal && textVal.trim()) {
+        currentDraftAnswers[code + '_note'] = textVal;
+    } else {
+        delete currentDraftAnswers[code + '_note'];
+    }
+    saveDraftLocal(false);
+}
+
+function onMultiTxChange(code) {
+    if (currentUser?.role === 'viewer') return;
+    const container = document.getElementById(`multiTx_${code}`);
+    if (!container) return;
+    const vals = Array.from(container.querySelectorAll('input[type="text"]'))
+        .map(inp => inp.value.trim())
+        .filter(Boolean);
+    if (vals.length > 0) {
+        currentDraftAnswers[code] = vals;
+    } else {
+        delete currentDraftAnswers[code];
+    }
+    saveDraftLocal(false);
+    evaluateQuestionConditions();
+    updateAnsweredSummaryBadge();
+}
+
+function addMultiTxRow(code) {
+    if (currentUser?.role === 'viewer') return;
+    const container = document.getElementById(`multiTx_${code}`);
+    if (!container) return;
+    const idx = container.querySelectorAll('.multi-tx-row').length + 1;
+    const row = document.createElement('div');
+    row.className = 'multi-tx-row';
+    row.style.cssText = 'display: flex; gap: 6px; align-items: center;';
+    row.innerHTML = `
+        <input type="text" class="form-control" value="" placeholder="Nhập dòng ${idx}..." oninput="onMultiTxChange('${code}')">
+        <button type="button" class="btn-outline" style="padding: 6px 10px; color: #b91c1c; border-color: #fecaca; flex-shrink: 0;" title="Xóa dòng" onclick="removeMultiTxRow('${code}', this)"><i class="fa-solid fa-xmark"></i></button>
+    `;
+    container.appendChild(row);
+    const inp = row.querySelector('input');
+    if (inp) inp.focus();
+}
+
+function removeMultiTxRow(code, btn) {
+    if (currentUser?.role === 'viewer') return;
+    const container = document.getElementById(`multiTx_${code}`);
+    if (!container) return;
+    const rows = container.querySelectorAll('.multi-tx-row');
+    if (rows.length <= 1) {
+        const inp = rows[0]?.querySelector('input');
+        if (inp) inp.value = '';
+    } else {
+        const row = btn.closest('.multi-tx-row');
+        if (row) row.remove();
+    }
+    onMultiTxChange(code);
 }
 
 // ========================================================

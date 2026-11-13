@@ -1441,39 +1441,47 @@
         "section": "PPI - Thông tin cải tạo vườn trong 12 tháng qua",
         "text": "Tên giống cây anh/chị thực hiện là gì?",
         "type": "SC",
-        "options_raw": "Robusta TR 1; Robusta TR 2; Robusta TR 3; Robusta TR 4; Robusta TR 5; Robusta TR 6; Robusta TR 7; Robusta TR 8 ...",
+        "options_raw": "Robusta TR4; Robusta TR9; Robusta TR11; Robusta TR12; Robusta TRS1; Xanh lùn; Thiện Trường; Lá xoài; Thực sinh (cà phê cũ); Khác",
         "options": [
           {
-            "value": "Robusta TR 1",
-            "label": "Robusta TR 1"
+            "value": "Robusta TR4",
+            "label": "Robusta TR4"
           },
           {
-            "value": "Robusta TR 2",
-            "label": "Robusta TR 2"
+            "value": "Robusta TR9",
+            "label": "Robusta TR9"
           },
           {
-            "value": "Robusta TR 3",
-            "label": "Robusta TR 3"
+            "value": "Robusta TR11",
+            "label": "Robusta TR11"
           },
           {
-            "value": "Robusta TR 4",
-            "label": "Robusta TR 4"
+            "value": "Robusta TR12",
+            "label": "Robusta TR12"
           },
           {
-            "value": "Robusta TR 5",
-            "label": "Robusta TR 5"
+            "value": "Robusta TRS1",
+            "label": "Robusta TRS1"
           },
           {
-            "value": "Robusta TR 6",
-            "label": "Robusta TR 6"
+            "value": "Xanh lùn",
+            "label": "Xanh lùn"
           },
           {
-            "value": "Robusta TR 7",
-            "label": "Robusta TR 7"
+            "value": "Thiện Trường",
+            "label": "Thiện Trường"
           },
           {
-            "value": "Robusta TR 8 ...",
-            "label": "Robusta TR 8 ..."
+            "value": "Lá xoài",
+            "label": "Lá xoài"
+          },
+          {
+            "value": "Thực sinh (cà phê cũ)",
+            "label": "Thực sinh (cà phê cũ)"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
           }
         ],
         "condition": "",
@@ -1633,7 +1641,7 @@
         "orig_code": "organic_fertilizers_when",
         "section": "PPI - Danh sách phân bón sử dụng",
         "text": "Thời điểm anh/chị bón đợt ... là lúc nào?",
-        "type": "SO",
+        "type": "TX",
         "options_raw": "",
         "options": [],
         "condition": "",
@@ -1672,8 +1680,8 @@
         "orig_code": "organic_fertilizers_name",
         "section": "PPI - Danh sách phân bón sử dụng",
         "text": "Loại phân hữu cơ khác sử dụng?",
-        "type": "SC",
-        "options_raw": "Vỏ cà phê - Chấu - Rác - Cỏ; Bò - Trâu - Dê; Heo; Gà - Cút; Cá; Bò - Trâu - Dê + Vỏ cà phê; Heo + Vỏ cà phê; Gà - Cút + Vỏ cà phê ...",
+        "type": "MO",
+        "options_raw": "Vỏ cà phê - Chấu - Rác - Cỏ; Bò - Trâu - Dê; Heo; Gà - Cút; Cá; Bò - Trâu - Dê + Vỏ cà phê; Heo + Vỏ cà phê; Gà - Cút + Vỏ cà phê; Phân hữu cơ vi sinh / chế biến sẵn; Khác",
         "options": [
           {
             "value": "Vỏ cà phê - Chấu - Rác - Cỏ",
@@ -1704,8 +1712,16 @@
             "label": "Heo + Vỏ cà phê"
           },
           {
-            "value": "Gà - Cút + Vỏ cà phê ...",
-            "label": "Gà - Cút + Vỏ cà phê ..."
+            "value": "Gà - Cút + Vỏ cà phê",
+            "label": "Gà - Cút + Vỏ cà phê"
+          },
+          {
+            "value": "Phân hữu cơ vi sinh / chế biến sẵn",
+            "label": "Phân hữu cơ vi sinh / chế biến sẵn"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
           }
         ],
         "condition": "",
@@ -1972,12 +1988,13 @@
         "orig_code": "chemical_fertilizers_when",
         "section": "PPI - Danh sách phân bón sử dụng",
         "text": "Thời điểm anh/chị bón đợt ... là lúc nào?",
-        "type": "SO",
+        "type": "MULTI_TX",
         "options_raw": "",
         "options": [],
         "condition": "",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "multi_rows": true
       },
       {
         "tool_code": "P1",
@@ -1987,40 +2004,56 @@
         "orig_code": "chemical_fertilizers_name",
         "section": "PPI - Danh sách phân bón sử dụng",
         "text": "Tên phân hoá học anh/chị sử dụng trong đợt này là gì?",
-        "type": "MC",
-        "options_raw": "NPK 15-9-20; NPK 15-15-15 hoặc 16-16-13; NPK 16-6-19; NPK 16-7-17 hoặc 17-7-17; NPK 16-8-16; NPK 16-8-19; NPK 16-16-8; NPK 16-16-16 hoặc 17-17-17 ...",
+        "type": "MO",
+        "options_raw": "1=Đầu mùa mưa: NPK 16-16-8; 2=Giữa mùa mưa: NPK 16-16-16 (hoặc 17-17-17 / 15-15-15); 3=Cuối mùa mưa: NPK 16-8-16; 4=NPK 15-9-20; 5=NPK 16-6-19; 6=NPK 16-7-17 hoặc 17-7-17; 7=NPK 16-8-19; 8=Urê / Đạm; 9=Lân; 10=Kali; 11=Công thức sử dụng khác (ghi ở PB25); 12=Theo phỏng vấn / Tên phân hóa học khác (ghi ở PB26)",
         "options": [
           {
-            "value": "NPK 15-9-20",
+            "value": "1",
+            "label": "Đầu mùa mưa: NPK 16-16-8"
+          },
+          {
+            "value": "2",
+            "label": "Giữa mùa mưa: NPK 16-16-16 (hoặc 17-17-17 / 15-15-15)"
+          },
+          {
+            "value": "3",
+            "label": "Cuối mùa mưa: NPK 16-8-16"
+          },
+          {
+            "value": "4",
             "label": "NPK 15-9-20"
           },
           {
-            "value": "NPK 15-15-15 hoặc 16-16-13",
-            "label": "NPK 15-15-15 hoặc 16-16-13"
-          },
-          {
-            "value": "NPK 16-6-19",
+            "value": "5",
             "label": "NPK 16-6-19"
           },
           {
-            "value": "NPK 16-7-17 hoặc 17-7-17",
+            "value": "6",
             "label": "NPK 16-7-17 hoặc 17-7-17"
           },
           {
-            "value": "NPK 16-8-16",
-            "label": "NPK 16-8-16"
-          },
-          {
-            "value": "NPK 16-8-19",
+            "value": "7",
             "label": "NPK 16-8-19"
           },
           {
-            "value": "NPK 16-16-8",
-            "label": "NPK 16-16-8"
+            "value": "8",
+            "label": "Urê / Đạm"
           },
           {
-            "value": "NPK 16-16-16 hoặc 17-17-17 ...",
-            "label": "NPK 16-16-16 hoặc 17-17-17 ..."
+            "value": "9",
+            "label": "Lân"
+          },
+          {
+            "value": "10",
+            "label": "Kali"
+          },
+          {
+            "value": "11",
+            "label": "Công thức sử dụng khác (ghi ở PB25)"
+          },
+          {
+            "value": "12",
+            "label": "Theo phỏng vấn / Tên phân hóa học khác (ghi ở PB26)"
           }
         ],
         "condition": "",
@@ -2034,11 +2067,11 @@
         "code": "PB25",
         "orig_code": "chemical_fertilizers_NPK",
         "section": "PPI - Danh sách phân bón sử dụng",
-        "text": "Công thức phân NPK khác sử dụng",
+        "text": "Công thức sử dụng khác",
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "PB24=14",
+        "condition": "PB24=11",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2049,11 +2082,11 @@
         "code": "PB26",
         "orig_code": "chemical_fertilizers_name_other",
         "section": "PPI - Danh sách phân bón sử dụng",
-        "text": "Tên phân hoá học khác sử dụng?",
+        "text": "Theo phỏng vấn (tên phân hóa học khác sử dụng)",
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "PB24=26",
+        "condition": "PB24=12",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2173,12 +2206,13 @@
         "orig_code": "foliar_fertilizers_when",
         "section": "PPI - Danh sách phân bón sử dụng",
         "text": "Thời điểm anh/chị bón đợt ... là lúc nào?",
-        "type": "SO",
+        "type": "MULTI_TX",
         "options_raw": "",
         "options": [],
         "condition": "",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "multi_rows": true
       },
       {
         "tool_code": "P1",
@@ -2393,8 +2427,8 @@
         "orig_code": "pests_and_diseases_how",
         "section": "PPI - Quản lý sâu bệnh hại trên vườn",
         "text": "Biện pháp thường sử dụng để xử lý là gì?",
-        "type": "MC",
-        "options_raw": "Cắt cành; Đốn bỏ; Sử dụng thuốc BVTV",
+        "type": "MO",
+        "options_raw": "Cắt cành; Đốn bỏ; Sử dụng thuốc BVTV; Khác",
         "options": [
           {
             "value": "Cắt cành",
@@ -2407,6 +2441,10 @@
           {
             "value": "Sử dụng thuốc BVTV",
             "label": "Sử dụng thuốc BVTV"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
           }
         ],
         "condition": "",
@@ -2694,7 +2732,9 @@
         ],
         "condition": "",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "follow_up_on": "Có",
+        "follow_up_placeholder": "Ghi rõ tên thuốc BVTV khác đang sử dụng..."
       },
       {
         "tool_code": "P1",
@@ -2805,7 +2845,7 @@
         "section": "PPI - Quản lý cỏ dại",
         "text": "Anh/chị thường phát cỏ dại theo cách nào?",
         "type": "SC",
-        "options_raw": "Phát trắng; Phát chừa gốc",
+        "options_raw": "Phát trắng; Phát chừa gốc; Phát gốc chừa thảm thực bì (có CD05 bổ trợ)",
         "options": [
           {
             "value": "Phát trắng",
@@ -2814,6 +2854,10 @@
           {
             "value": "Phát chừa gốc",
             "label": "Phát chừa gốc"
+          },
+          {
+            "value": "Phát gốc chừa thảm thực bì",
+            "label": "Phát gốc chừa thảm thực bì (có CD05 bổ trợ)"
           }
         ],
         "condition": "",
@@ -4169,27 +4213,27 @@
         "orig_code": "water_irrigation",
         "section": "PPI - Thông tin sử dụng tài nguyên nước",
         "text": "Kiểu tưới anh/chị đang sử dụng trên vườn là gì?",
-        "type": "MC",
-        "options_raw": "Tưới nhỏ giọt; Tưới gốc (tưới dí); Tưới phun mưa cục bộ (Tưới Bép thấp); Tưới phun mưa (Tươi Bép cao); Không tưới",
+        "type": "MO",
+        "options_raw": "1=Tưới nhỏ giọt; 2=Tưới gốc (tưới dí); 3=Tưới phun mưa cục bộ (Tưới Bép thấp); 4=Tưới phun mưa (Tưới Bép cao); 5=Không tưới",
         "options": [
           {
-            "value": "Tưới nhỏ giọt",
+            "value": "1",
             "label": "Tưới nhỏ giọt"
           },
           {
-            "value": "Tưới gốc (tưới dí)",
+            "value": "2",
             "label": "Tưới gốc (tưới dí)"
           },
           {
-            "value": "Tưới phun mưa cục bộ (Tưới Bép thấp)",
+            "value": "3",
             "label": "Tưới phun mưa cục bộ (Tưới Bép thấp)"
           },
           {
-            "value": "Tưới phun mưa (Tươi Bép cao)",
-            "label": "Tưới phun mưa (Tươi Bép cao)"
+            "value": "4",
+            "label": "Tưới phun mưa (Tưới Bép cao)"
           },
           {
-            "value": "Không tưới",
+            "value": "5",
             "label": "Không tưới"
           }
         ],
@@ -4205,7 +4249,7 @@
         "orig_code": "water_meter",
         "section": "PPI - Thông tin sử dụng tài nguyên nước",
         "text": "Công cụ anh/chị sử dụng để canh đo lượng nước tưới?",
-        "type": "MC",
+        "type": "MO",
         "options_raw": "Hệ thống tự động; Đồng hồ đo tại vòi; Đồng hồ đo tại bồn; Ước tính theo độ ẩm đất; Ước tính theo thời gian và lượng nước ra; Không theo dõi",
         "options": [
           {
@@ -4233,7 +4277,7 @@
             "label": "Không theo dõi"
           }
         ],
-        "condition": "NN01=1 or NN01=2  or NN01=3  or sele",
+        "condition": "NN01=1 or NN01=2 or NN01=3 or NN01=4",
         "indicator": "Tưới có kiểm soát (RA3 Outcome 1)",
         "dac": "Hiệu quả"
       },
@@ -4314,7 +4358,7 @@
         "orig_code": "land_conservation_how",
         "section": "PPI - Thông tin bảo tồn tài nguyên đất",
         "text": "Các biện pháp bảo tồn đất anh/chị đang áp dụng là gì?",
-        "type": "MC",
+        "type": "MO",
         "options_raw": "Mương/Rãnh ; Gờ cản nước; Bồn/Đào hố; Đai/Hàng rào cách ly; Trồng theo đường đồng mức",
         "options": [
           {
@@ -5146,8 +5190,8 @@
         "orig_code": "training_join_name",
         "section": "PPI - Thông tin chương trình tập huấn và chứng chỉ",
         "text": "Chủ đề tập huấn",
-        "type": "MC",
-        "options_raw": "Trồng cây; Tái canh; Ghép chồi; Cắt cành; Bón phân; Phun thuốc bảo vệ thực vật; Cắt cỏ; Cuốc cỏ ...",
+        "type": "MO",
+        "options_raw": "Trồng cây; Tái canh; Ghép chồi; Cắt cành; Bón phân; Phun thuốc bảo vệ thực vật; Cắt cỏ; Cuốc cỏ; Tưới tiết kiệm; Quản lý sâu bệnh hại; Thu hoạch & sơ chế; EUDR / Truy xuất nguồn gốc; Khác",
         "options": [
           {
             "value": "Trồng cây",
@@ -5178,8 +5222,28 @@
             "label": "Cắt cỏ"
           },
           {
-            "value": "Cuốc cỏ ...",
-            "label": "Cuốc cỏ ..."
+            "value": "Cuốc cỏ",
+            "label": "Cuốc cỏ"
+          },
+          {
+            "value": "Tưới tiết kiệm",
+            "label": "Tưới tiết kiệm"
+          },
+          {
+            "value": "Quản lý sâu bệnh hại",
+            "label": "Quản lý sâu bệnh hại"
+          },
+          {
+            "value": "Thu hoạch & sơ chế",
+            "label": "Thu hoạch & sơ chế"
+          },
+          {
+            "value": "EUDR / Truy xuất nguồn gốc",
+            "label": "EUDR / Truy xuất nguồn gốc"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
           }
         ],
         "condition": "",
@@ -5266,7 +5330,9 @@
         ],
         "condition": "",
         "indicator": "Tập huấn, chứng nhận",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "follow_up_on": "Có",
+        "follow_up_placeholder": "Ghi rõ các chương trình tập huấn khác đã tham gia..."
       },
       {
         "tool_code": "P1",
@@ -5480,8 +5546,8 @@
         "orig_code": "resource_group_type",
         "section": "PPI - Thống kê chi phí",
         "text": "Anh/chị sử dụng nhiên liệu cho các mục đích nào dưới đây?",
-        "type": "MC",
-        "options_raw": "Bón phân; Phun thuốc bảo vệ thực vật; Cắt cỏ; Phun thuốc cỏ; Chế biến khô; Chế biến ướt; Tưới nước; Vận chuyển ...",
+        "type": "MO",
+        "options_raw": "Bón phân; Phun thuốc bảo vệ thực vật; Cắt cỏ; Phun thuốc cỏ; Chế biến khô; Chế biến ướt; Tưới nước; Vận chuyển; Khác",
         "options": [
           {
             "value": "Bón phân",
@@ -5512,8 +5578,12 @@
             "label": "Tưới nước"
           },
           {
-            "value": "Vận chuyển ...",
-            "label": "Vận chuyển ..."
+            "value": "Vận chuyển",
+            "label": "Vận chuyển"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
           }
         ],
         "condition": "",
@@ -5528,7 +5598,7 @@
         "orig_code": "resource_device",
         "section": "PPI - Thống kê chi phí",
         "text": "Phương tiện, thiết bị anh/chị sử dụng cho mục đích ${resource_group_type_name} là gì?",
-        "type": "SC",
+        "type": "MO",
         "options_raw": "Xe máy; Xe tải; Xe công nông; Máy nổ; Máy dầu; Máy điện; Máy phát cỏ; Bình phun thuốc",
         "options": [
           {
@@ -5576,9 +5646,29 @@
         "orig_code": "resource_type",
         "section": "PPI - Thống kê chi phí",
         "text": "Nhiên liệu anh/chị sử dụng phương tiện ${resource_device} cho mục đích ${resource_group_type_name} là gì?",
-        "type": "SC",
-        "options_raw": "Xăng; Dầu Diesel; Điện",
+        "type": "MO",
+        "options_raw": "Xe máy; Mô tơ; Chạy máy phun; Máy phát cỏ; Máy nổ / Máy dầu; Xăng; Dầu Diesel; Điện; Khác",
         "options": [
+          {
+            "value": "Xe máy",
+            "label": "Xe máy"
+          },
+          {
+            "value": "Mô tơ",
+            "label": "Mô tơ"
+          },
+          {
+            "value": "Chạy máy phun",
+            "label": "Chạy máy phun"
+          },
+          {
+            "value": "Máy phát cỏ",
+            "label": "Máy phát cỏ"
+          },
+          {
+            "value": "Máy nổ / Máy dầu",
+            "label": "Máy nổ / Máy dầu"
+          },
           {
             "value": "Xăng",
             "label": "Xăng"
@@ -5590,6 +5680,10 @@
           {
             "value": "Điện",
             "label": "Điện"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
           }
         ],
         "condition": "",
@@ -5682,8 +5776,8 @@
         "orig_code": "labor_group_type",
         "section": "PPI - Thống kê chi phí",
         "text": "Anh/chị có thuê nhân công, thuê khoán lao động cho mục đích nào dưới đây?",
-        "type": "MC",
-        "options_raw": "Trồng cây; Tái canh; Ghép chồi; Cắt cành; Bón phân; Phun thuốc bảo vệ thực vật; Cắt cỏ; Cuốc cỏ ...",
+        "type": "MO",
+        "options_raw": "Trồng cây; Tái canh; Ghép chồi; Cắt cành; Bón phân; Phun thuốc bảo vệ thực vật; Cắt cỏ; Cuốc cỏ; Thu hoạch; Sơ chế / Phơi sấy; Tưới nước; Khác",
         "options": [
           {
             "value": "Trồng cây",
@@ -5714,8 +5808,24 @@
             "label": "Cắt cỏ"
           },
           {
-            "value": "Cuốc cỏ ...",
-            "label": "Cuốc cỏ ..."
+            "value": "Cuốc cỏ",
+            "label": "Cuốc cỏ"
+          },
+          {
+            "value": "Thu hoạch",
+            "label": "Thu hoạch"
+          },
+          {
+            "value": "Sơ chế / Phơi sấy",
+            "label": "Sơ chế / Phơi sấy"
+          },
+          {
+            "value": "Tưới nước",
+            "label": "Tưới nước"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
           }
         ],
         "condition": "",
@@ -5730,19 +5840,19 @@
         "orig_code": "labor_how",
         "section": "PPI - Thống kê chi phí",
         "text": "Hình thức thuê nhân công cho mục đích ${labor_group_type_name}?",
-        "type": "MC",
-        "options_raw": "Công khoán; Công thuê; Công gia đình",
+        "type": "MO",
+        "options_raw": "1=Công khoán; 2=Công thuê; 3=Công gia đình",
         "options": [
           {
-            "value": "Công khoán",
+            "value": "1",
             "label": "Công khoán"
           },
           {
-            "value": "Công thuê",
+            "value": "2",
             "label": "Công thuê"
           },
           {
-            "value": "Công gia đình",
+            "value": "3",
             "label": "Công gia đình"
           }
         ],
@@ -5857,7 +5967,7 @@
         "orig_code": "material_type",
         "section": "PPI - Thống kê chi phí",
         "text": "Hạng mục thiết bị",
-        "type": "SC",
+        "type": "MO",
         "options_raw": "Thiết bị cơ giới; Dụng cụ canh tác; Đồ bảo hộ; Khác",
         "options": [
           {
@@ -5948,7 +6058,9 @@
         ],
         "condition": "",
         "indicator": "Chi phí sản xuất; phát thải từ nhiên liệu",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "follow_up_on": "Có",
+        "follow_up_placeholder": "Ghi rõ vật tư khác đã mua trong năm vừa qua..."
       },
       {
         "tool_code": "P1",
@@ -6102,7 +6214,7 @@
         "orig_code": "D01",
         "section": "D. Tiếp cận dự án",
         "text": "Từ 2021 đến 2025, người trong hộ đã dự những lớp tập huấn nào?",
-        "type": "MC",
+        "type": "MO",
         "options_raw": "1=Tiếp cận cảnh quan; 2=Dinh dưỡng đất, bón phân; 3=Ủ phân hữu cơ; 4=Quản lý cỏ; 5=Trồng xen; 6=Tưới tiết kiệm; 7=Tái canh, ghép; 8=Thu hoạch, sau thu hoạch; 9=An toàn lao động, thuốc BVTV; 10=EUDR, truy xuất; 11=Không dự lớp nào",
         "options": [
           {
@@ -6950,7 +7062,7 @@
         "orig_code": "L02",
         "section": "L. Đánh giá chung",
         "text": "Dự án kết thúc từ 12/2025. Đến nay hộ vẫn còn làm những việc nào?",
-        "type": "MC",
+        "type": "MO",
         "options_raw": "1=Bón hữu cơ; 2=Giữ cỏ, che phủ; 3=Tưới tiết kiệm; 4=Dùng bảo hộ khi phun; 5=Thu gom bao bì; 6=Chăm cây xen, che bóng; 7=Ghi chép sổ nông hộ; 8=Không dùng thuốc cấm; 9=Không còn làm việc nào",
         "options": [
           {
@@ -7099,7 +7211,7 @@
         "orig_code": "M01",
         "section": "M. Chăm sóc đất và nhu cầu kỹ thuật",
         "text": "Trong 2 năm tới, ông/bà muốn thử hoặc làm nhiều hơn những việc nào trên vườn?",
-        "type": "MC",
+        "type": "MO",
         "options_raw": "1=Tự ủ phân từ vỏ cà phê, phân chuồng; 2=Giữ thảm cỏ, cây phủ đất giữa hàng; 3=Trồng thêm cây che bóng, cây gỗ; 4=Phân tích đất để bón đúng; 5=Giảm phân hóa học; 6=Dùng chế phẩm sinh học thay thuốc hóa học; 7=Tưới nhỏ giọt, tiết kiệm; 8=Tủ gốc bằng cành lá, tàn dư; 9=Nuôi gà, bò lấy phân; 10=Không muốn thay đổi",
         "options": [
           {
@@ -7155,7 +7267,7 @@
         "orig_code": "M02",
         "section": "M. Chăm sóc đất và nhu cầu kỹ thuật",
         "text": "Điều gì cản trở ông/bà làm những việc đó?",
-        "type": "MC",
+        "type": "MO",
         "options_raw": "1=Thiếu tiền; 2=Thiếu công lao động; 3=Thiếu nguyên liệu (phân chuồng, vỏ cà phê); 4=Sợ giảm năng suất; 5=Chưa biết cách; 6=Không bán được giá cao hơn; 7=Khác",
         "options": [
           {
