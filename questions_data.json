@@ -157,7 +157,9 @@
         ],
         "condition": "A08=1",
         "indicator": "",
-        "dac": ""
+        "dac": "",
+        "follow_up_on": "3",
+        "follow_up_placeholder": "Ghi rõ thành viên khác trong hộ..."
       },
       {
         "tool_code": "P1",
@@ -256,7 +258,9 @@
         ],
         "condition": "",
         "indicator": "Hộ DTTS được hỗ trợ",
-        "dac": "Phù hợp"
+        "dac": "Phù hợp",
+        "follow_up_on": "5",
+        "follow_up_placeholder": "Ghi rõ dân tộc khác..."
       },
       {
         "tool_code": "P1",
@@ -390,7 +394,9 @@
         ],
         "condition": "",
         "indicator": "",
-        "dac": ""
+        "dac": "",
+        "follow_up_on": "4",
+        "follow_up_placeholder": "Ghi rõ tên HTX khác..."
       },
       {
         "tool_code": "P1",
@@ -466,7 +472,9 @@
         ],
         "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "follow_up_on": "Đất khác",
+        "follow_up_placeholder": "Ghi rõ loại đất khác..."
       },
       {
         "tool_code": "P1",
@@ -1859,7 +1867,9 @@
         ],
         "condition": "SB01=1",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ biện pháp xử lý khác..."
       },
       {
         "tool_code": "P1",
@@ -3347,7 +3357,9 @@
         ],
         "condition": "VV01=1",
         "indicator": "Vay vốn",
-        "dac": "Bền vững"
+        "dac": "Bền vững",
+        "follow_up_on": "Các nguồn đầu tư khác",
+        "follow_up_placeholder": "Ghi rõ mục đích đầu tư khác..."
       },
       {
         "tool_code": "P1",
@@ -3427,7 +3439,9 @@
         ],
         "condition": "VV05=0",
         "indicator": "Vay vốn",
-        "dac": "Bền vững"
+        "dac": "Bền vững",
+        "follow_up_on": "Các lý do khác",
+        "follow_up_placeholder": "Ghi rõ lý do khác..."
       },
       {
         "tool_code": "P1",
@@ -3511,7 +3525,9 @@
         ],
         "condition": "VV07=1",
         "indicator": "Vay vốn",
-        "dac": "Bền vững"
+        "dac": "Bền vững",
+        "follow_up_on": "Các nguồn đầu tư khác",
+        "follow_up_placeholder": "Ghi rõ mục đích vay khác..."
       },
       {
         "tool_code": "P1",
@@ -3974,7 +3990,9 @@
         ],
         "condition": "",
         "indicator": "Tái canh, chăm sóc (RA4 Outcome 1)",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ kích thước hồ khác..."
       },
       {
         "tool_code": "P1",
@@ -4443,7 +4461,9 @@
         ],
         "condition": "CC01=1",
         "indicator": "Tập huấn, chứng nhận",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ tên chứng chỉ khác..."
       },
       {
         "tool_code": "P1",
@@ -4471,7 +4491,9 @@
         ],
         "condition": "CC01=1",
         "indicator": "Tập huấn, chứng nhận",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "follow_up_on": "Có thêm lợi ích khác từ chứng chỉ mang lại",
+        "follow_up_placeholder": "Ghi rõ lợi ích khác..."
       },
       {
         "tool_code": "P1",
@@ -4566,7 +4588,9 @@
         ],
         "condition": "CC04=1",
         "indicator": "Tập huấn, chứng nhận",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "follow_up_on": "Có thêm lợi ích khác từ chứng chỉ mang lại",
+        "follow_up_placeholder": "Ghi rõ lợi ích khác..."
       },
       {
         "tool_code": "P1",
@@ -4658,7 +4682,9 @@
         ],
         "condition": "CC08=1",
         "indicator": "Tập huấn, chứng nhận",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ chủ đề tập huấn khác..."
       },
       {
         "tool_code": "P1",
@@ -4701,7 +4727,9 @@
         ],
         "condition": "CC08=1",
         "indicator": "Tập huấn, chứng nhận",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "follow_up_on": "Có thêm lợi ích khác từ chứng chỉ mang lại",
+        "follow_up_placeholder": "Ghi rõ lợi ích khác..."
       },
       {
         "tool_code": "P1",
@@ -4998,7 +5026,9 @@
         ],
         "condition": "",
         "indicator": "Chi phí sản xuất; phát thải từ nhiên liệu",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ mục đích sử dụng nhiên liệu khác..."
       },
       {
         "tool_code": "P1",
@@ -5098,7 +5128,9 @@
         ],
         "condition": "",
         "indicator": "Chi phí sản xuất; phát thải từ nhiên liệu",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ loại nhiên liệu khác..."
       },
       {
         "tool_code": "P1",
@@ -5240,7 +5272,9 @@
         ],
         "condition": "",
         "indicator": "Chi phí sản xuất; phát thải từ nhiên liệu",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ mục đích thuê nhân công khác..."
       },
       {
         "tool_code": "P1",
@@ -5399,7 +5433,9 @@
         ],
         "condition": "CP13=1",
         "indicator": "Chi phí sản xuất; phát thải từ nhiên liệu",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ hạng mục thiết bị khác..."
       },
       {
         "tool_code": "P1",
@@ -5528,7 +5564,9 @@
         ],
         "condition": "",
         "indicator": "Tính hợp pháp đất (EUDR)",
-        "dac": "Bền vững"
+        "dac": "Bền vững",
+        "follow_up_on": "2",
+        "follow_up_placeholder": "Ghi rõ loại giấy tờ khác / hợp đồng..."
       },
       {
         "tool_code": "P1",
@@ -6222,7 +6260,9 @@
         ],
         "condition": "I15≠4",
         "indicator": "Tách ảnh hưởng của giá với dự án",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "follow_up_on": "6",
+        "follow_up_placeholder": "Ghi rõ nguyên nhân khác..."
       },
       {
         "tool_code": "P1",
@@ -6254,7 +6294,9 @@
         ],
         "condition": "",
         "indicator": "Phụ nữ được trao quyền (RA6 Outcome 3)",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "follow_up_on": "4",
+        "follow_up_placeholder": "Ghi rõ người quyết định..."
       },
       {
         "tool_code": "P1",
@@ -6286,7 +6328,9 @@
         ],
         "condition": "",
         "indicator": "RA6 Outcome 3",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "follow_up_on": "4",
+        "follow_up_placeholder": "Ghi rõ người quyết định..."
       },
       {
         "tool_code": "P1",
@@ -6711,7 +6755,9 @@
         ],
         "condition": "M01≠10",
         "indicator": "",
-        "dac": "Bền vững"
+        "dac": "Bền vững",
+        "follow_up_on": "7",
+        "follow_up_placeholder": "Ghi rõ khó khăn / cản trở khác..."
       },
       {
         "tool_code": "P1",
