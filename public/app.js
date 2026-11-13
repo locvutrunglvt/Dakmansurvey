@@ -1278,9 +1278,38 @@ function getDynamicQuestionTextAndUnit(q) {
     return { text: q.text, unit: q.unit || '' };
 }
 
+function pruneHiddenAnswers() {
+    const qList = allQuestionsData[currentTool]?.questions || [];
+    let changed = false;
+    for (let pass = 0; pass < 5; pass++) {
+        let passChanged = false;
+        qList.forEach(q => {
+            if (!q.condition) return;
+            if (!checkConditionMet(q.condition, currentDraftAnswers)) {
+                const c = q.code;
+                if (currentDraftAnswers[c] !== undefined) {
+                    delete currentDraftAnswers[c];
+                    passChanged = true;
+                }
+                if (currentDraftAnswers[c + '_note'] !== undefined) {
+                    delete currentDraftAnswers[c + '_note'];
+                    passChanged = true;
+                }
+                if (currentDraftAnswers[c + '_details'] !== undefined) {
+                    delete currentDraftAnswers[c + '_details'];
+                    passChanged = true;
+                }
+            }
+        });
+        if (passChanged) changed = true;
+        else break;
+    }
+    return changed;
+}
+
 function evaluateQuestionConditions() {
     const cards = document.querySelectorAll('.question-card');
-    let hasChanges = false;
+    let hasChanges = pruneHiddenAnswers();
 
     cards.forEach(card => {
         const code = card.dataset.code;
@@ -1309,6 +1338,10 @@ function evaluateQuestionConditions() {
                     delete currentDraftAnswers[code + '_note'];
                     hasChanges = true;
                 }
+                if (currentDraftAnswers[code + '_details'] !== undefined) {
+                    delete currentDraftAnswers[code + '_details'];
+                    hasChanges = true;
+                }
                 card.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(inp => {
                     inp.checked = false;
                     if (inp.parentElement) inp.parentElement.classList.remove('selected');
@@ -1316,8 +1349,11 @@ function evaluateQuestionConditions() {
                 card.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"], textarea, select').forEach(inp => {
                     inp.value = '';
                 });
+                card.querySelectorAll('.likert-btn.active').forEach(btn => btn.classList.remove('active'));
                 const fuBox = document.getElementById(`followUp_${code}`);
                 if (fuBox) fuBox.style.display = 'none';
+                const detBox = document.getElementById(`optionDetails_${code}`);
+                if (detBox) detBox.innerHTML = '';
             }
         }
     });
@@ -1375,8 +1411,8 @@ function setLikertAnswer(code, val) {
             else btn.classList.remove('active');
         });
     }
-    saveDraftLocal(false);
     evaluateQuestionConditions();
+    saveDraftLocal(false);
     updateAnsweredSummaryBadge();
 }
 
@@ -1452,8 +1488,8 @@ function onAnswerChange(code, el, isMulti) {
         }
     }
 
-    saveDraftLocal(false);
     evaluateQuestionConditions();
+    saveDraftLocal(false);
     updateAnsweredSummaryBadge();
 }
 
@@ -1547,8 +1583,8 @@ function onMultiTxChange(code) {
     } else {
         delete currentDraftAnswers[code];
     }
-    saveDraftLocal(false);
     evaluateQuestionConditions();
+    saveDraftLocal(false);
     updateAnsweredSummaryBadge();
 }
 
