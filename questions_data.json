@@ -608,60 +608,28 @@
         "tool_code": "P1",
         "tool_name": "P1 - Phiếu hộ",
         "group": "Nhóm 1: Nông Dân",
-        "code": "LD12",
-        "orig_code": "plot_contiguous",
-        "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "Vườn này của anh/chị có tiếp giáp với ... hay không?",
-        "type": "MO",
-        "options_raw": "Sông; Suối; Hồ/Đập; Rừng; Hàng rào bằng cây trồng; Hàng rào bằng thép, trụ, tường",
-        "options": [
-          {
-            "value": "Sông",
-            "label": "Sông"
-          },
-          {
-            "value": "Suối",
-            "label": "Suối"
-          },
-          {
-            "value": "Hồ/Đập",
-            "label": "Hồ/Đập"
-          },
-          {
-            "value": "Rừng",
-            "label": "Rừng"
-          },
-          {
-            "value": "Hàng rào bằng cây trồng",
-            "label": "Hàng rào bằng cây trồng"
-          },
-          {
-            "value": "Hàng rào bằng thép, trụ, tường",
-            "label": "Hàng rào bằng thép, trụ, tường"
-          }
-        ],
-        "condition": "",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
         "code": "LD13",
         "orig_code": "plot_tree_exiting_type",
         "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "Trên vườn anh/chị đang tồn tại những cây trồng nào nào?",
+        "text": "Cây trồng xen trên vườn?",
         "type": "MO",
-        "options_raw": "Cà phê; Sầu riêng; Xoài; Chuối; Mắc ca; Bơ; Dổi; Tiêu; Khác",
+        "options_raw": "Sầu riêng; Tiêu; Bơ; Mắc ca; Xoài; Chuối; Dổi; Cà phê; Không trồng xen; Khác",
         "options": [
-          {
-            "value": "Cà phê",
-            "label": "Cà phê"
-          },
           {
             "value": "Sầu riêng",
             "label": "Sầu riêng"
+          },
+          {
+            "value": "Tiêu",
+            "label": "Tiêu"
+          },
+          {
+            "value": "Bơ",
+            "label": "Bơ"
+          },
+          {
+            "value": "Mắc ca",
+            "label": "Mắc ca"
           },
           {
             "value": "Xoài",
@@ -672,20 +640,16 @@
             "label": "Chuối"
           },
           {
-            "value": "Mắc ca",
-            "label": "Mắc ca"
-          },
-          {
-            "value": "Bơ",
-            "label": "Bơ"
-          },
-          {
             "value": "Dổi",
             "label": "Dổi"
           },
           {
-            "value": "Tiêu",
-            "label": "Tiêu"
+            "value": "Cà phê",
+            "label": "Cà phê"
+          },
+          {
+            "value": "Không trồng xen",
+            "label": "Không trồng xen"
           },
           {
             "value": "Khác",
