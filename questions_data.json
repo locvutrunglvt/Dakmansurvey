@@ -613,7 +613,7 @@
         "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Cây trồng xen trên vườn?",
         "type": "MO",
-        "options_raw": "Sầu riêng; Tiêu; Bơ; Mắc ca; Xoài; Chuối; Dổi; Cà phê; Không trồng xen; Khác",
+        "options_raw": "Sầu riêng; Tiêu; Bơ; Mắc ca; Cau; Điều; Cao su; Cây ăn trái khác; Các loại cây rừng; Không trồng xen; Khác",
         "options": [
           {
             "value": "Sầu riêng",
@@ -632,20 +632,24 @@
             "label": "Mắc ca"
           },
           {
-            "value": "Xoài",
-            "label": "Xoài"
+            "value": "Cau",
+            "label": "Cau"
           },
           {
-            "value": "Chuối",
-            "label": "Chuối"
+            "value": "Điều",
+            "label": "Điều"
           },
           {
-            "value": "Dổi",
-            "label": "Dổi"
+            "value": "Cao su",
+            "label": "Cao su"
           },
           {
-            "value": "Cà phê",
-            "label": "Cà phê"
+            "value": "Cây ăn trái khác",
+            "label": "Cây ăn trái khác"
+          },
+          {
+            "value": "Các loại cây rừng",
+            "label": "Các loại cây rừng"
           },
           {
             "value": "Không trồng xen",
@@ -658,7 +662,9 @@
         ],
         "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ tên cây trồng xen khác..."
       },
       {
         "tool_code": "P1",
