@@ -715,15 +715,15 @@
         "section": "PPI - Thông tin cải tạo vườn trong 12 tháng qua",
         "text": "Trong năm 2022 anh/chị có trồng mới / thay thế / mở rộng / cắt ghép cây trồng nào trên vườn không?",
         "type": "SC",
-        "options_raw": "Không; Có",
+        "options_raw": "Có; Không",
         "options": [
-          {
-            "value": "Không",
-            "label": "Không"
-          },
           {
             "value": "Có",
             "label": "Có"
+          },
+          {
+            "value": "Không",
+            "label": "Không"
           }
         ],
         "condition": "",
