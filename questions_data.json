@@ -544,318 +544,9 @@
         "tool_code": "P1",
         "tool_name": "P1 - Phiếu hộ",
         "group": "Nhóm 1: Nông Dân",
-        "code": "TD01",
-        "orig_code": "rent_fee",
-        "section": "PPI hỏi một lần - Thông tin thuê sử dụng đất",
-        "text": "Anh/chị có tốn phí thuê sử dụng đất này không?",
-        "type": "SC",
-        "options_raw": "Có; Không",
-        "options": [
-          {
-            "value": "Có",
-            "label": "Có"
-          },
-          {
-            "value": "Không",
-            "label": "Không"
-          }
-        ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "TD02",
-        "orig_code": "rent_fee_type",
-        "section": "PPI hỏi một lần - Thông tin thuê sử dụng đất",
-        "text": "Hình thức chi trả phí thuê thông thường của anh/chị là gì?",
-        "type": "SC",
-        "options_raw": "Theo sản lượng hằng năm; Theo chi phí cố định",
-        "options": [
-          {
-            "value": "Theo sản lượng hằng năm",
-            "label": "Theo sản lượng hằng năm"
-          },
-          {
-            "value": "Theo chi phí cố định",
-            "label": "Theo chi phí cố định"
-          }
-        ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "TD03",
-        "orig_code": "rent_coffee_qty",
-        "section": "PPI hỏi một lần - Thông tin thuê sử dụng đất",
-        "text": "Sản lượng anh/chị chi trả theo năm cho phí thuê đất là bao nhiêu?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "TD04",
-        "orig_code": "rent_cost",
-        "section": "PPI hỏi một lần - Thông tin thuê sử dụng đất",
-        "text": "Chi phí anh/chị chi trả theo năm là bao nhiêu?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MD01",
-        "orig_code": "farm_expansion",
-        "section": "PPI hỏi một lần - Thay đổi mục đích sử dụng đất",
-        "text": "Vườn cà phê của  Anh/chị có được mở rộng trong 20 năm qua không?",
-        "type": "SC",
-        "options_raw": "Có; Không; Tôi không biết",
-        "options": [
-          {
-            "value": "Có",
-            "label": "Có"
-          },
-          {
-            "value": "Không",
-            "label": "Không"
-          },
-          {
-            "value": "Tôi không biết",
-            "label": "Tôi không biết"
-          }
-        ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MD02",
-        "orig_code": "farm_expansion_know_area",
-        "section": "PPI hỏi một lần - Thay đổi mục đích sử dụng đất",
-        "text": "Anh/chị biết phần diện tích được mở rộng trên **vườn này** trong 20 năm qua không?",
-        "type": "SC",
-        "options_raw": "",
-        "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MD03",
-        "orig_code": "farm_expansion_area",
-        "section": "PPI hỏi một lần - Thay đổi mục đích sử dụng đất",
-        "text": "Có bao nhiêu hecta được thêm vào **vườn cà phê này** trong 20 năm qua?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MD04",
-        "orig_code": "farm_expansion_know_num_trees",
-        "section": "PPI hỏi một lần - Thay đổi mục đích sử dụng đất",
-        "text": "Anh/chị biết có bao nhiêu cây cà phê được trồng trên phần diện tích mở rộng này không?",
-        "type": "SC",
-        "options_raw": "",
-        "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MD05",
-        "orig_code": "farm_expansion_num_trees",
-        "section": "PPI hỏi một lần - Thay đổi mục đích sử dụng đất",
-        "text": "Có bao nhiêu cây cà phê được trồng trên phần diện tích mới mở rộng này?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MD06",
-        "orig_code": "farm_expansion_know_year",
-        "section": "PPI hỏi một lần - Thay đổi mục đích sử dụng đất",
-        "text": "Anh/chị biết việc mở rộng vườn gần đây nhất xảy ra vào năm nào không?",
-        "type": "SC",
-        "options_raw": "",
-        "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MD07",
-        "orig_code": "farm_expansion_year",
-        "section": "PPI hỏi một lần - Thay đổi mục đích sử dụng đất",
-        "text": "Việc mở rộng gần đây nhất xảy ra vào năm nào?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MD08",
-        "orig_code": "farm_expansion_know_land_use",
-        "section": "PPI hỏi một lần - Thay đổi mục đích sử dụng đất",
-        "text": "Anh/chị biết phần diện tích mở rộng này ĐÃ được sử dụng như thế nào trước khi chuyển sang trồng cà phê không?",
-        "type": "SC",
-        "options_raw": "",
-        "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MD09",
-        "orig_code": "farm_expansion_land_use",
-        "section": "PPI hỏi một lần - Thay đổi mục đích sử dụng đất",
-        "text": "Trước đây, phần đất mở rộng được sử dụng làm gì?",
-        "type": "MC",
-        "options_raw": "",
-        "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MD10",
-        "orig_code": "farm_expansion_burn",
-        "section": "PPI hỏi một lần - Thay đổi mục đích sử dụng đất",
-        "text": "Có phải đốt (dùng lửa) để dọn đất trước khi trồng cà phê không?",
-        "type": "SC",
-        "options_raw": "Có; Không; Tôi không biết",
-        "options": [
-          {
-            "value": "Có",
-            "label": "Có"
-          },
-          {
-            "value": "Không",
-            "label": "Không"
-          },
-          {
-            "value": "Tôi không biết",
-            "label": "Tôi không biết"
-          }
-        ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "DT01",
-        "orig_code": "plot_area_type",
-        "section": "PPI hỏi một lần - Thông tin phân bổ diện tích sử dụng đất trên vườn",
-        "text": "Diện tích Anh/chị sử dụng cho những mục đích gì?",
-        "type": "MC",
-        "options_raw": "Diện tích ao hồ; Diện tích Nhà ở, sân phơi, ...; Diện tích trồng cà phê; Diện tích trồng thuần các cây trồng khác; Diện tích bỏ trống, chưa sử dụng; Diện tích trồng lúa",
-        "options": [
-          {
-            "value": "Diện tích ao hồ",
-            "label": "Diện tích ao hồ"
-          },
-          {
-            "value": "Diện tích Nhà ở, sân phơi, ...",
-            "label": "Diện tích Nhà ở, sân phơi, ..."
-          },
-          {
-            "value": "Diện tích trồng cà phê",
-            "label": "Diện tích trồng cà phê"
-          },
-          {
-            "value": "Diện tích trồng thuần các cây trồng khác",
-            "label": "Diện tích trồng thuần các cây trồng khác"
-          },
-          {
-            "value": "Diện tích bỏ trống, chưa sử dụng",
-            "label": "Diện tích bỏ trống, chưa sử dụng"
-          },
-          {
-            "value": "Diện tích trồng lúa",
-            "label": "Diện tích trồng lúa"
-          }
-        ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "DT02",
-        "orig_code": "plot_area_type_ha",
-        "section": "PPI hỏi một lần - Thông tin phân bổ diện tích sử dụng đất trên vườn",
-        "text": "Diện tích sử dụng cho mục đích từng loại đất đã chọn",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
         "code": "LD01",
         "orig_code": "plot_soil_type",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Trên vườn anh/chị có những loại đất nào?",
         "type": "MC",
         "options_raw": "Đất đỏ Bazan; Đất xám; Đất bô xít; Đất cát pha; Đất sỏi-đá; Đất khác",
@@ -885,7 +576,7 @@
             "label": "Đất khác"
           }
         ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -895,12 +586,12 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD02",
         "orig_code": "plot_soil_percent",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Tỷ lệ đất từng loại đất đã chọn trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -910,7 +601,7 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD03",
         "orig_code": "plot_soil_type",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "**QUAN SÁT** Điều tra viên nhận định những loại đất hiện có trên vườn",
         "type": "MC",
         "options_raw": "Đất đỏ Bazan; Đất xám; Đất bô xít; Đất cát pha; Đất sỏi-đá; Đất khác",
@@ -940,7 +631,7 @@
             "label": "Đất khác"
           }
         ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -950,12 +641,12 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD04",
         "orig_code": "plot_soil_percent",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Tỷ lệ đất từng loại đất đã chọn trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -965,12 +656,12 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD05",
         "orig_code": "plot_typography_know_type",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Anh chị có biết trên vườn có những loại địa hình nào không?",
         "type": "SC",
         "options_raw": "",
         "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -980,7 +671,7 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD06",
         "orig_code": "plot_typography_type",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Trên vườn anh/chị có những loại địa hình nào?",
         "type": "MC",
         "options_raw": "Địa hình tương đối bằng phẳng (Độ dốc nhỏ hơn 8%);  Địa hình dốc thoải (Độ dốc từ 8% - 15%);  Địa hình dốc đồi (Độ dốc từ 16% - 25%); Địa hình dốc cao (Độ dốc từ 26% - 35%); Địa hình dốc đứng (Độ dốc trên 36%); Địa hình uốn lượn",
@@ -1010,7 +701,7 @@
             "label": "Địa hình uốn lượn"
           }
         ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1020,12 +711,12 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD07",
         "orig_code": "plot_typography_percent",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Tỷ lệ địa hình từng dạng địa hình đã chọn trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1035,7 +726,7 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD08",
         "orig_code": "plot_typography_type",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "**QUAN SÁT** Điều tra viên nhận định những loại địa hình hiện có trên vườn",
         "type": "MC",
         "options_raw": "Địa hình tương đối bằng phẳng (Độ dốc nhỏ hơn 8%);  Địa hình dốc thoải (Độ dốc từ 8% - 15%);  Địa hình dốc đồi (Độ dốc từ 16% - 25%); Địa hình dốc cao (Độ dốc từ 26% - 35%); Địa hình dốc đứng (Độ dốc trên 36%); Địa hình uốn lượn",
@@ -1065,7 +756,7 @@
             "label": "Địa hình uốn lượn"
           }
         ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1075,12 +766,12 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD09",
         "orig_code": "plot_typography_percent",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Tỷ lệ địa hình từng dạng địa hình đã chọn trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1090,7 +781,7 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD10",
         "orig_code": "plot_water_type",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Trên vườn anh/chị có những nguồn nước nào?",
         "type": "MC",
         "options_raw": "Sông; Suối; Ao; Hồ/Đập; Nước giếng đào; Nước giếng khoan; Mua nước sử dụng; Không có nguồn nước",
@@ -1128,7 +819,7 @@
             "label": "Không có nguồn nước"
           }
         ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1138,12 +829,12 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD11",
         "orig_code": "plot_water_percent",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Tỷ lệ nguồn nước từng nguồn nước đã chọn trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1153,7 +844,7 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD12",
         "orig_code": "plot_contiguous",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Vườn này của anh/chị có tiếp giáp với ... hay không?",
         "type": "MC",
         "options_raw": "Sông; Suối; Hồ/Đập; Rừng; Hàng rào bằng cây trồng; Hàng rào bằng thép, trụ, tường",
@@ -1183,7 +874,7 @@
             "label": "Hàng rào bằng thép, trụ, tường"
           }
         ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1193,7 +884,7 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD13",
         "orig_code": "plot_tree_exiting_type",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Trên vườn anh/chị đang tồn tại những cây trồng nào nào?",
         "type": "MC",
         "options_raw": "Cà phê; Sầu riêng; XoàI; ChuốI; Mắc ca; Bơ; Dổi; Tiêu ...",
@@ -1231,7 +922,7 @@
             "label": "Tiêu ..."
           }
         ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1241,12 +932,12 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD14",
         "orig_code": "plot_tree_exiting_year",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Năm trồng cây cây trồng hiện có",
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1256,12 +947,12 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD15",
         "orig_code": "plot_tree_exiting_qty",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Số cây cây trồng hiện có (theo từng năm trồng) trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1271,7 +962,7 @@
         "group": "Nhóm 1: Nông Dân",
         "code": "LD16",
         "orig_code": "plot_tree_exiting_year_more",
-        "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
+        "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Còn năm trồng nào khác đối với cây cây trồng hiện có này không?",
         "type": "SC",
         "options_raw": "Không; Có",
@@ -1285,7 +976,7 @@
             "label": "Có"
           }
         ],
-        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
+        "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
