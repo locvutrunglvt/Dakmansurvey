@@ -1,0 +1,19 @@
+[Unit]
+Description=Dakman Survey Webapp Backend Service (dakmansurvey.slowforest.vn)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/dakmansurvey
+ExecStart=/usr/bin/python3 /var/www/dakmansurvey/server.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+Environment=PORT=8080
+
+[Install]
+WantedBy=multi-user.target
+

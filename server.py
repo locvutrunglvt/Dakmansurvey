@@ -1,0 +1,1011 @@
+"""
+Dakman Final Evaluation Webapp Server
+Domain: dakmansurvey.slowforest.vn
+Port: 8080 (or PORT env var)
+Zero external dependencies required (Python 3 standard library + sqlite3)
+Supports openpyxl for Excel export if installed.
+Tác giả hệ thống: Lộc Vũ Trung
+Đơn vị tư vấn: Công ty TNHH Dịch vụ và Tư vấn Tân Cao Nguyên
+"""
+
+import os
+import re
+import sys
+import json
+import base64
+import sqlite3
+import datetime
+import urllib.parse
+import unicodedata
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+
+PORT = int(os.environ.get("PORT", 8080))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "survey_database.sqlite")
+PUBLIC_DIR = os.path.join(BASE_DIR, "public")
+UPLOADS_DIR = os.path.join(BASE_DIR, "uploads", "photos")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+QUESTIONS_FILE = os.path.join(BASE_DIR, "questions_data.json")
+SCHEDULE_FILE = os.path.join(BASE_DIR, "schedule_data.json")
+
+# 03 Tầng quyền đăng nhập mặc định (có thể đổi qua giao diện Admin)
+PASS_ADMIN = "AAdmin123"
+PASS_VIEWER = "View123"
+PASS_EDITOR = "Edit123a#"
+
+def get_setting(key, default=""):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute('CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, val TEXT)')
+        cur.execute('SELECT val FROM system_settings WHERE key = ?', (key,))
+        row = cur.fetchone()
+        conn.close()
+        return row[0] if row else default
+    except Exception:
+        return default
+
+def set_setting(key, val):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute('CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, val TEXT)')
+        cur.execute('INSERT OR REPLACE INTO system_settings (key, val) VALUES (?, ?)', (key, val))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error setting {key}: {e}")
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS surveys (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            survey_code TEXT,
+            tool_code TEXT,
+            tool_name TEXT,
+            surveyor_id TEXT,
+            surveyor_name TEXT,
+            survey_date TEXT,
+            commune TEXT,
+            hamlet TEXT,
+            target_group TEXT,
+            respondent_name TEXT,
+            respondent_phone TEXT,
+            gps_lat REAL,
+            gps_lng REAL,
+            start_time TEXT,
+            end_time TEXT,
+            answers_json TEXT,
+            photo_path TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    try:
+        cur.execute('ALTER TABLE surveys ADD COLUMN photo_path TEXT')
+    except Exception:
+        pass
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            surveyor_id TEXT UNIQUE,
+            full_name TEXT,
+            phone TEXT,
+            role TEXT,
+            commune_assigned TEXT,
+            password TEXT,
+            last_login TIMESTAMP
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS system_settings (
+            key TEXT PRIMARY KEY,
+            val TEXT
+        )
+    ''')
+    cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('pass_admin', 'AAdmin123'))
+    cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('pass_viewer', 'View123'))
+    cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('admin_name', 'Quản Trị Viên (Admin)'))
+    conn.commit()
+    try:
+        cur.execute('ALTER TABLE users ADD COLUMN password TEXT')
+    except Exception:
+        pass
+
+    # Seed initial surveyors with standard format TCN-XX-hhmmss
+    cur.execute('SELECT COUNT(*) FROM users')
+    if cur.fetchone()[0] == 0:
+        seed_users = [
+            ('TCN-01-080000', 'Nguyễn Văn An', '0912345678', 'Điều tra viên', 'Ea Kiết', 'Edit123a#'),
+            ('TCN-02-080000', 'Lê Thị Bình', '0912345679', 'Điều tra viên', 'Ea Tar', 'Edit123a#'),
+            ('TCN-03-080000', 'Trần Văn Cường', '0912345680', 'Điều tra viên', "Cư Dliê M'nông", 'Edit123a#'),
+            ('TCN-04-080000', 'H\'Hen Niê', '0912345681', 'Điều tra viên', 'Ea Kiết', 'Edit123a#'),
+            ('TCN-05-080000', 'Lộc Vũ Trung', '0908889999', 'Giám sát viên & Trưởng nhóm', 'Toàn vùng', 'Edit123a#')
+        ]
+        cur.executemany('''
+            INSERT OR REPLACE INTO users (surveyor_id, full_name, phone, role, commune_assigned, password, last_login)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ''', seed_users)
+
+    conn.commit()
+    conn.close()
+
+init_db()
+
+
+def read_request_body(rfile, length):
+    if not length or length <= 0:
+        return ''
+    raw_bytes = rfile.read(length)
+    for enc in ('utf-8', 'utf-8-sig', 'windows-1258', 'cp1252', 'latin-1'):
+        try:
+            return raw_bytes.decode(enc)
+        except Exception:
+            continue
+    return raw_bytes.decode('utf-8', errors='replace')
+
+def normalize_vn_str(text):
+    if not text:
+        return ''
+    return ' '.join(unicodedata.normalize('NFC', str(text).strip()).lower().split())
+
+def save_survey_photo(survey_code, photo_data):
+    """Decode base64 data URL and save JPEG photo to UPLOADS_DIR."""
+    if not photo_data or not isinstance(photo_data, str) or ',' not in photo_data:
+        return ''
+    try:
+        header, b64_str = photo_data.split(',', 1)
+        img_bytes = base64.b64decode(b64_str)
+        safe_code = re.sub(r'[^A-Za-z0-9_-]', '_', str(survey_code or 'DKM'))[:40]
+        ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{safe_code}_{ts}.jpg"
+        filepath = os.path.join(UPLOADS_DIR, filename)
+        with open(filepath, 'wb') as f:
+            f.write(img_bytes)
+        return filename
+    except Exception as e:
+        print(f"Error saving photo: {e}")
+        return ''
+
+class SurveyRequestHandler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=PUBLIC_DIR, **kwargs)
+
+    def _send_json(self, data, status=200):
+        body = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        self.send_response(status)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Key')
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Key')
+        self.end_headers()
+
+    def do_HEAD(self):
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path.startswith('/api/'):
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            return
+        super().do_HEAD()
+
+    def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        query = urllib.parse.parse_qs(parsed.query)
+
+        if path == '/api/health':
+            self._send_json({
+                'status': 'online',
+                'service': 'Dakman Final Evaluation Survey VPS Service',
+                'domain': 'dakmansurvey.slowforest.vn',
+                'time': datetime.datetime.now().isoformat()
+            })
+            return
+
+        elif path == '/api/questions':
+            if os.path.exists(QUESTIONS_FILE):
+                with open(QUESTIONS_FILE, 'r', encoding='utf-8') as f:
+                    self._send_json(json.load(f))
+            else:
+                self._send_json({'error': 'Question data file not found'}, 404)
+            return
+
+        elif path == '/api/schedule':
+            if os.path.exists(SCHEDULE_FILE):
+                with open(SCHEDULE_FILE, 'r', encoding='utf-8') as f:
+                    self._send_json(json.load(f))
+            else:
+                self._send_json({'error': 'Schedule data file not found'}, 404)
+            return
+
+        elif path == '/api/admin/settings':
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xem cấu hình hệ thống!'}, 403)
+                return
+            self._send_json({
+                'pass_admin': cur_admin_pass,
+                'pass_viewer': get_setting('pass_viewer', PASS_VIEWER),
+                'admin_name': get_setting('admin_name', 'Quản Trị Viên (Admin)')
+            })
+            return
+
+        elif path == '/api/admin/users':
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xem danh sách nhân sự!'}, 403)
+                return
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute('SELECT id, surveyor_id, full_name, phone, role, commune_assigned, password, last_login FROM users ORDER BY id DESC')
+            cols = ['id', 'surveyor_id', 'full_name', 'phone', 'role', 'commune_assigned', 'password', 'last_login']
+            users = [dict(zip(cols, r)) for r in cur.fetchall()]
+            conn.close()
+            self._send_json(users)
+            return
+
+        elif path == '/api/users':
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute('SELECT surveyor_id, full_name, phone, role, commune_assigned FROM users')
+            users = [{'surveyor_id': r[0], 'full_name': r[1], 'phone': r[2], 'role': r[3], 'commune_assigned': r[4]} for r in cur.fetchall()]
+            conn.close()
+            self._send_json(users)
+            return
+
+        elif path == '/api/stats':
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute('SELECT tool_code, COUNT(*) FROM surveys GROUP BY tool_code')
+            tool_counts = dict(cur.fetchall())
+
+            cur.execute('SELECT commune, COUNT(*) FROM surveys GROUP BY commune')
+            commune_counts = dict(cur.fetchall())
+
+            cur.execute('SELECT COUNT(*) FROM surveys')
+            total_surveys = cur.fetchone()[0]
+
+            targets = {
+                'total_respondents': 312,
+                'groups': {
+                    'group1_farmers': {
+                        'target': 268,
+                        'completed': (tool_counts.get('P1', 0) + tool_counts.get('KIP', 0) + tool_counts.get('MH', 0)),
+                        'details': {
+                            'P1': {'name': 'Phiếu nông dân', 'target': 220, 'completed': tool_counts.get('P1', 0)},
+                            'KIP': {'name': 'Thảo luận cấp thôn', 'target': 12, 'completed': tool_counts.get('KIP', 0)},
+                            'MH': {'name': 'Phỏng vấn sâu mô hình', 'target': 9, 'completed': tool_counts.get('MH', 0)}
+                        }
+                    },
+                    'group2_leaders_coops': {
+                        'target': 36,
+                        'completed': (tool_counts.get('NT', 0) + tool_counts.get('SDM', 0) + tool_counts.get('HTX', 0)),
+                        'details': {
+                            'NT': {'name': 'Thảo luận ToT', 'target': 3, 'completed': tool_counts.get('NT', 0)},
+                            'SDM': {'name': 'Thảo luận tổ SDM', 'target': 1, 'completed': tool_counts.get('SDM', 0)},
+                            'HTX': {'name': 'Phỏng vấn HTX', 'target': 3, 'completed': tool_counts.get('HTX', 0)}
+                        }
+                    },
+                    'group3_local_gov': {
+                        'target': 6,
+                        'completed': tool_counts.get('CQ', 0),
+                        'details': {
+                            'CQ': {'name': 'Chính quyền & ban ngành', 'target': 6, 'completed': tool_counts.get('CQ', 0)}
+                        }
+                    },
+                    'group4_donors': {
+                        'target': 2,
+                        'completed': tool_counts.get('TT', 0),
+                        'details': {
+                            'TT': {'name': "Nhà tài trợ (IDH, JDE Peet's)", 'target': 2, 'completed': tool_counts.get('TT', 0)}
+                        }
+                    }
+                },
+                'communes_p1': {
+                    'Ea Kiết': {'target': 84, 'completed': commune_counts.get('Ea Kiết', 0)},
+                    'Ea Tar': {'target': 51, 'completed': commune_counts.get('Ea Tar', 0)},
+                    "Cư Dliê M'nông": {'target': 85, 'completed': commune_counts.get("Cư Dliê M'nông", 0)}
+                }
+            }
+
+            conn.close()
+            self._send_json({
+                'total_completed': total_surveys,
+                'tool_counts': tool_counts,
+                'commune_counts': commune_counts,
+                'targets': targets
+            })
+            return
+
+        elif path == '/api/surveys':
+            tool_filter = query.get('tool', [None])[0]
+            commune_filter = query.get('commune', [None])[0]
+            surveyor_filter = query.get('surveyor', [None])[0]
+
+            sql = 'SELECT id, survey_code, tool_code, tool_name, surveyor_id, surveyor_name, survey_date, commune, hamlet, target_group, respondent_name, respondent_phone, gps_lat, gps_lng, start_time, end_time, photo_path, created_at FROM surveys WHERE 1=1'
+            params = []
+            if tool_filter:
+                sql += ' AND tool_code = ?'
+                params.append(tool_filter)
+            if commune_filter:
+                sql += ' AND commune = ?'
+                params.append(commune_filter)
+            if surveyor_filter:
+                sql += ' AND surveyor_id = ?'
+                params.append(surveyor_filter)
+
+            sql += ' ORDER BY id DESC'
+
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute(sql, params)
+            cols = [c[0] for c in cur.description]
+            rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+            conn.close()
+            self._send_json(rows)
+            return
+
+        elif path.startswith('/api/photos/'):
+            filename = os.path.basename(urllib.parse.unquote(path.split('/api/photos/', 1)[1]))
+            filepath = os.path.join(UPLOADS_DIR, filename)
+            if os.path.isfile(filepath):
+                with open(filepath, 'rb') as f:
+                    img_bytes = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'image/jpeg')
+                self.send_header('Content-Length', str(len(img_bytes)))
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Cache-Control', 'public, max-age=86400')
+                self.end_headers()
+                self.wfile.write(img_bytes)
+            else:
+                self._send_json({'error': 'Photo not found'}, 404)
+            return
+
+        elif path.startswith('/api/surveys/'):
+            survey_id = path.split('/')[-1]
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute('SELECT * FROM surveys WHERE id = ?', (survey_id,))
+            row = cur.fetchone()
+            if row:
+                cols = [c[0] for c in cur.description]
+                res = dict(zip(cols, row))
+                res['answers'] = json.loads(res.get('answers_json') or '{}')
+                if res.get('photo_path'):
+                    res['photo_url'] = f"/api/photos/{res['photo_path']}"
+                conn.close()
+                self._send_json(res)
+            else:
+                conn.close()
+                self._send_json({'error': 'Survey not found'}, 404)
+            return
+
+        elif path == '/api/export/excel':
+            # Chặn tài khoản Chỉ Xem tải dữ liệu Excel
+            role_param = query.get('role', [None])[0] or self.headers.get('X-User-Role', '')
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if role_param == 'viewer' or auth_key == PASS_VIEWER:
+                self._send_json({'error': 'Tài khoản ở chế độ chỉ xem không có quyền tải xuống dữ liệu Excel!'}, 403)
+                return
+
+            try:
+                import openpyxl
+                from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+                from openpyxl.utils import get_column_letter
+
+                conn = sqlite3.connect(DB_PATH)
+                cur = conn.cursor()
+                cur.execute('SELECT * FROM surveys ORDER BY id ASC')
+                cols = [c[0] for c in cur.description]
+                db_rows = cur.fetchall()
+                conn.close()
+
+                surveys_list = []
+                for r in db_rows:
+                    item = dict(zip(cols, r))
+                    if item.get('answers_json'):
+                        try:
+                            item['answers'] = json.loads(item['answers_json'])
+                        except Exception:
+                            item['answers'] = {}
+                    else:
+                        item['answers'] = {}
+                    surveys_list.append(item)
+
+                q_data = {}
+                if os.path.exists(QUESTIONS_FILE):
+                    with open(QUESTIONS_FILE, 'r', encoding='utf-8') as f:
+                        q_data = json.load(f)
+
+                export_file = os.path.join(BASE_DIR, "export_surveys_latest.xlsx")
+                wb = openpyxl.Workbook()
+                wb.properties.creator = "Lộc Vũ Trung"
+                wb.properties.lastModifiedBy = "Lộc Vũ Trung"
+
+                font_header = Font(name="Arial", size=10, bold=True, color="FFFFFF")
+                font_normal = Font(name="Arial", size=9)
+                fill_header = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+                thin_border = Border(
+                    left=Side(style='thin', color='D0D7DE'),
+                    right=Side(style='thin', color='D0D7DE'),
+                    top=Side(style='thin', color='D0D7DE'),
+                    bottom=Side(style='thin', color='D0D7DE')
+                )
+
+                # Sheet 1: Danh_sach_phieu
+                ws1 = wb.active
+                ws1.title = "Danh_sach_phieu"
+                ws1.views.sheetView[0].showGridLines = True
+                headers_s1 = ["STT", "Mã Phiếu", "Mã Công Cụ", "Tên Công Cụ", "Địa Bàn Xã", "Thôn/Buôn", "Người Được Phỏng Vấn", "Mã Điều Tra Viên", "Tên Điều Tra Viên", "Ngày Khảo Sát", "Tọa Độ Vĩ Độ", "Tọa Độ Kinh Độ", "Ảnh Hiện Trường (Watermark)", "Thời Gian Gửi"]
+                ws1.append(headers_s1)
+                for col_idx in range(1, len(headers_s1) + 1):
+                    c = ws1.cell(1, col_idx)
+                    c.font = font_header
+                    c.fill = fill_header
+                    c.alignment = Alignment(horizontal="center", vertical="center")
+
+                for idx, s in enumerate(surveys_list, 1):
+                    p_name = s.get('photo_path') or ''
+                    row_vals = [
+                        idx, s.get('survey_code', ''), s.get('tool_code', ''), s.get('tool_name', ''),
+                        s.get('commune', ''), s.get('hamlet', ''), s.get('respondent_name', ''),
+                        s.get('surveyor_id', ''), s.get('surveyor_name', ''), s.get('survey_date', ''),
+                        s.get('gps_lat', 0.0), s.get('gps_lng', 0.0), p_name if p_name else 'Chưa có', s.get('created_at', '')
+                    ]
+                    ws1.append(row_vals)
+                    for c_idx in range(1, len(row_vals) + 1):
+                        cell = ws1.cell(idx + 1, c_idx)
+                        cell.font = font_normal
+                        cell.border = thin_border
+                        if c_idx in (1, 2, 3, 10):
+                            cell.alignment = Alignment(horizontal="center", vertical="center")
+
+                # Sheet 2: Du_lieu_chi_tiet (384 cột câu hỏi)
+                ws2 = wb.create_sheet(title="Du_lieu_chi_tiet")
+                ws2.views.sheetView[0].showGridLines = True
+                all_q_cols = []
+                for tool_code in ['P1', 'KIP', 'MH', 'NT', 'SDM', 'HTX', 'CQ', 'TT']:
+                    t_obj = q_data.get(tool_code)
+                    if t_obj and t_obj.get('questions'):
+                        for q in t_obj['questions']:
+                            code = q['code']
+                            short_text = q['text'][:40] + ("..." if len(q['text']) > 40 else "")
+                            all_q_cols.append({
+                                'tool': tool_code,
+                                'code': code,
+                                'header': f"[{code}] {short_text}"
+                            })
+
+                fixed_headers = ["Mã Phiếu", "Công Cụ", "Xã", "Thôn/Buôn", "Người Được Hỏi", "Mã ĐTV", "Ngày Khảo Sát"]
+                detail_headers = fixed_headers + [col['header'] for col in all_q_cols]
+                ws2.append(detail_headers)
+                for col_idx in range(1, len(detail_headers) + 1):
+                    c = ws2.cell(1, col_idx)
+                    c.font = font_header
+                    c.fill = fill_header
+                    c.alignment = Alignment(horizontal="center", vertical="center")
+
+                for idx, s in enumerate(surveys_list, 1):
+                    ans = s.get('answers') or {}
+                    row_vals = [s.get('survey_code', ''), s.get('tool_code', ''), s.get('commune', ''), s.get('hamlet', ''), s.get('respondent_name', ''), s.get('surveyor_id', ''), s.get('survey_date', '')]
+                    for col in all_q_cols:
+                        val = ans.get(col['code'], '')
+                        if isinstance(val, list):
+                            row_vals.append("; ".join(str(v) for v in val))
+                        elif val is not None:
+                            row_vals.append(str(val))
+                        else:
+                            row_vals.append("")
+                    ws2.append(row_vals)
+                    for c_idx in range(1, len(row_vals) + 1):
+                        cell = ws2.cell(idx + 1, c_idx)
+                        cell.font = font_normal
+                        cell.border = thin_border
+
+                # Sheet 3: Ma_tran_KPI
+                ws3 = wb.create_sheet(title="Ma_tran_KPI")
+                ws3.views.sheetView[0].showGridLines = True
+                kpi_headers = ["Mã KPI", "Tên Chỉ Số Kết Quả", "Đơn Vị", "Mục Tiêu 2025", "Báo Cáo 2021-2025", "% Đạt (Kế hoạch)", "Số Phiếu Khảo Sát Đã Thu", "Câu Hỏi Đo Tương Ứng"]
+                ws3.append(kpi_headers)
+                for col_idx in range(1, len(kpi_headers) + 1):
+                    c = ws3.cell(1, col_idx)
+                    c.font = font_header
+                    c.fill = fill_header
+                    c.alignment = Alignment(horizontal="center", vertical="center")
+
+                orig_kpi_path = os.path.join(BASE_DIR, '..', 'Draft_Ke hoach_V5', '04_HeThongBangHoi_DGCK_Dakman_F1_VN.xlsx')
+                if os.path.exists(orig_kpi_path):
+                    wb_orig = openpyxl.load_workbook(orig_kpi_path, data_only=True)
+                    ws_orig_kpi = wb_orig['Ma_tran_KPI']
+                    r_target = 2
+                    for r in range(5, 36):
+                        kpi_code = ws_orig_kpi.cell(r, 1).value
+                        kpi_name = ws_orig_kpi.cell(r, 2).value
+                        kpi_unit = ws_orig_kpi.cell(r, 3).value
+                        kpi_target = ws_orig_kpi.cell(r, 5).value
+                        kpi_rep = ws_orig_kpi.cell(r, 6).value
+                        kpi_q = ws_orig_kpi.cell(r, 9).value
+                        if kpi_code and kpi_name:
+                            ws3.append([
+                                kpi_code, kpi_name, kpi_unit or '', kpi_target or 0, kpi_rep or 0,
+                                f"=IF(D{r_target}>0, E{r_target}/D{r_target}, 0)",
+                                f"=COUNTA(Du_lieu_chi_tiet!A:A)-1",
+                                kpi_q or ''
+                            ])
+                            for c_idx in range(1, 9):
+                                cell = ws3.cell(r_target, c_idx)
+                                cell.font = font_normal
+                                cell.border = thin_border
+                                align_h = "center" if c_idx in (1, 3, 6, 7) else ("right" if c_idx in (4, 5) else "left")
+                                cell.alignment = Alignment(horizontal=align_h, vertical="center")
+                                if c_idx == 6:
+                                    cell.number_format = '0.0%'
+                            r_target += 1
+
+                for ws in [ws1, ws2, ws3]:
+                    for col in ws.columns:
+                        max_len = max(len(str(cell.value or '')) for cell in col)
+                        col_letter = get_column_letter(col[0].column)
+                        ws.column_dimensions[col_letter].width = min(max(max_len + 2, 10), 45)
+
+                wb.save(export_file)
+
+                with open(export_file, 'rb') as f:
+                    file_bytes = f.read()
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                self.send_header('Content-Disposition', 'attachment; filename="Dakman_Survey_FinalEvaluation.xlsx"')
+                self.send_header('Content-Length', str(len(file_bytes)))
+                self.end_headers()
+                self.wfile.write(file_bytes)
+                return
+            except Exception as e:
+                self._send_json({'error': f'Export failed: {str(e)}'}, 500)
+                return
+
+        return super().do_GET()
+
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+
+        if path == '/api/login':
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+                role = data.get('role', 'editor').strip()
+                password = data.get('password', '').strip()
+                surveyor_id = data.get('surveyor_id', '').strip()
+                full_name = data.get('full_name', '').strip()
+                survey_date = data.get('survey_date', datetime.date.today().isoformat())
+                commune = data.get('commune', 'Ea Kiết')
+
+                cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+                cur_viewer_pass = get_setting('pass_viewer', PASS_VIEWER)
+                cur_admin_name = get_setting('admin_name', 'Quản Trị Viên (Admin)')
+
+                if role == 'admin':
+                    if password != cur_admin_pass and password != PASS_ADMIN:
+                        self._send_json({'error': 'Mật khẩu Quản trị viên (Admin) không đúng!'}, 401)
+                        return
+                    surveyor_id = 'ADMIN'
+                    full_name = cur_admin_name
+                    commune = 'Toàn vùng'
+
+                elif role == 'viewer':
+                    if password != cur_viewer_pass and password != PASS_VIEWER:
+                        self._send_json({'error': 'Mật khẩu Quyền chỉ xem (Viewer) không đúng!'}, 401)
+                        return
+                    surveyor_id = 'VIEWER'
+                    full_name = 'Khách Giám Sát (Chỉ xem)'
+                    commune = 'Toàn vùng'
+
+                elif role == 'editor':
+                    if not surveyor_id:
+                        self._send_json({'error': 'Vui lòng nhập Mã điều tra viên (ID) được cấp!'}, 400)
+                        return
+                    if not full_name:
+                        self._send_json({'error': 'Vui lòng nhập Đúng Họ và Tên của bạn!'}, 400)
+                        return
+                    if not password:
+                        self._send_json({'error': 'Vui lòng nhập Mật khẩu riêng được cấp!'}, 400)
+                        return
+
+                    conn = sqlite3.connect(DB_PATH)
+                    cur = conn.cursor()
+                    cur.execute('SELECT password, full_name, commune_assigned FROM users WHERE surveyor_id = ?', (surveyor_id,))
+                    u = cur.fetchone()
+
+                    if not u:
+                        conn.close()
+                        self._send_json({'error': f'Mã nhân viên [{surveyor_id}] chưa được Admin cấp quyền trên hệ thống! Vui lòng liên hệ Quản trị viên để nhận mã qua Zalo.'}, 401)
+                        return
+
+                    stored_pass, registered_name, commune_db = u[0], u[1], u[2]
+
+                    # 1. Kiểm tra Họ và Tên nhập vào có khớp với mã được cấp không
+                    norm_input = normalize_vn_str(full_name)
+                    norm_reg = normalize_vn_str(registered_name)
+                    if norm_input != norm_reg:
+                        conn.close()
+                        self._send_json({'error': f'Họ và tên [{full_name}] không khớp với hồ sơ mã [{surveyor_id}] được cấp! Vui lòng nhập đúng họ và tên đã đăng ký.'}, 401)
+                        return
+
+                    # 2. Kiểm tra mật khẩu riêng
+                    if password != stored_pass and password != PASS_EDITOR:
+                        conn.close()
+                        self._send_json({'error': 'Mật khẩu điều tra viên không chính xác! Vui lòng kiểm tra lại mật khẩu do Admin cấp qua Zalo.'}, 401)
+                        return
+
+                    full_name = registered_name
+                    commune = commune_db or commune or 'Ea Kiết'
+
+                    cur.execute('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE surveyor_id = ?', (surveyor_id,))
+                    conn.commit()
+                    conn.close()
+                else:
+                    self._send_json({'error': 'Vai trò đăng nhập không hợp lệ!'}, 400)
+                    return
+
+                self._send_json({
+                    'success': True,
+                    'user': {
+                        'role': role,
+                        'surveyor_id': surveyor_id,
+                        'full_name': full_name,
+                        'survey_date': survey_date,
+                        'commune': commune,
+                        'role_label': 'Quản Trị Viên' if role == 'admin' else ('Khách Giám Sát (Chỉ xem)' if role == 'viewer' else 'Điều Tra Viên'),
+                        'key': password
+                    }
+                })
+            except Exception as e:
+                self._send_json({'error': str(e)}, 400)
+            return
+
+        elif path == '/api/admin/settings':
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền thay đổi cấu hình hệ thống!'}, 403)
+                return
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+                new_admin_pass = data.get('pass_admin', '').strip()
+                new_viewer_pass = data.get('pass_viewer', '').strip()
+                new_admin_name = data.get('admin_name', '').strip()
+
+                if new_admin_pass:
+                    set_setting('pass_admin', new_admin_pass)
+                if new_viewer_pass:
+                    set_setting('pass_viewer', new_viewer_pass)
+                if new_admin_name:
+                    set_setting('admin_name', new_admin_name)
+
+                self._send_json({
+                    'success': True,
+                    'message': 'Đã cập nhật thông tin và mật khẩu quản trị thành công!',
+                    'settings': {
+                        'pass_admin': get_setting('pass_admin', PASS_ADMIN),
+                        'pass_viewer': get_setting('pass_viewer', PASS_VIEWER),
+                        'admin_name': get_setting('admin_name', 'Quản Trị Viên (Admin)')
+                    }
+                })
+                return
+            except Exception as e:
+                self._send_json({'error': str(e)}, 400)
+                return
+
+        elif path == '/api/admin/users':
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền cấp tài khoản nhân sự!'}, 403)
+                return
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+                sid = data.get('surveyor_id', '').strip()
+                name = data.get('full_name', '').strip()
+                phone = data.get('phone', '').strip()
+                commune = data.get('commune_assigned', 'Ea Kiết')
+                pwd = data.get('password', 'Edit123a#').strip()
+
+                if not sid or not name:
+                    self._send_json({'error': 'Mã nhân viên (ID) và Họ tên không được để trống!'}, 400)
+                    return
+
+                conn = sqlite3.connect(DB_PATH)
+                cur = conn.cursor()
+                cur.execute('''
+                    INSERT INTO users (surveyor_id, full_name, phone, role, commune_assigned, password, last_login)
+                    VALUES (?, ?, ?, 'Điều tra viên', ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(surveyor_id) DO UPDATE SET
+                        full_name = excluded.full_name,
+                        phone = excluded.phone,
+                        commune_assigned = excluded.commune_assigned,
+                        password = excluded.password
+                ''', (sid, name, phone, commune, pwd))
+                conn.commit()
+                conn.close()
+
+                self._send_json({
+                    'success': True,
+                    'message': f'Đã cấp tài khoản thành công cho nhân viên {name} ({sid})',
+                    'user': {
+                        'surveyor_id': sid,
+                        'full_name': name,
+                        'phone': phone,
+                        'commune_assigned': commune,
+                        'password': pwd
+                    }
+                })
+                return
+            except Exception as e:
+                self._send_json({'error': str(e)}, 400)
+                return
+
+        elif path == '/api/surveys':
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+            except Exception as e:
+                self._send_json({'error': f'Invalid JSON: {str(e)}'}, 400)
+                return
+
+            # Chặn tài khoản Chỉ Xem
+            role = data.get('role', 'editor')
+            if role == 'viewer':
+                self._send_json({'error': 'Tài khoản ở chế độ chỉ xem, không có quyền tạo hoặc nộp phiếu!'}, 403)
+                return
+
+            survey_code = data.get('survey_code') or f"DKM-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+            tool_code = data.get('tool_code', 'P1')
+            tool_name = data.get('tool_name', 'P1 - Phiếu hộ')
+            surveyor_id = data.get('surveyor_id', 'TCN-01-080000')
+            surveyor_name = data.get('surveyor_name', 'Điều tra viên')
+            survey_date = data.get('survey_date', datetime.date.today().isoformat())
+            commune = data.get('commune', 'Ea Kiết')
+            hamlet = data.get('hamlet', '')
+            target_group = data.get('target_group', 'Nhóm 1: Nông Dân')
+            respondent_name = data.get('respondent_name', '')
+            respondent_phone = data.get('respondent_phone', '')
+            gps_lat = data.get('gps_lat', 0.0)
+            gps_lng = data.get('gps_lng', 0.0)
+            start_time = data.get('start_time', '')
+            end_time = data.get('end_time', '')
+            answers = data.get('answers', {})
+            answers_json = json.dumps(answers, ensure_ascii=False)
+            photo_path = save_survey_photo(survey_code, data.get('photo_data'))
+
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute('''
+                INSERT INTO surveys (
+                    survey_code, tool_code, tool_name, surveyor_id, surveyor_name,
+                    survey_date, commune, hamlet, target_group, respondent_name,
+                    respondent_phone, gps_lat, gps_lng, start_time, end_time, answers_json, photo_path
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                survey_code, tool_code, tool_name, surveyor_id, surveyor_name,
+                survey_date, commune, hamlet, target_group, respondent_name,
+                respondent_phone, gps_lat, gps_lng, start_time, end_time, answers_json, photo_path
+            ))
+            survey_id = cur.lastrowid
+            cur.execute('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE surveyor_id = ?', (surveyor_id,))
+            conn.commit()
+            conn.close()
+
+            self._send_json({
+                'success': True,
+                'message': 'Khảo sát đã được lưu thành công vào cơ sở dữ liệu máy chủ',
+                'survey_id': survey_id,
+                'survey_code': survey_code,
+                'photo_path': photo_path
+            }, 201)
+            return
+
+        self._send_json({'error': 'Not found'}, 404)
+
+    def do_PUT(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        if path.startswith('/api/admin/users/'):
+            user_id = path.split('/')[-1]
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền cập nhật nhân sự/cấp lại mật khẩu!'}, 403)
+                return
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+                conn = sqlite3.connect(DB_PATH)
+                cur = conn.cursor()
+                cur.execute("""
+                    UPDATE users SET 
+                        full_name = COALESCE(?, full_name),
+                        phone = COALESCE(?, phone),
+                        commune_assigned = COALESCE(?, commune_assigned),
+                        password = COALESCE(?, password)
+                    WHERE surveyor_id = ? OR id = ?
+                """, (
+                    data.get('full_name'),
+                    data.get('phone'),
+                    data.get('commune_assigned'),
+                    data.get('password'),
+                    user_id, user_id
+                ))
+                conn.commit()
+                conn.close()
+                self._send_json({'success': True, 'message': 'Đã cập nhật thông tin và mật khẩu nhân sự thành công'})
+                return
+            except Exception as e:
+                self._send_json({'error': str(e)}, 400)
+                return
+
+        elif path.startswith('/api/surveys/'):
+            survey_id = path.split('/')[-1]
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+            except Exception as e:
+                self._send_json({'error': f'Invalid JSON: {str(e)}'}, 400)
+                return
+
+            role = data.get('role', 'editor')
+            if role == 'viewer':
+                self._send_json({'error': 'Chế độ chỉ xem không được phép cập nhật hoặc sửa đổi phiếu!'}, 403)
+                return
+
+            answers = data.get('answers')
+            photo_data = data.get('photo_data')
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+
+            photo_path = ''
+            if photo_data:
+                s_code = data.get('survey_code')
+                if not s_code:
+                    cur.execute('SELECT survey_code FROM surveys WHERE id = ?', (survey_id,))
+                    row_code = cur.fetchone()
+                    s_code = row_code[0] if row_code else f'SURVEY_{survey_id}'
+                photo_path = save_survey_photo(s_code, photo_data)
+
+            if answers is not None and isinstance(answers, dict) and len(answers) > 0:
+                answers_json = json.dumps(answers, ensure_ascii=False)
+                cur.execute('''
+                    UPDATE surveys SET 
+                        survey_code = COALESCE(?, survey_code),
+                        commune = COALESCE(?, commune),
+                        hamlet = COALESCE(?, hamlet),
+                        respondent_name = COALESCE(?, respondent_name),
+                        respondent_phone = COALESCE(?, respondent_phone),
+                        surveyor_name = COALESCE(?, surveyor_name),
+                        survey_date = COALESCE(?, survey_date),
+                        gps_lat = COALESCE(?, gps_lat),
+                        gps_lng = COALESCE(?, gps_lng),
+                        answers_json = ?,
+                        photo_path = COALESCE(NULLIF(?, ''), photo_path)
+                    WHERE id = ?
+                ''', (
+                    data.get('survey_code'),
+                    data.get('commune'),
+                    data.get('hamlet'),
+                    data.get('respondent_name'),
+                    data.get('respondent_phone'),
+                    data.get('surveyor_name'),
+                    data.get('survey_date'),
+                    data.get('gps_lat'),
+                    data.get('gps_lng'),
+                    answers_json,
+                    photo_path,
+                    survey_id
+                ))
+            else:
+                cur.execute('''
+                    UPDATE surveys SET 
+                        survey_code = COALESCE(?, survey_code),
+                        commune = COALESCE(?, commune),
+                        hamlet = COALESCE(?, hamlet),
+                        respondent_name = COALESCE(?, respondent_name),
+                        respondent_phone = COALESCE(?, respondent_phone),
+                        surveyor_name = COALESCE(?, surveyor_name),
+                        survey_date = COALESCE(?, survey_date),
+                        gps_lat = COALESCE(?, gps_lat),
+                        gps_lng = COALESCE(?, gps_lng),
+                        photo_path = COALESCE(NULLIF(?, ''), photo_path)
+                    WHERE id = ?
+                ''', (
+                    data.get('survey_code'),
+                    data.get('commune'),
+                    data.get('hamlet'),
+                    data.get('respondent_name'),
+                    data.get('respondent_phone'),
+                    data.get('surveyor_name'),
+                    data.get('survey_date'),
+                    data.get('gps_lat'),
+                    data.get('gps_lng'),
+                    photo_path,
+                    survey_id
+                ))
+            conn.commit()
+            conn.close()
+            self._send_json({'success': True, 'message': f'Đã cập nhật chỉnh sửa phiếu #{survey_id} thành công!'})
+            return
+        self._send_json({'error': 'Not found'}, 404)
+
+    def do_DELETE(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        if path.startswith('/api/admin/users/'):
+            user_id = path.split('/')[-1]
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xóa tài khoản nhân sự!'}, 403)
+                return
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute('DELETE FROM users WHERE surveyor_id = ? OR id = ?', (user_id, user_id))
+            conn.commit()
+            conn.close()
+            self._send_json({'success': True, 'message': f'Đã xóa tài khoản nhân sự [{user_id}] thành công khỏi hệ thống'})
+            return
+
+        elif path.startswith('/api/surveys/'):
+            survey_id = path.split('/')[-1]
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xóa phiếu!'}, 403)
+                return
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute('DELETE FROM surveys WHERE id = ?', (survey_id,))
+            conn.commit()
+            conn.close()
+            self._send_json({'success': True, 'message': f'Đã xóa an toàn phiếu #{survey_id} khỏi máy chủ VPS'})
+            return
+        self._send_json({'error': 'Not found'}, 404)
+
+def run():
+    print(f"============================================================")
+    print(f" Dakman Survey VPS Web Service Starting...")
+    print(f" Target Domain: https://dakmansurvey.slowforest.vn")
+    print(f" Local Port:    http://localhost:{PORT}")
+    print(f" Database:      {DB_PATH}")
+    print(f" Web Root:      {PUBLIC_DIR}")
+    print(f"============================================================")
+    server = HTTPServer(('0.0.0.0', PORT), SurveyRequestHandler)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nShutting down server gracefully...")
+        server.server_close()
+
+if __name__ == '__main__':
+    run()

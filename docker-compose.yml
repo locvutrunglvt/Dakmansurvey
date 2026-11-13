@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  dakman-survey:
+    build: .
+    container_name: dakman_survey_app
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./survey_database.sqlite:/app/survey_database.sqlite
+      - ./export_surveys_latest.xlsx:/app/export_surveys_latest.xlsx
+    environment:
+      - PORT=8080
+      - PYTHONUNBUFFERED=1
+

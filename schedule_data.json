@@ -1,0 +1,200 @@
+[
+  {
+    "stt": 1,
+    "name": "Họp khởi động; nhận danh sách 168 vườn panel, số liệu PPI 2023, 2025, danh sách hưởng lợi, GPS vườn",
+    "owner": "Trưởng nhóm",
+    "start": "2026-11-01",
+    "end": "2026-11-02",
+    "days": 2,
+    "phase": "Giai đoạn 1: Chuẩn bị"
+  },
+  {
+    "stt": 2,
+    "name": "Chuyển bảng hỏi PPI sang bản cuối kỳ trên KoBoToolbox, thêm phần đánh giá dự án",
+    "owner": "Chuyên viên dữ liệu",
+    "start": "2026-11-01",
+    "end": "2026-11-03",
+    "days": 3,
+    "phase": "Giai đoạn 1: Chuẩn bị"
+  },
+  {
+    "stt": 3,
+    "name": "Rải 100 điểm mới trên lưới 2023, rút 32 hộ bổ sung, lập danh sách dự phòng",
+    "owner": "Trưởng nhóm + chuyên viên dữ liệu",
+    "start": "2026-11-02",
+    "end": "2026-11-03",
+    "days": 2,
+    "phase": "Giai đoạn 1: Chuẩn bị"
+  },
+  {
+    "stt": 4,
+    "name": "Làm việc với UBND xã, trưởng thôn, 3 HTX; hẹn lịch hộ",
+    "owner": "Giám sát viên",
+    "start": "2026-11-02",
+    "end": "2026-11-05",
+    "days": 4,
+    "phase": "Giai đoạn 1: Chuẩn bị"
+  },
+  {
+    "stt": 5,
+    "name": "Tập huấn 5 điều tra viên (1 ngày), thử phiếu 10 hộ ngoài mẫu (1 ngày)",
+    "owner": "Trưởng nhóm",
+    "start": "2026-11-04",
+    "end": "2026-11-05",
+    "days": 2,
+    "phase": "Giai đoạn 1: Chuẩn bị"
+  },
+  {
+    "stt": 6,
+    "name": "Khảo sát hộ xã cũ Ea Kiết: 84 phiếu",
+    "owner": "4 ĐTV + GSV",
+    "start": "2026-11-06",
+    "end": "2026-11-11",
+    "days": 6,
+    "phase": "Giai đoạn 2: Thu thập thực địa"
+  },
+  {
+    "stt": 7,
+    "name": "Khảo sát hộ xã cũ Ea Tar: 51 phiếu",
+    "owner": "4 ĐTV + GSV",
+    "start": "2026-11-11",
+    "end": "2026-11-14",
+    "days": 4,
+    "phase": "Giai đoạn 2: Thu thập thực địa"
+  },
+  {
+    "stt": 8,
+    "name": "Khảo sát hộ xã cũ Cư Dliê M'nông: 85 phiếu",
+    "owner": "4 ĐTV + GSV",
+    "start": "2026-11-15",
+    "end": "2026-11-20",
+    "days": 6,
+    "phase": "Giai đoạn 2: Thu thập thực địa"
+  },
+  {
+    "stt": 9,
+    "name": "Thảo luận nhóm cấp thôn tại 12 thôn trọng điểm (3 nhóm/ngày)",
+    "owner": "Chuyên gia xã hội + thư ký",
+    "start": "2026-11-06",
+    "end": "2026-11-09",
+    "days": 4,
+    "phase": "Giai đoạn 2: Thu thập thực địa"
+  },
+  {
+    "stt": 10,
+    "name": "Phỏng vấn sâu 9 chủ mô hình, thảo luận tổ SDM; lấy 30 mẫu đất, gửi phân tích",
+    "owner": "Chuyên gia nông học",
+    "start": "2026-11-07",
+    "end": "2026-11-12",
+    "days": 6,
+    "phase": "Giai đoạn 2: Thu thập thực địa"
+  },
+  {
+    "stt": 11,
+    "name": "Thảo luận nhóm trưởng ToT, tổ SDM; phỏng vấn 3 HTX",
+    "owner": "Trưởng nhóm + chuyên gia",
+    "start": "2026-11-09",
+    "end": "2026-11-18",
+    "days": 10,
+    "phase": "Giai đoạn 2: Thu thập thực địa"
+  },
+  {
+    "stt": 12,
+    "name": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông",
+    "owner": "Trưởng nhóm",
+    "start": "2026-11-10",
+    "end": "2026-11-17",
+    "days": 8,
+    "phase": "Giai đoạn 2: Thu thập thực địa"
+  },
+  {
+    "stt": 13,
+    "name": "Phỏng vấn trực tuyến IDH, JDE Peet's",
+    "owner": "Trưởng nhóm",
+    "start": "2026-11-16",
+    "end": "2026-11-20",
+    "days": 5,
+    "phase": "Giai đoạn 2: Thu thập thực địa"
+  },
+  {
+    "stt": 14,
+    "name": "Quay clip ngày 1 tại Ea Kiết (nông dân, UBND xã)",
+    "owner": "Ê-kíp quay",
+    "start": "2026-11-09",
+    "end": "2026-11-09",
+    "days": 1,
+    "phase": "Giai đoạn 2: Thu thập thực địa"
+  },
+  {
+    "stt": 15,
+    "name": "Quay clip ngày 2 tại Cư Dliê M'nông (HTX, cảnh hoạt động)",
+    "owner": "Ê-kíp quay",
+    "start": "2026-11-17",
+    "end": "2026-11-17",
+    "days": 1,
+    "phase": "Giai đoạn 2: Thu thập thực địa"
+  },
+  {
+    "stt": 16,
+    "name": "Kiểm tra phiếu hằng ngày, gọi lại 10% hộ, ghép số liệu 3 vòng theo mã vườn",
+    "owner": "GSV + chuyên viên dữ liệu",
+    "start": "2026-11-06",
+    "end": "2026-11-21",
+    "days": 16,
+    "phase": "Giai đoạn 2: Thu thập thực địa"
+  },
+  {
+    "stt": 17,
+    "name": "Phân tích số liệu, bản đồ, so sánh 2021 - 2023 - 2025 - 2026; nhận kết quả mẫu đất",
+    "owner": "Chuyên viên dữ liệu + chuyên gia",
+    "start": "2026-11-20",
+    "end": "2026-11-25",
+    "days": 6,
+    "phase": "Giai đoạn 3: Phân tích & Báo cáo"
+  },
+  {
+    "stt": 18,
+    "name": "Dựng clip 5 phút",
+    "owner": "Ê-kíp quay",
+    "start": "2026-11-18",
+    "end": "2026-11-24",
+    "days": 7,
+    "phase": "Giai đoạn 3: Phân tích & Báo cáo"
+  },
+  {
+    "stt": 19,
+    "name": "Viết dự thảo báo cáo cuối kỳ",
+    "owner": "Trưởng nhóm",
+    "start": "2026-11-22",
+    "end": "2026-11-26",
+    "days": 5,
+    "phase": "Giai đoạn 3: Phân tích & Báo cáo"
+  },
+  {
+    "stt": 20,
+    "name": "Hội thảo tham vấn kết quả, chiếu clip",
+    "owner": "Trưởng nhóm",
+    "start": "2026-11-27",
+    "end": "2026-11-27",
+    "days": 1,
+    "phase": "Giai đoạn 4: Nghiệm thu & Nộp"
+  },
+  {
+    "stt": 21,
+    "name": "Dịch báo cáo sang tiếng Anh (dịch song song từ bản dự thảo, cập nhật sau hội thảo)",
+    "owner": "Biên dịch",
+    "start": "2026-11-24",
+    "end": "2026-11-29",
+    "days": 6,
+    "phase": "Giai đoạn 4: Nghiệm thu & Nộp"
+  },
+  {
+    "stt": 22,
+    "name": "Hoàn thiện, nộp báo cáo cuối kỳ tiếng Việt và tiếng Anh, toàn bộ sản phẩm",
+    "owner": "Trưởng nhóm",
+    "start": "2026-11-28",
+    "end": "2026-11-30",
+    "days": 3,
+    "phase": "Giai đoạn 4: Nghiệm thu & Nộp"
+  }
+]
