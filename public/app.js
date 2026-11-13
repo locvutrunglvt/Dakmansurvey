@@ -453,7 +453,10 @@ function capitalize(s) {
 // ========================================================
 // 3. TẢI DỮ LIỆU CÂU HỎI & LỊCH TRÌNH
 // ========================================================
+let sampleHouseholds = [];
+
 async function loadQuestions() {
+    loadSampleHouseholds();
     try {
         const res = await fetch(apiUrl('/api/questions'));
         if (res.ok) {
@@ -461,6 +464,133 @@ async function loadQuestions() {
         }
     } catch (e) {
         console.warn('Không tải được câu hỏi từ API:', e);
+    }
+}
+
+async function loadSampleHouseholds() {
+    try {
+        const res = await fetch('./sample_households.json?v=1');
+        if (res.ok) {
+            sampleHouseholds = await res.json();
+            populateSampleGuideFilter('');
+            const cnt = document.getElementById('sampleFilterCount');
+            if (cnt) cnt.textContent = `${sampleHouseholds.length} hộ mẫu`;
+        }
+    } catch (e) {
+        console.warn('Không tải được danh sách hộ mẫu:', e);
+    }
+}
+
+function populateSampleGuideFilter(nvVal) {
+    const sel = document.getElementById('sampleFilterGuide');
+    if (!sel) return;
+    const prev = sel.value;
+    const guides = Array.from(new Set(
+        sampleHouseholds
+            .filter(h => !nvVal || h.interviewer === nvVal)
+            .map(h => h.guide)
+            .filter(Boolean)
+    ));
+    sel.innerHTML = `<option value="">-- Tất cả Người Dẫn Đường (${guides.length}) --</option>` +
+        guides.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+    if (guides.includes(prev)) sel.value = prev;
+}
+
+function onSampleNVFilterChange() {
+    const nv = document.getElementById('sampleFilterNV')?.value || '';
+    populateSampleGuideFilter(nv);
+    filterSampleHouseholds();
+}
+
+function filterSampleHouseholds() {
+    const nv = document.getElementById('sampleFilterNV')?.value || '';
+    const guide = document.getElementById('sampleFilterGuide')?.value || '';
+    const commune = document.getElementById('sampleFilterCommune')?.value || '';
+    const kw = (document.getElementById('sampleSearchInput')?.value || '').trim().toLowerCase();
+
+    const matched = sampleHouseholds.filter(h => {
+        if (nv && h.interviewer !== nv) return false;
+        if (guide && h.guide !== guide) return false;
+        if (commune && h.commune !== commune) return false;
+        if (kw) {
+            const hay = `${h.id} ${h.name} ${h.phone} ${h.hamlet} ${h.commune} ${h.guide} ${h.clb}`.toLowerCase();
+            if (!hay.includes(kw)) return false;
+        }
+        return true;
+    });
+
+    const cnt = document.getElementById('sampleFilterCount');
+    if (cnt) cnt.textContent = `Tìm thấy ${matched.length} / ${sampleHouseholds.length} hộ`;
+
+    const box = document.getElementById('sampleResultList');
+    if (!box) return;
+    if (!nv && !guide && !commune && !kw) {
+        box.style.display = 'none';
+        box.innerHTML = '';
+        return;
+    }
+    box.style.display = 'block';
+    if (matched.length === 0) {
+        box.innerHTML = '<div style="padding: 8px 10px; font-size: 0.80rem; color: #64748b;">Không tìm thấy nông hộ nào khớp bộ lọc.</div>';
+        return;
+    }
+    box.innerHTML = matched.slice(0, 60).map(h => `
+        <div onclick="selectSampleHousehold('${escapeQuotes(h.id)}')"
+             style="padding: 7px 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer; font-size: 0.80rem; display: flex; justify-content: space-between; align-items: center; gap: 8px;"
+             onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='#ffffff'">
+            <div>
+                <strong style="color:#002060;">[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong>
+                <span style="color:#475569;"> — ${escapeHtml(h.address)}</span>
+                <div style="font-size:0.74rem; color:#64748b;">SĐT: ${escapeHtml(h.phone || '—')} • CLB: ${escapeHtml(h.clb || '—')} • Dẫn đường: <b>${escapeHtml(h.guide)}</b></div>
+            </div>
+            <span style="background:#dbeafe; color:#1e40af; padding:2px 7px; border-radius:3px; font-weight:700; font-size:0.72rem; white-space:nowrap;">NV: ${escapeHtml(h.interviewer)}</span>
+        </div>
+    `).join('');
+}
+
+function selectSampleHousehold(id) {
+    const h = sampleHouseholds.find(item => item.id.toUpperCase() === String(id || '').trim().toUpperCase());
+    if (!h) return;
+
+    const codeEl = document.getElementById('surveyCodeInput');
+    const commEl = document.getElementById('communeSelect');
+    const hamEl = document.getElementById('hamletInput');
+    const respEl = document.getElementById('respondentNameInput');
+    if (codeEl) codeEl.value = h.id;
+    if (commEl && h.commune) commEl.value = h.commune;
+    if (hamEl) hamEl.value = h.hamlet || '';
+    if (respEl) respEl.value = (h.status && h.status.includes('Hộ mới')) ? '' : (h.name || '');
+
+    // Tự động điền các câu hỏi thông tin phiếu A01, A03, A04
+    currentDraftAnswers['A01'] = h.id;
+    currentDraftAnswers['A04'] = h.hamlet || '';
+    const a03Q = (allQuestionsData[currentTool]?.questions || []).find(q => q.code === 'A03');
+    if (a03Q && Array.isArray(a03Q.options)) {
+        const matchOpt = a03Q.options.find(o => o.label.toLowerCase().includes(h.commune.toLowerCase()));
+        if (matchOpt) currentDraftAnswers['A03'] = matchOpt.value;
+        else currentDraftAnswers['A03'] = h.commune;
+    }
+    currentDraftAnswers['_guide'] = h.guide || '';
+    currentDraftAnswers['_assigned_nv'] = h.interviewer || '';
+    currentDraftAnswers['_phone'] = h.phone || '';
+    currentDraftAnswers['_clb'] = h.clb || '';
+
+    const box = document.getElementById('sampleResultList');
+    if (box) box.style.display = 'none';
+    const banner = document.getElementById('sampleSelectedBanner');
+    if (banner) {
+        banner.style.display = 'block';
+        banner.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đã điền tự động: <strong>[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong> (${escapeHtml(h.address)}) • SĐT: ${escapeHtml(h.phone || '—')} • Dẫn đường: <strong>${escapeHtml(h.guide)}</strong> • NV: <strong>${escapeHtml(h.interviewer)}</strong>`;
+    }
+
+    if (currentSection) renderQuestionsForSection(currentSection);
+    saveDraftLocal(false);
+}
+
+function tryAutofillBySurveyCode(val) {
+    const clean = String(val || '').trim().toUpperCase();
+    if (/^[A-Z]{2}-[A-Z0-9]{2,3}-\d{3}$/.test(clean)) {
+        selectSampleHousehold(clean);
     }
 }
 

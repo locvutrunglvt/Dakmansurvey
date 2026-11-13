@@ -1525,16 +1525,62 @@
                             <span class="sub-note">(*) Bắt buộc ghi nhận chính xác</span>
                         </div>
 
+                        <!-- Tra Cứu & Lọc Nông Hộ Theo Danh Sách Mẫu -->
+                        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                                <span style="font-size: 0.82rem; font-weight: 700; color: #166534;">
+                                    <i class="fa-solid fa-magnifying-glass"></i> LỌC &amp; CHỌN NÔNG HỘ MẪU (ĐIỀN ID TỰ ĐỘNG)
+                                </span>
+                                <span id="sampleFilterCount" style="font-size: 0.76rem; color: #15803d; font-weight: 600;">220 hộ (197 mẫu + 23 mới)</span>
+                            </div>
+                            <div class="grid-4" style="margin-bottom: 8px;">
+                                <div class="form-group">
+                                    <select id="sampleFilterNV" class="form-control" onchange="onSampleNVFilterChange()" style="font-size: 0.82rem;">
+                                        <option value="">-- Tất cả NV Điều Tra --</option>
+                                        <option value="Duy">Duy (5 dẫn đường - Ea Kiết)</option>
+                                        <option value="Vọng">Vọng (5 dẫn đường - Ea Kiết)</option>
+                                        <option value="Trụ">Trụ (4 dẫn đường - Ea Tul)</option>
+                                        <option value="Thao">Thao (5 dẫn đường - Ea Tul)</option>
+                                        <option value="Phuc">Phuc (5 dẫn đường - Ea Tul)</option>
+                                        <option value="Sinh">Sinh (5 dẫn đường - Ea Tul)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <select id="sampleFilterGuide" class="form-control" onchange="filterSampleHouseholds()" style="font-size: 0.82rem;">
+                                        <option value="">-- Tất cả Người Dẫn Đường --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <select id="sampleFilterCommune" class="form-control" onchange="filterSampleHouseholds()" style="font-size: 0.82rem;">
+                                        <option value="">-- Tất cả Xã --</option>
+                                        <option value="Ea Kiết">Xã Ea Kiết</option>
+                                        <option value="Ea Tul">Xã Ea Tul</option>
+                                        <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" id="sampleSearchInput" class="form-control"
+                                           placeholder="Tìm ID (DM001), Tên, SĐT, Thôn..."
+                                           oninput="filterSampleHouseholds()"
+                                           style="font-size: 0.82rem;">
+                                </div>
+                            </div>
+                            <div id="sampleResultList" style="max-height: 170px; overflow-y: auto; background: #ffffff; border: 1px solid #d1d5db; border-radius: 3px; display: none;"></div>
+                            <div id="sampleSelectedBanner" style="display: none; margin-top: 6px; padding: 6px 10px; background: #dcfce7; border: 1px solid #86efac; border-radius: 3px; font-size: 0.80rem; color: #14532d;"></div>
+                        </div>
+
                         <div class="grid-4">
                             <div class="form-group">
-                                <label>Mã Phiếu / Mã Vườn PPI <span class="req">*</span></label>
+                                <label>Mã Phiếu / ID Nông Hộ <span class="req">*</span></label>
                                 <input type="text" class="form-control" id="surveyCodeInput" required
-                                    placeholder="Ví dụ: CDMN_060">
+                                    onchange="tryAutofillBySurveyCode(this.value)"
+                                    placeholder="Ví dụ: EK-JV-001">
                             </div>
                             <div class="form-group">
                                 <label>Địa Bàn Xã <span class="req">*</span></label>
                                 <select class="form-control" id="communeSelect" required>
                                     <option value="Ea Kiết">Xã Ea Kiết</option>
+                                    <option value="Ea Tul">Xã Ea Tul</option>
                                     <option value="Ea Tar">Xã Ea Tar</option>
                                     <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
                                 </select>
@@ -2459,7 +2505,7 @@
     </div>
 
     <!-- Application Logic -->
-    <script src="app.js?v=2.11"></script>
+    <script src="app.js?v=2.12"></script>
 
 </body>
 
