@@ -1006,11 +1006,14 @@ function renderQuestionsForSection(secName) {
                             ${isViewer ? 'disabled' : ''}
                             onchange="onAnswerChange('${code}', this, false)">
                         <option value="">-- Chọn đáp án --</option>
-                        ${q.options.map(opt => `
+                        ${q.options.map(opt => {
+                            const sameVal = String(opt.value).trim() === String(opt.label).trim();
+                            return `
                             <option value="${escapeHtml(opt.value)}" ${val === opt.value ? 'selected' : ''}>
-                                ${escapeHtml(opt.value)}. ${escapeHtml(opt.label)}
+                                ${sameVal ? escapeHtml(opt.label) : `${escapeHtml(opt.value)}. ${escapeHtml(opt.label)}`}
                             </option>
-                        `).join('')}
+                        `;
+                        }).join('')}
                     </select>
                 </div>
             `;
@@ -1022,6 +1025,7 @@ function renderQuestionsForSection(secName) {
                         const isChecked = isMulti 
                             ? (Array.isArray(val) && val.includes(opt.value))
                             : (val === opt.value);
+                        const sameVal = String(opt.value).trim() === String(opt.label).trim();
                         return `
                             <label class="radio-label ${isChecked ? 'selected' : ''}">
                                 <input type="${isMulti ? 'checkbox' : 'radio'}" 
@@ -1030,7 +1034,7 @@ function renderQuestionsForSection(secName) {
                                        ${isChecked ? 'checked' : ''}
                                        ${isViewer ? 'disabled' : ''}
                                        onchange="onAnswerChange('${code}', this, ${isMulti})">
-                                <span><strong>${opt.value}</strong>. ${opt.label}</span>
+                                <span>${sameVal ? escapeHtml(opt.label) : `<strong>${escapeHtml(opt.value)}</strong>. ${escapeHtml(opt.label)}`}</span>
                             </label>
                         `;
                     }).join('')}

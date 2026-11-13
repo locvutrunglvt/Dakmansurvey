@@ -943,7 +943,7 @@
         "code": "PB01",
         "orig_code": "organic_fertilizer_yes",
         "section": "PPI - Danh sách phân bón sử dụng",
-        "text": "Anh/chị có sử dụng phân bón hữu cơ trên vườn hay không?",
+        "text": "Anh/chị có bón phân hữu cơ trên vườn hay không?",
         "type": "SC",
         "options_raw": "Không; Có",
         "options": [
@@ -967,9 +967,9 @@
         "code": "PB02",
         "orig_code": "organic_fertilizer_frequency",
         "section": "PPI - Danh sách phân bón sử dụng",
-        "text": "Tần suất bón phân hữu cơ anh/chị hay thực hiện là gì?",
+        "text": "Tần suất bón phân hữu cơ anh/chị hay áp dụng là gì?",
         "type": "SC",
-        "options_raw": "1 năm / lần; 2 năm / lần; 3 năm / lần",
+        "options_raw": "1 năm / lần; 2 năm / lần; 3 năm / lần; Khác",
         "options": [
           {
             "value": "1 năm / lần",
@@ -982,11 +982,17 @@
           {
             "value": "3 năm / lần",
             "label": "3 năm / lần"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
           }
         ],
         "condition": "PB01=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ tần suất bón phân hữu cơ khác..."
       },
       {
         "tool_code": "P1",
@@ -1017,65 +1023,11 @@
         "tool_name": "P1 - Phiếu hộ",
         "group": "Nhóm 1: Nông Dân",
         "code": "PB04",
-        "orig_code": "organic_fertilizer_times",
-        "section": "PPI - Danh sách phân bón sử dụng",
-        "text": "Số đợt bón phân hữu cơ trong năm vừa qua là bao nhiêu?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "PB01=1 and PB03=1",
-        "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
-        "dac": "Tác động"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "PB05",
-        "orig_code": "organic_fertilizers_when",
-        "section": "PPI - Danh sách phân bón sử dụng",
-        "text": "Thời điểm anh/chị bón đợt ... là lúc nào?",
-        "type": "TX",
-        "options_raw": "",
-        "options": [],
-        "condition": "PB01=1",
-        "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
-        "dac": "Tác động"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "PB06",
-        "orig_code": "organic_fertilizers_type",
-        "section": "PPI - Danh sách phân bón sử dụng",
-        "text": "Phân hữu cơ anh/chị đã xử lý hay chưa?",
-        "type": "SC",
-        "options_raw": "Chưa xử lý; Đã xử lý",
-        "options": [
-          {
-            "value": "Chưa xử lý",
-            "label": "Chưa xử lý"
-          },
-          {
-            "value": "Đã xử lý",
-            "label": "Đã xử lý"
-          }
-        ],
-        "condition": "PB01=1",
-        "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
-        "dac": "Tác động"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "PB07",
         "orig_code": "organic_fertilizers_name",
         "section": "PPI - Danh sách phân bón sử dụng",
         "text": "Loại phân hữu cơ khác sử dụng?",
         "type": "MO",
-        "options_raw": "Vỏ cà phê - Chấu - Rác - Cỏ; Bò - Trâu - Dê; Heo; Gà - Cút; Cá; Bò - Trâu - Dê + Vỏ cà phê; Heo + Vỏ cà phê; Gà - Cút + Vỏ cà phê; Phân hữu cơ vi sinh / chế biến sẵn; Khác",
+        "options_raw": "Vỏ cà phê - Chấu - Rác - Cỏ; Bò - Trâu - Dê; Heo; Gà - Cút; Cá; Bò - Trâu - Dê + Vỏ cà phê; Heo + Vỏ cà phê; Gà - Cút + Vỏ cà phê; Phân làm từ vỏ sầu riêng; Phân hữu cơ vi sinh / chế biến sẵn; Khác",
         "options": [
           {
             "value": "Vỏ cà phê - Chấu - Rác - Cỏ",
@@ -1110,6 +1062,10 @@
             "label": "Gà - Cút + Vỏ cà phê"
           },
           {
+            "value": "Phân làm từ vỏ sầu riêng",
+            "label": "Phân làm từ vỏ sầu riêng"
+          },
+          {
             "value": "Phân hữu cơ vi sinh / chế biến sẵn",
             "label": "Phân hữu cơ vi sinh / chế biến sẵn"
           },
@@ -1126,6 +1082,60 @@
         "tool_code": "P1",
         "tool_name": "P1 - Phiếu hộ",
         "group": "Nhóm 1: Nông Dân",
+        "code": "PB05",
+        "orig_code": "organic_fertilizers_when",
+        "section": "PPI - Danh sách phân bón sử dụng",
+        "text": "Thời điểm anh/chị bón đợt ... là lúc nào?",
+        "type": "TX",
+        "options_raw": "",
+        "options": [],
+        "condition": "PB01=1",
+        "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
+        "dac": "Tác động"
+      },
+      {
+        "tool_code": "P1",
+        "tool_name": "P1 - Phiếu hộ",
+        "group": "Nhóm 1: Nông Dân",
+        "code": "PB06",
+        "orig_code": "organic_fertilizers_type",
+        "section": "PPI - Danh sách phân bón sử dụng",
+        "text": "Anh/chị có xử lý phân hữu cơ trước khi bón hay không?",
+        "type": "SC",
+        "options_raw": "Có xử lý; Không xử lý",
+        "options": [
+          {
+            "value": "Có xử lý",
+            "label": "Có xử lý"
+          },
+          {
+            "value": "Không xử lý",
+            "label": "Không xử lý"
+          }
+        ],
+        "condition": "PB01=1",
+        "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
+        "dac": "Tác động"
+      },
+      {
+        "tool_code": "P1",
+        "tool_name": "P1 - Phiếu hộ",
+        "group": "Nhóm 1: Nông Dân",
+        "code": "PB07",
+        "orig_code": "organic_fertilizer_times",
+        "section": "PPI - Danh sách phân bón sử dụng",
+        "text": "Số đợt bón phân hữu cơ trong năm vừa qua là bao nhiêu?",
+        "type": "SO",
+        "options_raw": "",
+        "options": [],
+        "condition": "PB01=1 and PB03=1",
+        "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
+        "dac": "Tác động"
+      },
+      {
+        "tool_code": "P1",
+        "tool_name": "P1 - Phiếu hộ",
+        "group": "Nhóm 1: Nông Dân",
         "code": "PB08",
         "orig_code": "organic_fertilizers_commerce_name",
         "section": "PPI - Danh sách phân bón sử dụng",
@@ -1133,7 +1143,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "PB01=1 and PB07=9",
+        "condition": "PB01=1 and PB04=10",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1148,7 +1158,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "PB01=1 and PB07=10",
+        "condition": "PB01=1 and PB04=11",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
