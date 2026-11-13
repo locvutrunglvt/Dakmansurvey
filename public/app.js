@@ -606,9 +606,8 @@ function selectSampleHousehold(id) {
     if (respEl) respEl.value = isNew ? '' : (h.name || '');
     if (phoneEl) phoneEl.value = isNew ? '' : (h.phone || '');
 
-    // Tự động điền các câu hỏi thông tin phiếu A01, A02, A03, A04
+    // Tự động điền các câu hỏi thông tin phiếu A01, A03, A04
     currentDraftAnswers['A01'] = h.id;
-    currentDraftAnswers['A02'] = isNew ? '2' : '1';
     currentDraftAnswers['A04'] = h.hamlet || '';
     const a03Q = (allQuestionsData[currentTool]?.questions || []).find(q => q.code === 'A03');
     if (a03Q && Array.isArray(a03Q.options)) {
@@ -681,7 +680,6 @@ function generateNextNewHouseholdId() {
     if (phoneEl) phoneEl.value = '';
 
     currentDraftAnswers['A01'] = newId;
-    currentDraftAnswers['A02'] = '2';
     currentDraftAnswers['A04'] = hamVal;
     const a03Q = (allQuestionsData[currentTool]?.questions || []).find(q => q.code === 'A03');
     if (a03Q && Array.isArray(a03Q.options)) {
