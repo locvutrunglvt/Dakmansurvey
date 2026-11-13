@@ -1533,7 +1533,7 @@
                                 </span>
                                 <span id="sampleFilterCount" style="font-size: 0.76rem; color: #15803d; font-weight: 600;">220 hộ (197 mẫu + 23 mới)</span>
                             </div>
-                            <div class="grid-4" style="margin-bottom: 8px;">
+                            <div class="grid-3" style="margin-bottom: 8px;">
                                 <div class="form-group">
                                     <select id="sampleFilterNV" class="form-control" onchange="onSampleNVFilterChange()" style="font-size: 0.82rem;">
                                         <option value="">-- Tất cả NV Điều Tra --</option>
@@ -1551,16 +1551,8 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <select id="sampleFilterCommune" class="form-control" onchange="filterSampleHouseholds()" style="font-size: 0.82rem;">
-                                        <option value="">-- Tất cả Xã --</option>
-                                        <option value="Ea Kiết">Xã Ea Kiết</option>
-                                        <option value="Ea Tul">Xã Ea Tul</option>
-                                        <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
                                     <input type="text" id="sampleSearchInput" class="form-control"
-                                           placeholder="Tìm ID (DM001), Tên, SĐT, Thôn..."
+                                           placeholder="Tìm ID (EK-JV-001), Tên, SĐT, Thôn, RA..."
                                            oninput="filterSampleHouseholds()"
                                            style="font-size: 0.82rem;">
                                 </div>
@@ -2505,7 +2497,7 @@
     </div>
 
     <!-- Application Logic -->
-    <script src="app.js?v=2.13"></script>
+    <script src="app.js?v=2.14"></script>
 
 </body>
 

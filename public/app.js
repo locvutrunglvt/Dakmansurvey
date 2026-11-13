@@ -454,6 +454,7 @@ function capitalize(s) {
 // 3. TẢI DỮ LIỆU CÂU HỎI & LỊCH TRÌNH
 // ========================================================
 let sampleHouseholds = [];
+let interviewedSurveyCodes = new Set();
 
 async function loadQuestions() {
     loadSampleHouseholds();
@@ -469,12 +470,15 @@ async function loadQuestions() {
 
 async function loadSampleHouseholds() {
     try {
-        const res = await fetch('./sample_households.json?v=1');
+        const res = await fetch('./sample_households.json?v=2');
         if (res.ok) {
             sampleHouseholds = await res.json();
             populateSampleGuideFilter('');
-            const cnt = document.getElementById('sampleFilterCount');
-            if (cnt) cnt.textContent = `${sampleHouseholds.length} hộ mẫu`;
+            if (interviewedSurveyCodes.size === 0) {
+                loadSurveysList();
+            } else {
+                filterSampleHouseholds();
+            }
         }
     } catch (e) {
         console.warn('Không tải được danh sách hộ mẫu:', e);
@@ -505,13 +509,12 @@ function onSampleNVFilterChange() {
 function filterSampleHouseholds() {
     const nv = document.getElementById('sampleFilterNV')?.value || '';
     const guide = document.getElementById('sampleFilterGuide')?.value || '';
-    const commune = document.getElementById('sampleFilterCommune')?.value || '';
     const kw = (document.getElementById('sampleSearchInput')?.value || '').trim().toLowerCase();
 
-    const matched = sampleHouseholds.filter(h => {
+    const pendingPool = sampleHouseholds.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase()));
+    const matched = pendingPool.filter(h => {
         if (nv && h.interviewer !== nv) return false;
         if (guide && h.guide !== guide) return false;
-        if (commune && h.commune !== commune) return false;
         if (kw) {
             const hay = `${h.id} ${h.name} ${h.phone} ${h.hamlet} ${h.commune} ${h.guide} ${h.clb} ${h.ra || ''}`.toLowerCase();
             if (!hay.includes(kw)) return false;
@@ -520,11 +523,16 @@ function filterSampleHouseholds() {
     });
 
     const cnt = document.getElementById('sampleFilterCount');
-    if (cnt) cnt.textContent = `Tìm thấy ${matched.length} / ${sampleHouseholds.length} hộ`;
+    const doneCnt = sampleHouseholds.length - pendingPool.length;
+    if (cnt) {
+        cnt.textContent = (!nv && !guide && !kw)
+            ? `Còn ${pendingPool.length} / ${sampleHouseholds.length} hộ chưa phỏng vấn` + (doneCnt ? ` (đã ẩn ${doneCnt} hộ xong)` : '')
+            : `Tìm thấy ${matched.length} hộ chưa phỏng vấn` + (doneCnt ? ` (đã ẩn ${doneCnt} hộ xong)` : '');
+    }
 
     const box = document.getElementById('sampleResultList');
     if (!box) return;
-    if (!nv && !guide && !commune && !kw) {
+    if (!nv && !guide && !kw) {
         box.style.display = 'none';
         box.innerHTML = '';
         return;
@@ -1888,6 +1896,10 @@ async function loadSurveysList() {
         const res = await fetch(apiUrl('/api/surveys'));
         if (!res.ok) return;
         const list = await res.json();
+        interviewedSurveyCodes = new Set(
+            list.map(s => String(s.survey_code || '').trim().toUpperCase()).filter(Boolean)
+        );
+        if (sampleHouseholds.length > 0) filterSampleHouseholds();
 
         const tbody = document.getElementById('surveyHistoryTbody');
         if (!tbody) return;
