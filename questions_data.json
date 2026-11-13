@@ -713,7 +713,7 @@
         "code": "CT01",
         "orig_code": "plot_tree_planting_yes",
         "section": "PPI - Thông tin cải tạo vườn trong 12 tháng qua",
-        "text": "Trong năm 2022 anh/chị có trồng mới / thay thế / mở rộng / cắt ghép cây trồng nào trên vườn không?",
+        "text": "Trong 12 tháng qua anh/chị có trồng mới / thay thế / mở rộng / cắt ghép cây trồng nào trên vườn không?",
         "type": "SC",
         "options_raw": "Không; Có",
         "options": [
@@ -737,9 +737,9 @@
         "code": "CT02",
         "orig_code": "plot_tree_planting_type",
         "section": "PPI - Thông tin cải tạo vườn trong 12 tháng qua",
-        "text": "Danh sách cây trồng thực hiện trồng mới / thay thế / mở rộng / cắt ghép?",
-        "type": "MC",
-        "options_raw": "Cà phê; Sầu riêng; XoàI; ChuốI; Mắc ca; Bơ; Dổi; Tiêu ...",
+        "text": "Danh sách cây trồng thực hiện trồng mới / thay thế / mở rộng / cắt ghép (đối chiếu với vườn cà phê LD12 và cây xen LD13)?",
+        "type": "MO",
+        "options_raw": "Cà phê; Sầu riêng; Tiêu; Bơ; Mắc ca; Cau; Điều; Cao su; Cây ăn trái khác; Các loại cây rừng; Khác",
         "options": [
           {
             "value": "Cà phê",
@@ -750,33 +750,47 @@
             "label": "Sầu riêng"
           },
           {
-            "value": "XoàI",
-            "label": "XoàI"
-          },
-          {
-            "value": "ChuốI",
-            "label": "ChuốI"
-          },
-          {
-            "value": "Mắc ca",
-            "label": "Mắc ca"
+            "value": "Tiêu",
+            "label": "Tiêu"
           },
           {
             "value": "Bơ",
             "label": "Bơ"
           },
           {
-            "value": "Dổi",
-            "label": "Dổi"
+            "value": "Mắc ca",
+            "label": "Mắc ca"
           },
           {
-            "value": "Tiêu ...",
-            "label": "Tiêu ..."
+            "value": "Cau",
+            "label": "Cau"
+          },
+          {
+            "value": "Điều",
+            "label": "Điều"
+          },
+          {
+            "value": "Cao su",
+            "label": "Cao su"
+          },
+          {
+            "value": "Cây ăn trái khác",
+            "label": "Cây ăn trái khác"
+          },
+          {
+            "value": "Các loại cây rừng",
+            "label": "Các loại cây rừng"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
           }
         ],
         "condition": "CT01=1",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ tên cây trồng khác..."
       },
       {
         "tool_code": "P1",
@@ -785,17 +799,17 @@
         "code": "CT03",
         "orig_code": "planting_type",
         "section": "PPI - Thông tin cải tạo vườn trong 12 tháng qua",
-        "text": "Hình thức thực hiện với cây cây trồng thực hiện là gì?",
-        "type": "SC",
-        "options_raw": "Trồng mới (Thực hiện lần đầu tiên); Trồng mở rộng (Khi có nhu cầu tăng số lượng cây đang tôn tại trên vườn); Trồng thay thế (Ghi nhận mới nhưng không thay đổi số lượng cây trồng đang tồn tại trên vườn); Ghép chồi",
+        "text": "Hình thức thực hiện đối với các cây trồng đã chọn ở CT02 là gì?",
+        "type": "MO",
+        "options_raw": "Trồng mới (Thực hiện lần đầu tiên); Trồng mở rộng (Khi có nhu cầu tăng số lượng cây đang tồn tại trên vườn); Trồng thay thế (Ghi nhận mới nhưng không thay đổi số lượng cây trồng đang tồn tại trên vườn); Ghép chồi",
         "options": [
           {
             "value": "Trồng mới (Thực hiện lần đầu tiên)",
             "label": "Trồng mới (Thực hiện lần đầu tiên)"
           },
           {
-            "value": "Trồng mở rộng (Khi có nhu cầu tăng số lượng cây đang tôn tại trên vườn)",
-            "label": "Trồng mở rộng (Khi có nhu cầu tăng số lượng cây đang tôn tại trên vườn)"
+            "value": "Trồng mở rộng (Khi có nhu cầu tăng số lượng cây đang tồn tại trên vườn)",
+            "label": "Trồng mở rộng (Khi có nhu cầu tăng số lượng cây đang tồn tại trên vườn)"
           },
           {
             "value": "Trồng thay thế (Ghi nhận mới nhưng không thay đổi số lượng cây trồng đang tồn tại trên vườn)",
@@ -841,13 +855,16 @@
         "code": "CT05",
         "orig_code": "plot_tree_planting_month",
         "section": "PPI - Thông tin cải tạo vườn trong 12 tháng qua",
-        "text": "Tháng thực hiện",
+        "text": "Tháng thực hiện (trong 12 tháng qua)?",
         "type": "SO",
         "options_raw": "",
         "options": [],
         "condition": "CT01=1",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "min": 1,
+        "max": 12,
+        "unit": "tháng"
       },
       {
         "tool_code": "P1",
@@ -856,7 +873,7 @@
         "code": "CT06",
         "orig_code": "plot_tree_planting_variety",
         "section": "PPI - Thông tin cải tạo vườn trong 12 tháng qua",
-        "text": "Tên giống cây anh/chị thực hiện là gì?",
+        "text": "Tên giống cà phê anh/chị thực hiện là gì?",
         "type": "SC",
         "options_raw": "Robusta TR4; Robusta TR9; Robusta TR11; Robusta TR12; Robusta TRS1; Xanh lùn; Thiện Trường; Lá xoài; Thực sinh (cà phê cũ); Khác",
         "options": [
@@ -901,9 +918,11 @@
             "label": "Khác"
           }
         ],
-        "condition": "CT01=1",
+        "condition": "CT01=1 and CT02=1",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ tên giống cà phê khác..."
       },
       {
         "tool_code": "P1",
@@ -918,7 +937,9 @@
         "options": [],
         "condition": "CT01=1",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "min": 0,
+        "unit": "cây/chồi"
       },
       {
         "tool_code": "P1",
@@ -933,7 +954,9 @@
         "options": [],
         "condition": "CT01=1",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "min": 0,
+        "unit": "đồng"
       },
       {
         "tool_code": "P1",
@@ -942,7 +965,7 @@
         "code": "CT09",
         "orig_code": "plot_tree_planting_month_more",
         "section": "PPI - Thông tin cải tạo vườn trong 12 tháng qua",
-        "text": "Còn cây cây trồng thực hiện nào thực hiện mới năm nay trên vườn không?",
+        "text": "Còn loại cây trồng nào khác thực hiện cải tạo trong 12 tháng qua không?",
         "type": "SC",
         "options_raw": "Không; Có",
         "options": [
@@ -957,7 +980,9 @@
         ],
         "condition": "CT01=1",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
-        "dac": "Hiệu quả"
+        "dac": "Hiệu quả",
+        "follow_up_on": "Có",
+        "follow_up_placeholder": "Ghi rõ tên cây, hình thức, tháng thực hiện, số lượng và chi phí..."
       },
       {
         "tool_code": "P1",
