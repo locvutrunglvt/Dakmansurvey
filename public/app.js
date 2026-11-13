@@ -887,11 +887,28 @@ function renderQuestionsForSection(secName) {
             `;
         }
 
+        const isAdminUser = (currentUser?.role === 'admin');
+        const adminActionsHtml = isAdminUser ? `
+            <span style="display:inline-flex; gap:4px; flex-shrink:0; margin-left:auto;">
+                <button type="button" onclick="inlineEditQuestion('${escapeQuotes(code)}')"
+                        title="Sửa câu hỏi này"
+                        style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; padding:2px 8px; border-radius:3px; cursor:pointer; font-size:0.74rem; font-weight:600;">
+                    <i class="fa-solid fa-pen"></i> Sửa
+                </button>
+                <button type="button" onclick="inlineDeleteQuestion('${escapeQuotes(code)}')"
+                        title="Xóa câu hỏi này"
+                        style="background:#fee2e2; color:#991b1b; border:1px solid #fecaca; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:0.74rem; font-weight:600;">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </span>
+        ` : '';
+
         return `
             <div class="question-card" id="qCard_${code}" data-code="${code}" data-condition="${escapeQuotes(q.condition || '')}">
                 <div class="q-header">
                     <span class="q-code">${code}</span>
                     <span class="q-text">${q.text}</span>
+                    ${adminActionsHtml}
                 </div>
                 ${q.condition ? `<div class="q-condition"><i class="fa-solid fa-code-branch"></i> Điều kiện xuất hiện: ${q.condition}</div>` : ''}
                 ${q.options_raw && !q.options?.length ? `<div style="font-size: 0.8rem; color: var(--slate-500); font-style: italic; margin-top: 4px;">Gợi ý: ${q.options_raw}</div>` : ''}
@@ -2330,6 +2347,26 @@ function openAddQuestionForm() {
     document.getElementById('qEditText').focus();
 }
 
+function inlineEditQuestion(code) {
+    if (currentUser?.role !== 'admin') return;
+    openAdminModal();
+    switchAdminTab('questions');
+    const sel = document.getElementById('adminQuestionToolSelect');
+    if (sel && currentTool) sel.value = currentTool;
+    loadAdminQuestionsTable();
+    openEditQuestionForm(code);
+    setTimeout(() => {
+        document.getElementById('questionEditorBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
+}
+
+function inlineDeleteQuestion(code) {
+    if (currentUser?.role !== 'admin') return;
+    const sel = document.getElementById('adminQuestionToolSelect');
+    if (sel && currentTool) sel.value = currentTool;
+    deleteAdminQuestion(code);
+}
+
 function openEditQuestionForm(code) {
     const toolCode = document.getElementById('adminQuestionToolSelect')?.value || currentTool || 'P1';
     const q = (allQuestionsData[toolCode]?.questions || []).find(item => item.code === code);
@@ -2342,7 +2379,9 @@ function openEditQuestionForm(code) {
 
     const rawT = String(q.type || 'TX').toUpperCase();
     let mappedT = 'TX';
-    if (rawT.includes('DR') || rawT.includes('SELECT')) mappedT = 'DR';
+    if (rawT.includes('MULTI_TX') || q.multi_rows) mappedT = 'MULTI_TX';
+    else if (rawT.includes('DATETIME')) mappedT = 'DATETIME';
+    else if (rawT.includes('DR') || rawT.includes('SELECT')) mappedT = 'DR';
     else if (rawT.includes('MO') || rawT.includes('CB')) mappedT = 'MO';
     else if (rawT.includes('SC') || rawT.includes('MC')) mappedT = 'SC';
     else if (rawT.includes('SO') || rawT.includes('NUM')) mappedT = 'SO';
@@ -2443,7 +2482,15 @@ async function saveAdminQuestion(e) {
             alert(data.message);
             closeQuestionEditorForm();
             loadAdminQuestionsTable();
-            if (currentTool === toolCode) selectTool(currentTool);
+            if (currentTool === toolCode) {
+                const prevSec = currentSection;
+                selectTool(currentTool);
+                if (prevSec) {
+                    const secs = getToolSections();
+                    const idx = secs.indexOf(prevSec);
+                    if (idx >= 0) selectSection(prevSec, idx);
+                }
+            }
         } else {
             alert('Lỗi: ' + (data.error || 'Không thể lưu câu hỏi'));
         }
