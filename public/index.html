@@ -1531,7 +1531,14 @@
                                 <span style="font-size: 0.82rem; font-weight: 700; color: #166534;">
                                     <i class="fa-solid fa-magnifying-glass"></i> LỌC &amp; CHỌN NÔNG HỘ MẪU (ĐIỀN ID TỰ ĐỘNG)
                                 </span>
-                                <span id="sampleFilterCount" style="font-size: 0.76rem; color: #15803d; font-weight: 600;">220 hộ (197 mẫu + 23 mới)</span>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <span id="sampleFilterCount" style="font-size: 0.76rem; color: #15803d; font-weight: 600;">220 hộ (197 mẫu + 23 mới)</span>
+                                    <button type="button" onclick="generateNextNewHouseholdId()"
+                                            style="background: #15803d; color: #fff; border: none; padding: 3px 9px; border-radius: 3px; font-size: 0.75rem; font-weight: 600; cursor: pointer;"
+                                            title="Tạo mã hộ mới (+1) cho người chưa có trong danh sách theo Xã/Buôn đang chọn">
+                                        <i class="fa-solid fa-plus"></i> Cấp mã hộ mới (+1)
+                                    </button>
+                                </div>
                             </div>
                             <div class="grid-3" style="margin-bottom: 8px;">
                                 <div class="form-group">
@@ -1586,6 +1593,11 @@
                                 <label>Họ Tên Người Được Phỏng Vấn <span class="req">*</span></label>
                                 <input type="text" class="form-control" id="respondentNameInput" required
                                     placeholder="Họ và tên chủ hộ/đại diện">
+                            </div>
+                            <div class="form-group">
+                                <label>Số Điện Thoại</label>
+                                <input type="tel" class="form-control" id="phoneInput"
+                                    placeholder="SĐT liên hệ (tự điền hoặc nhập mới)">
                             </div>
                         </div>
 
@@ -2497,7 +2509,7 @@
     </div>
 
     <!-- Application Logic -->
-    <script src="app.js?v=2.14"></script>
+    <script src="app.js?v=2.15"></script>
 
 </body>
 
