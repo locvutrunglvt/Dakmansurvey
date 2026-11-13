@@ -841,7 +841,7 @@
         "code": "DT02",
         "orig_code": "plot_area_type_ha",
         "section": "PPI hỏi một lần - Thông tin phân bổ diện tích sử dụng đất trên vườn",
-        "text": "Diện tích sử dụng cho mục đích ${plot_area_type_name}",
+        "text": "Diện tích sử dụng cho mục đích từng loại đất đã chọn",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -896,7 +896,7 @@
         "code": "LD02",
         "orig_code": "plot_soil_percent",
         "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
-        "text": "Tỷ lệ đất ${plot_soil_type_name} trên vườn?",
+        "text": "Tỷ lệ đất từng loại đất đã chọn trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -951,7 +951,7 @@
         "code": "LD04",
         "orig_code": "plot_soil_percent",
         "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
-        "text": "Tỷ lệ đất ${plot_soil_type_name} trên vườn?",
+        "text": "Tỷ lệ đất từng loại đất đã chọn trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -1021,7 +1021,7 @@
         "code": "LD07",
         "orig_code": "plot_typography_percent",
         "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
-        "text": "Tỷ lệ địa hình ${plot_typography_type_name} trên vườn?",
+        "text": "Tỷ lệ địa hình từng dạng địa hình đã chọn trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -1076,7 +1076,7 @@
         "code": "LD09",
         "orig_code": "plot_typography_percent",
         "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
-        "text": "Tỷ lệ địa hình ${plot_typography_type_name} trên vườn?",
+        "text": "Tỷ lệ địa hình từng dạng địa hình đã chọn trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -1139,7 +1139,7 @@
         "code": "LD11",
         "orig_code": "plot_water_percent",
         "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
-        "text": "Tỷ lệ nguồn nước ${plot_water_type_name} trên vườn?",
+        "text": "Tỷ lệ nguồn nước từng nguồn nước đã chọn trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -1242,7 +1242,7 @@
         "code": "LD14",
         "orig_code": "plot_tree_exiting_year",
         "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
-        "text": "Năm trồng cây ${plot_tree_exiting_type_name}",
+        "text": "Năm trồng cây cây trồng hiện có",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -1257,7 +1257,7 @@
         "code": "LD15",
         "orig_code": "plot_tree_exiting_qty",
         "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
-        "text": "Số cây ${plot_tree_exiting_type_name} năm ${plot_tree_exiting_year} trên vườn?",
+        "text": "Số cây cây trồng hiện có (theo từng năm trồng) trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -1272,7 +1272,7 @@
         "code": "LD16",
         "orig_code": "plot_tree_exiting_year_more",
         "section": "PPI hỏi một lần - Thông tin phân bổ loại đất trên vườn",
-        "text": "Còn năm trồng nào khác đối với cây ${plot_tree_exiting_type_name} này không?",
+        "text": "Còn năm trồng nào khác đối với cây cây trồng hiện có này không?",
         "type": "SC",
         "options_raw": "Không; Có",
         "options": [
@@ -1368,7 +1368,7 @@
         "code": "CT03",
         "orig_code": "planting_type",
         "section": "PPI - Thông tin cải tạo vườn trong 12 tháng qua",
-        "text": "Hình thức thực hiện với cây ${plot_tree_planting_type_name} là gì?",
+        "text": "Hình thức thực hiện với cây cây trồng thực hiện là gì?",
         "type": "SC",
         "options_raw": "Trồng mới (Thực hiện lần đầu tiên); Trồng mở rộng (Khi có nhu cầu tăng số lượng cây đang tôn tại trên vườn); Trồng thay thế (Ghi nhận mới nhưng không thay đổi số lượng cây trồng đang tồn tại trên vườn); Ghép chồi",
         "options": [
@@ -1389,7 +1389,7 @@
             "label": "Ghép chồi"
           }
         ],
-        "condition": "",
+        "condition": "CT01=1",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
         "dac": "Hiệu quả"
       },
@@ -1413,7 +1413,7 @@
             "label": "Ghép cành"
           }
         ],
-        "condition": "CT03=4",
+        "condition": "CT01=1 and CT03=4",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
         "dac": "Hiệu quả"
       },
@@ -1428,7 +1428,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CT01=1",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
         "dac": "Hiệu quả"
       },
@@ -1484,7 +1484,7 @@
             "label": "Khác"
           }
         ],
-        "condition": "",
+        "condition": "CT01=1",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
         "dac": "Hiệu quả"
       },
@@ -1499,7 +1499,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CT01=1",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
         "dac": "Hiệu quả"
       },
@@ -1514,7 +1514,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CT01=1",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
         "dac": "Hiệu quả"
       },
@@ -1525,7 +1525,7 @@
         "code": "CT09",
         "orig_code": "plot_tree_planting_month_more",
         "section": "PPI - Thông tin cải tạo vườn trong 12 tháng qua",
-        "text": "Còn cây ${plot_tree_planting_type_name} nào thực hiện mới năm nay trên vườn không?",
+        "text": "Còn cây cây trồng thực hiện nào thực hiện mới năm nay trên vườn không?",
         "type": "SC",
         "options_raw": "Không; Có",
         "options": [
@@ -1538,7 +1538,7 @@
             "label": "Có"
           }
         ],
-        "condition": "",
+        "condition": "CT01=1",
         "indicator": "Tái canh, cây xen (RA4 Output 4, 5)",
         "dac": "Hiệu quả"
       },
@@ -1629,7 +1629,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "PB03=1",
+        "condition": "PB01=1 and PB03=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1644,7 +1644,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB01=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1668,7 +1668,7 @@
             "label": "Đã xử lý"
           }
         ],
-        "condition": "",
+        "condition": "PB01=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1724,7 +1724,7 @@
             "label": "Khác"
           }
         ],
-        "condition": "",
+        "condition": "PB01=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1739,7 +1739,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "PB07=10",
+        "condition": "PB01=1 and PB07=9",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1754,7 +1754,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "PB07=11",
+        "condition": "PB01=1 and PB07=10",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1769,7 +1769,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB01=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1784,7 +1784,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB01=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1799,7 +1799,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB01=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1823,7 +1823,7 @@
             "label": "Có"
           }
         ],
-        "condition": "",
+        "condition": "PB01=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1877,7 +1877,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB14=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1892,7 +1892,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB14=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1907,7 +1907,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB14=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1922,7 +1922,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB14=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1937,7 +1937,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB14=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -1991,7 +1991,7 @@
         "type": "MULTI_TX",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB21=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động",
         "multi_rows": true
@@ -2056,7 +2056,7 @@
             "label": "Theo phỏng vấn / Tên phân hóa học khác (ghi ở PB26)"
           }
         ],
-        "condition": "",
+        "condition": "PB21=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2071,7 +2071,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "PB24=11",
+        "condition": "PB21=1 and PB24=11",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2086,7 +2086,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "PB24=12",
+        "condition": "PB21=1 and PB24=12",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2097,11 +2097,11 @@
         "code": "PB27",
         "orig_code": "chemical_fertilizers_qty",
         "section": "PPI - Danh sách phân bón sử dụng",
-        "text": "Số lượng phân ${chemical_fertilizers_name_name} trên đã sử dụng trên vườn?",
+        "text": "Số lượng phân hóa học đã chọn trên đã sử dụng trên vườn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB21=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2112,11 +2112,11 @@
         "code": "PB28",
         "orig_code": "chemical_fertilizers_total",
         "section": "PPI - Danh sách phân bón sử dụng",
-        "text": "Tổng số tiền bỏ ra để mua phân ${chemical_fertilizers_name_name}?",
+        "text": "Tổng số tiền bỏ ra để mua phân hóa học đã chọn?",
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB21=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2127,11 +2127,11 @@
         "code": "PB29",
         "orig_code": "chemical_fertilizers_kg_per_tree",
         "section": "PPI - Danh sách phân bón sử dụng",
-        "text": "Số Kg phân ${chemical_fertilizers_name_name} sử dụng trung bình trên từng cây?",
+        "text": "Số Kg phân hóa học đã chọn sử dụng trung bình trên từng cây?",
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB21=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2155,7 +2155,7 @@
             "label": "Có"
           }
         ],
-        "condition": "",
+        "condition": "PB21=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2209,7 +2209,7 @@
         "type": "MULTI_TX",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB31=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động",
         "multi_rows": true
@@ -2225,7 +2225,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB31=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2240,7 +2240,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB31=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2272,7 +2272,7 @@
             "label": "Gói"
           }
         ],
-        "condition": "",
+        "condition": "PB31=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2287,7 +2287,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "PB31=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
         "dac": "Tác động"
       },
@@ -2458,7 +2458,7 @@
         "code": "SB06",
         "orig_code": "pests_and_diseases_when",
         "section": "PPI - Quản lý sâu bệnh hại trên vườn",
-        "text": "Thời điểm lần thứ ${pests_and_diseases_counta} anh/chị sử dụng lúc nào?",
+        "text": "Thời điểm các đợt xử lý anh/chị sử dụng lúc nào?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -3210,7 +3210,7 @@
         "code": "TH03",
         "orig_code": "harvest_qty",
         "section": "PPI - Thông tin thu hoạch",
-        "text": "Sản lượng ${harvest_tree_type_name}",
+        "text": "Sản lượng cây trồng thu hoạch",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -3483,7 +3483,7 @@
         "code": "SP03",
         "orig_code": "selling_when",
         "section": "PPI - Sản phẩm bán",
-        "text": "Thời điểm anh chị bán ${selling_tree_type_name} là khi nào?",
+        "text": "Thời điểm anh chị bán sản phẩm cây trồng là khi nào?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -3498,7 +3498,7 @@
         "code": "SP04",
         "orig_code": "selling_production",
         "section": "PPI - Sản phẩm bán",
-        "text": "Tên sản phẩm ${selling_tree_type_name} bán",
+        "text": "Tên sản phẩm sản phẩm cây trồng bán",
         "type": "SC",
         "options_raw": "Cà phê quả tươi; Cà phê quả khô; Cà phê nhân xô; Sầu riêng; XoàI; ChuốI; Mắc ca; Bơ ...",
         "options": [
@@ -3546,7 +3546,7 @@
         "code": "SP05",
         "orig_code": "selling_qty",
         "section": "PPI - Sản phẩm bán",
-        "text": "Số lượng bán ${selling_production}",
+        "text": "Số lượng bán sản phẩm đã chọn",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -3561,7 +3561,7 @@
         "code": "SP06",
         "orig_code": "selling_price",
         "section": "PPI - Sản phẩm bán",
-        "text": "Đơn giá bán ${selling_production}",
+        "text": "Đơn giá bán sản phẩm đã chọn",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -5246,7 +5246,7 @@
             "label": "Khác"
           }
         ],
-        "condition": "",
+        "condition": "CC08=1",
         "indicator": "Tập huấn, chứng nhận",
         "dac": "Hiệu quả"
       },
@@ -5261,7 +5261,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CC08=1",
         "indicator": "Tập huấn, chứng nhận",
         "dac": "Hiệu quả"
       },
@@ -5289,7 +5289,7 @@
             "label": "Có thêm lợi ích khác từ chứng chỉ mang lại"
           }
         ],
-        "condition": "",
+        "condition": "CC08=1",
         "indicator": "Tập huấn, chứng nhận",
         "dac": "Hiệu quả"
       },
@@ -5304,7 +5304,7 @@
         "type": "DT",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CC08=1",
         "indicator": "Tập huấn, chứng nhận",
         "dac": "Hiệu quả"
       },
@@ -5597,7 +5597,7 @@
         "code": "CP02",
         "orig_code": "resource_device",
         "section": "PPI - Thống kê chi phí",
-        "text": "Phương tiện, thiết bị anh/chị sử dụng cho mục đích ${resource_group_type_name} là gì?",
+        "text": "Phương tiện, thiết bị anh/chị sử dụng cho mục đích mục đích đã chọn là gì?",
         "type": "MO",
         "options_raw": "Xe máy; Xe tải; Xe công nông; Máy nổ; Máy dầu; Máy điện; Máy phát cỏ; Bình phun thuốc",
         "options": [
@@ -5645,7 +5645,7 @@
         "code": "CP03",
         "orig_code": "resource_type",
         "section": "PPI - Thống kê chi phí",
-        "text": "Nhiên liệu anh/chị sử dụng phương tiện ${resource_device} cho mục đích ${resource_group_type_name} là gì?",
+        "text": "Nhiên liệu anh/chị sử dụng phương tiện thiết bị đã chọn cho mục đích mục đích đã chọn là gì?",
         "type": "MO",
         "options_raw": "Xe máy; Mô tơ; Chạy máy phun; Máy phát cỏ; Máy nổ / Máy dầu; Xăng; Dầu Diesel; Điện; Khác",
         "options": [
@@ -5745,7 +5745,7 @@
         "code": "CP05",
         "orig_code": "resource_qty",
         "section": "PPI - Thống kê chi phí",
-        "text": "Mức tiêu hao nhiên liệu trung bình trên 1 ${resource_unit_name} là bao nhiêu?",
+        "text": "Mức tiêu hao nhiên liệu trung bình trên 1 đơn vị tính đã chọn là bao nhiêu?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -5839,7 +5839,7 @@
         "code": "CP08",
         "orig_code": "labor_how",
         "section": "PPI - Thống kê chi phí",
-        "text": "Hình thức thuê nhân công cho mục đích ${labor_group_type_name}?",
+        "text": "Hình thức thuê nhân công cho mục đích công việc đã chọn?",
         "type": "MO",
         "options_raw": "1=Công khoán; 2=Công thuê; 3=Công gia đình",
         "options": [
@@ -5867,7 +5867,7 @@
         "code": "CP09",
         "orig_code": "labor_contract",
         "section": "PPI - Thống kê chi phí",
-        "text": "Tổng chi phí thuê chọn gói anh/chị khoán để thực hiện ${labor_group_type_name} là bao nhiêu?",
+        "text": "Tổng chi phí thuê chọn gói anh/chị khoán để thực hiện công việc đã chọn là bao nhiêu?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -5882,7 +5882,7 @@
         "code": "CP10",
         "orig_code": "labor_hired",
         "section": "PPI - Thống kê chi phí",
-        "text": "Tổng số công anh/chị thuê ngoài để thực hiện ${labor_group_type_name} là bao nhiêu?",
+        "text": "Tổng số công anh/chị thuê ngoài để thực hiện công việc đã chọn là bao nhiêu?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -5897,7 +5897,7 @@
         "code": "CP11",
         "orig_code": "labor_household",
         "section": "PPI - Thống kê chi phí",
-        "text": "Tổng số công của anh/chị tự bỏ ra để thực hiện ${labor_group_type_name} là bao nhiêu?",
+        "text": "Tổng số công của anh/chị tự bỏ ra để thực hiện công việc đã chọn là bao nhiêu?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -5912,7 +5912,7 @@
         "code": "CP12",
         "orig_code": "labor_cost",
         "section": "PPI - Thống kê chi phí",
-        "text": "Chi phí công 1 người/ngày cho việc ${labor_group_type_name} là bao nhiêu?",
+        "text": "Chi phí công 1 người/ngày cho việc công việc đã chọn là bao nhiêu?",
         "type": "SO",
         "options_raw": "",
         "options": [],
@@ -5955,7 +5955,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CP13=1",
         "indicator": "Chi phí sản xuất; phát thải từ nhiên liệu",
         "dac": "Tác động"
       },
@@ -5987,7 +5987,7 @@
             "label": "Khác"
           }
         ],
-        "condition": "",
+        "condition": "CP13=1",
         "indicator": "Chi phí sản xuất; phát thải từ nhiên liệu",
         "dac": "Tác động"
       },
@@ -6002,7 +6002,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CP13=1",
         "indicator": "Chi phí sản xuất; phát thải từ nhiên liệu",
         "dac": "Tác động"
       },
@@ -6017,7 +6017,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CP13=1",
         "indicator": "Chi phí sản xuất; phát thải từ nhiên liệu",
         "dac": "Tác động"
       },
@@ -6032,7 +6032,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CP13=1",
         "indicator": "Chi phí sản xuất; phát thải từ nhiên liệu",
         "dac": "Tác động"
       },
