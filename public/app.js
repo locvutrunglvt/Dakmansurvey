@@ -565,19 +565,28 @@ function filterSampleHouseholds() {
         box.innerHTML = '<div style="padding: 8px 10px; font-size: 0.80rem; color: #64748b;">Không tìm thấy nông hộ nào khớp bộ lọc.</div>';
         return;
     }
-    box.innerHTML = matched.slice(0, 60).map(h => `
+    box.innerHTML = matched.slice(0, 60).map(h => {
+        const isExtra = Boolean(h.status && h.status.includes('Hộ mới'));
+        const bgNormal = isExtra ? '#fef2f2' : '#ffffff';
+        const bgHover = isExtra ? '#fee2e2' : '#f0fdf4';
+        const borderLeft = isExtra ? 'border-left: 4px solid #dc2626;' : '';
+        const titleColor = isExtra ? '#b91c1c' : '#002060';
+        const extraBadge = isExtra ? '<span style="background:#dc2626; color:#ffffff; padding:1px 6px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:5px;">BỔ SUNG (+1)</span>' : '';
+        return `
         <div onclick="selectSampleHousehold('${escapeQuotes(h.id)}')"
-             style="padding: 7px 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer; font-size: 0.80rem; display: flex; justify-content: space-between; align-items: center; gap: 8px;"
-             onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='#ffffff'">
+             style="padding: 7px 10px; border-bottom: 1px solid #f1f5f9; ${borderLeft} background: ${bgNormal}; cursor: pointer; font-size: 0.80rem; display: flex; justify-content: space-between; align-items: center; gap: 8px;"
+             onmouseover="this.style.background='${bgHover}'" onmouseout="this.style.background='${bgNormal}'">
             <div>
-                <strong style="color:#002060;">[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong>
+                <strong style="color:${titleColor};">[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong>
+                ${extraBadge}
                 ${h.ra ? '<span style="background:#dcfce7; color:#166534; border:1px solid #86efac; padding:1px 5px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:4px;">RA</span>' : ''}
                 <span style="color:#475569;"> — ${escapeHtml(h.address)}</span>
                 <div style="font-size:0.74rem; color:#64748b;">SĐT: ${escapeHtml(h.phone || '—')} • CLB: ${escapeHtml(h.clb || '—')} • Dẫn đường: <b>${escapeHtml(h.guide)}</b></div>
             </div>
             <span style="background:#dbeafe; color:#1e40af; padding:2px 7px; border-radius:3px; font-weight:700; font-size:0.72rem; white-space:nowrap;">NV: ${escapeHtml(h.interviewer)}</span>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function selectSampleHousehold(id) {
