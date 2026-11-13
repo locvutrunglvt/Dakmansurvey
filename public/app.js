@@ -1191,8 +1191,9 @@ function matchesConditionValue(qCode, actualVal, expVal) {
             if (opts.length === 2) {
                 const labels = opts.map(o => String(o.value).trim());
                 if (labels.includes('Không') && labels.includes('Có')) {
-                    if (expVal === '0' && s === 'Không') return true;
-                    if (expVal === '1' && s === 'Có') return true;
+                    if (expVal === '0') return s === 'Không';
+                    if (expVal === '1') return s === 'Có';
+                    return false;
                 }
             }
             const idx = parseInt(expVal, 10) - 1;
