@@ -728,8 +728,23 @@ function renderQuestionsForSection(secName) {
 
         let inputHtml = '';
 
-        if (q.options && q.options.length > 0) {
-            const isMulti = qType.includes('MO');
+        if (q.options && q.options.length > 0 && (qType.includes('DR') || qType.includes('SELECT'))) {
+            inputHtml = `
+                <div style="margin-top: 8px; max-width: 420px;">
+                    <select class="form-control"
+                            ${isViewer ? 'disabled' : ''}
+                            onchange="onAnswerChange('${code}', this, false)">
+                        <option value="">-- Chọn đáp án --</option>
+                        ${q.options.map(opt => `
+                            <option value="${escapeHtml(opt.value)}" ${val === opt.value ? 'selected' : ''}>
+                                ${escapeHtml(opt.value)}. ${escapeHtml(opt.label)}
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+            `;
+        } else if (q.options && q.options.length > 0) {
+            const isMulti = qType.includes('MO') || qType.includes('CB');
             inputHtml = `
                 <div class="radio-group">
                     ${q.options.map((opt, oIdx) => {
@@ -768,7 +783,7 @@ function renderQuestionsForSection(secName) {
                     }).join('')}
                 </div>
             `;
-        } else if (qType.includes('SO')) {
+        } else if (qType.includes('SO') || qType.includes('NUM')) {
             inputHtml = `
                 <div style="margin-top: 8px; max-width: 260px;">
                     <input type="number" 
@@ -778,6 +793,16 @@ function renderQuestionsForSection(secName) {
                            ${isViewer ? 'disabled' : ''}
                            oninput="onAnswerChange('${code}', this, false)" 
                            placeholder="Nhập số lượng / giá trị...">
+                </div>
+            `;
+        } else if (qType.includes('DT') || qType.includes('DATE')) {
+            inputHtml = `
+                <div style="margin-top: 8px; max-width: 260px;">
+                    <input type="date" 
+                           class="form-control" 
+                           value="${val}" 
+                           ${isViewer ? 'disabled' : ''}
+                           onchange="onAnswerChange('${code}', this, false)">
                 </div>
             `;
         } else {
@@ -1954,12 +1979,14 @@ function switchAdminSubTab(subTab) {
     const btnStaff = document.getElementById('btnAdminTabStaff');
     const btnSec = document.getElementById('btnAdminTabSecurity');
     const btnTrash = document.getElementById('btnAdminTabTrash');
+    const btnQuestions = document.getElementById('btnAdminTabQuestions');
     const paneStaff = document.getElementById('adminTabPaneStaff');
     const paneSec = document.getElementById('adminTabPaneSecurity');
     const paneTrash = document.getElementById('adminTabPaneTrash');
+    const paneQuestions = document.getElementById('adminTabPaneQuestions');
 
-    [btnStaff, btnSec, btnTrash].forEach(b => b && b.classList.remove('active'));
-    [paneStaff, paneSec, paneTrash].forEach(p => { if (p) p.style.display = 'none'; });
+    [btnStaff, btnSec, btnTrash, btnQuestions].forEach(b => b && b.classList.remove('active'));
+    [paneStaff, paneSec, paneTrash, paneQuestions].forEach(p => { if (p) p.style.display = 'none'; });
 
     if (subTab === 'staff') {
         if (btnStaff) btnStaff.classList.add('active');
@@ -1972,6 +1999,228 @@ function switchAdminSubTab(subTab) {
         if (btnTrash) btnTrash.classList.add('active');
         if (paneTrash) paneTrash.style.display = 'block';
         loadTrashList();
+    } else if (subTab === 'questions') {
+        if (btnQuestions) btnQuestions.classList.add('active');
+        if (paneQuestions) paneQuestions.style.display = 'block';
+        const sel = document.getElementById('adminQuestionToolSelect');
+        if (sel && allQuestionsData[currentTool]) sel.value = currentTool;
+        loadAdminQuestionsTable();
+    }
+}
+
+function getQuestionTypeLabel(qType) {
+    const t = String(qType || 'TX').toUpperCase();
+    if (t.includes('DR') || t.includes('SELECT')) return 'Dropdown';
+    if (t.includes('MO') || t.includes('CB')) return 'Chọn nhiều';
+    if (t.includes('SC') || t.includes('MC')) return 'Chọn 1';
+    if (t.includes('SO') || t.includes('NUM')) return 'Số liệu';
+    if (t.includes('LK')) return 'Likert 1-5';
+    if (t.includes('DT') || t.includes('DATE')) return 'Ngày tháng';
+    return 'Văn bản';
+}
+
+function loadAdminQuestionsTable() {
+    const toolCode = document.getElementById('adminQuestionToolSelect')?.value || currentTool || 'P1';
+    const kw = (document.getElementById('adminQuestionSearch')?.value || '').trim().toLowerCase();
+    const tbody = document.getElementById('adminQuestionsTbody');
+    const dl = document.getElementById('qSectionDatalist');
+    if (!tbody) return;
+
+    const toolObj = allQuestionsData[toolCode];
+    const questions = (toolObj && toolObj.questions) ? toolObj.questions : [];
+
+    if (dl) {
+        const secs = [...new Set(questions.map(q => q.section || 'Thông tin chung'))];
+        dl.innerHTML = secs.map(s => `<option value="${escapeHtml(s)}">`).join('');
+    }
+
+    const filtered = kw
+        ? questions.filter(q =>
+            String(q.code || '').toLowerCase().includes(kw) ||
+            String(q.text || '').toLowerCase().includes(kw) ||
+            String(q.section || '').toLowerCase().includes(kw)
+        )
+        : questions;
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#64748b;padding:14px;">Không có câu hỏi nào phù hợp.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(q => `
+        <tr>
+            <td style="font-family:monospace;font-weight:700;color:#002060;">${escapeHtml(q.code)}</td>
+            <td style="font-size:0.74rem;color:#475569;">${escapeHtml(q.section || '')}</td>
+            <td>${escapeHtml(q.text || '')}</td>
+            <td><span style="background:#e2e8f0;padding:2px 6px;border-radius:3px;font-size:0.72rem;font-weight:700;">${getQuestionTypeLabel(q.type)}</span></td>
+            <td style="text-align:center;white-space:nowrap;">
+                <button type="button" onclick="openEditQuestionForm('${escapeQuotes(q.code)}')" style="background:#eab308;color:#713f12;border:none;padding:3px 7px;border-radius:3px;cursor:pointer;font-size:0.74rem;font-weight:600;margin-right:3px;">
+                    <i class="fa-solid fa-pen"></i> Sửa
+                </button>
+                <button type="button" onclick="deleteAdminQuestion('${escapeQuotes(q.code)}')" style="background:#ef4444;color:#fff;border:none;padding:3px 7px;border-radius:3px;cursor:pointer;font-size:0.74rem;font-weight:600;">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function onQuestionTypeChange() {
+    const t = (document.getElementById('qEditType')?.value || 'TX').toUpperCase();
+    const wrap = document.getElementById('qEditOptionsWrap');
+    if (wrap) {
+        wrap.style.display = (['SC', 'DR', 'MO'].includes(t)) ? 'block' : 'none';
+    }
+}
+
+function openAddQuestionForm() {
+    document.getElementById('questionEditorTitle').textContent = 'THÊM CÂU HỎI MỚI';
+    document.getElementById('qEditOrigCode').value = '';
+    document.getElementById('qEditCode').value = '';
+    document.getElementById('qEditSection').value = '';
+    document.getElementById('qEditType').value = 'SC';
+    document.getElementById('qEditText').value = '';
+    document.getElementById('qEditOptions').value = '';
+    document.getElementById('qEditHint').value = '';
+    document.getElementById('qEditCondition').value = '';
+    onQuestionTypeChange();
+    document.getElementById('questionEditorBox').style.display = 'block';
+    document.getElementById('qEditCode').focus();
+}
+
+function openEditQuestionForm(code) {
+    const toolCode = document.getElementById('adminQuestionToolSelect')?.value || currentTool || 'P1';
+    const q = (allQuestionsData[toolCode]?.questions || []).find(item => item.code === code);
+    if (!q) return;
+
+    document.getElementById('questionEditorTitle').textContent = `CHỈNH SỬA CÂU HỎI [${code}]`;
+    document.getElementById('qEditOrigCode').value = q.code;
+    document.getElementById('qEditCode').value = q.code || '';
+    document.getElementById('qEditSection').value = q.section || '';
+
+    const rawT = String(q.type || 'TX').toUpperCase();
+    let mappedT = 'TX';
+    if (rawT.includes('DR') || rawT.includes('SELECT')) mappedT = 'DR';
+    else if (rawT.includes('MO') || rawT.includes('CB')) mappedT = 'MO';
+    else if (rawT.includes('SC') || rawT.includes('MC')) mappedT = 'SC';
+    else if (rawT.includes('SO') || rawT.includes('NUM')) mappedT = 'SO';
+    else if (rawT.includes('LK')) mappedT = 'LK';
+    else if (rawT.includes('DT') || rawT.includes('DATE')) mappedT = 'DT';
+    document.getElementById('qEditType').value = mappedT;
+
+    document.getElementById('qEditText').value = q.text || '';
+    const optsLines = (q.options || []).map(o => `${o.value}=${o.label}`).join('\n');
+    document.getElementById('qEditOptions').value = optsLines;
+    document.getElementById('qEditHint').value = (!q.options?.length ? (q.options_raw || '') : '');
+    document.getElementById('qEditCondition').value = q.condition || '';
+    onQuestionTypeChange();
+    document.getElementById('questionEditorBox').style.display = 'block';
+}
+
+function closeQuestionEditorForm() {
+    const box = document.getElementById('questionEditorBox');
+    if (box) box.style.display = 'none';
+}
+
+function parseOptionsTextarea(rawText) {
+    const lines = String(rawText || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const opts = [];
+    lines.forEach((line, idx) => {
+        const eqIdx = line.indexOf('=');
+        if (eqIdx > 0) {
+            opts.push({
+                value: line.slice(0, eqIdx).trim(),
+                label: line.slice(eqIdx + 1).trim()
+            });
+        } else {
+            opts.push({
+                value: String(idx + 1),
+                label: line
+            });
+        }
+    });
+    return opts;
+}
+
+async function saveAdminQuestion(e) {
+    e.preventDefault();
+    const toolCode = document.getElementById('adminQuestionToolSelect')?.value || currentTool || 'P1';
+    const origCode = document.getElementById('qEditOrigCode').value.trim();
+    const code = document.getElementById('qEditCode').value.trim();
+    const section = document.getElementById('qEditSection').value.trim() || 'Thông tin chung';
+    const qType = document.getElementById('qEditType').value;
+    const text = document.getElementById('qEditText').value.trim();
+    const hint = document.getElementById('qEditHint').value.trim();
+    const condition = document.getElementById('qEditCondition').value.trim();
+
+    const needsOpts = ['SC', 'DR', 'MO'].includes(qType);
+    const options = needsOpts ? parseOptionsTextarea(document.getElementById('qEditOptions').value) : [];
+    const options_raw = needsOpts ? options.map(o => `${o.value}=${o.label}`).join('; ') : hint;
+
+    try {
+        const res = await fetch(apiUrl('/api/admin/questions'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Key': getAdminKey()
+            },
+            body: JSON.stringify({
+                action: 'upsert',
+                tool_code: toolCode,
+                orig_code: origCode,
+                question: {
+                    code,
+                    section,
+                    type: qType,
+                    text,
+                    options,
+                    options_raw,
+                    condition
+                }
+            })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            if (data.all_questions) allQuestionsData = data.all_questions;
+            alert(data.message);
+            closeQuestionEditorForm();
+            loadAdminQuestionsTable();
+            if (currentTool === toolCode) selectTool(currentTool);
+        } else {
+            alert('Lỗi: ' + (data.error || 'Không thể lưu câu hỏi'));
+        }
+    } catch (err) {
+        alert('Lỗi kết nối máy chủ khi lưu câu hỏi.');
+    }
+}
+
+async function deleteAdminQuestion(code) {
+    const toolCode = document.getElementById('adminQuestionToolSelect')?.value || currentTool || 'P1';
+    if (!confirm(`Bạn có chắc chắn muốn XÓA câu hỏi [${code}] khỏi công cụ ${toolCode}?`)) return;
+    try {
+        const res = await fetch(apiUrl('/api/admin/questions'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Key': getAdminKey()
+            },
+            body: JSON.stringify({
+                action: 'delete',
+                tool_code: toolCode,
+                code
+            })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            if (data.all_questions) allQuestionsData = data.all_questions;
+            alert(data.message);
+            loadAdminQuestionsTable();
+            if (currentTool === toolCode) selectTool(currentTool);
+        } else {
+            alert('Lỗi: ' + (data.error || 'Không thể xóa câu hỏi'));
+        }
+    } catch (err) {
+        alert('Lỗi kết nối máy chủ khi xóa câu hỏi.');
     }
 }
 

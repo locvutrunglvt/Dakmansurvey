@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -12,12 +13,14 @@
     <link rel="apple-touch-icon" href="img/pwa-icon-192.png">
     <link rel="icon" type="image/png" href="img/pwa-icon-192.png">
     <title>Hệ Thống Khảo Sát & Phỏng Vấn Hiện Trường — Dự Án Dakman Cư M'gar (2021–2026)</title>
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -46,8 +49,12 @@
             --radius-md: 4px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         /* 1. Nền tổng thể: Tông Xám Kỹ Thuật Excel / QGIS Desktop (#ECECEC / #F0F0F0) - Dịu mắt, chống lóa */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -78,7 +85,9 @@
             font-size: 0.82rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.12);
         }
-        .top-navbar a, .top-navbar button {
+
+        .top-navbar a,
+        .top-navbar button {
             color: #cbd5e1;
             background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
             border: 1px solid #475569;
@@ -94,11 +103,14 @@
             gap: 6px;
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
         }
-        .top-navbar a:hover, .top-navbar button:hover {
+
+        .top-navbar a:hover,
+        .top-navbar button:hover {
             color: #ffffff;
             background: linear-gradient(180deg, #475569 0%, #334155 100%);
             border-color: #64748b;
         }
+
         .user-tag {
             background: rgba(255, 255, 255, 0.12);
             padding: 3px 10px;
@@ -121,6 +133,7 @@
             border-radius: var(--radius-sm);
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
         }
+
         .header-official .org-title {
             font-size: 0.90rem;
             font-weight: 700;
@@ -128,6 +141,7 @@
             letter-spacing: 0.5px;
             text-transform: uppercase;
         }
+
         .header-official .group-title {
             font-size: 1.15rem;
             font-weight: 800;
@@ -136,17 +150,20 @@
             margin-top: 4px;
             letter-spacing: 0.5px;
         }
+
         .header-official .cert-code {
             font-size: 0.84rem;
             color: var(--slate-600);
             margin-top: 2px;
         }
+
         .header-official .divider-line {
             width: 140px;
             height: 2px;
             background: var(--primary);
             margin: 12px auto;
         }
+
         .header-official h1 {
             font-family: 'Segoe UI', -apple-system, sans-serif;
             font-size: 1.50rem;
@@ -155,6 +172,7 @@
             margin-bottom: 6px;
             line-height: 1.35;
         }
+
         .header-official .doc-subtitle {
             font-size: 0.88rem;
             color: var(--slate-600);
@@ -177,21 +195,25 @@
             max-width: 980px;
             margin: 0 auto;
         }
+
         .meta-table-item {
             display: flex;
             gap: 8px;
         }
+
         .meta-table-item strong {
             color: var(--slate-700);
             min-width: 155px;
             font-weight: 700;
         }
+
         .meta-table-item span {
             color: var(--slate-900);
         }
 
         /* 3. Thẻ Tab chuẩn cơ học nổi xúc giác (Tactile Desktop Tabs - QGIS Parameters / Log style) */
-        .view-switcher-bar, .view-tabs-nav {
+        .view-switcher-bar,
+        .view-tabs-nav {
             display: flex;
             background: #e2e2e2;
             border: 1px solid var(--border-frame);
@@ -202,6 +224,7 @@
             border-radius: 3px 3px 0 0;
             box-shadow: inset 0 1px 0 #ffffff;
         }
+
         .view-tab-btn {
             background: linear-gradient(180deg, #f8f8f8 0%, #ececec 50%, #dddddd 100%);
             border: 1px solid #b4b4b4;
@@ -222,11 +245,13 @@
             box-shadow: inset 0 1px 0 #ffffff;
             user-select: none;
         }
+
         .view-tab-btn:hover {
             background: linear-gradient(180deg, #ffffff 0%, #efefef 100%);
             color: var(--primary);
             border-color: #909090;
         }
+
         .view-tab-btn.active {
             background: #ffffff !important;
             color: var(--primary) !important;
@@ -236,7 +261,7 @@
             top: 1px;
             z-index: 3;
             font-weight: 700;
-            box-shadow: 0 -2px 3px rgba(0,0,0,0.05), inset 0 1px 0 #ffffff;
+            box-shadow: 0 -2px 3px rgba(0, 0, 0, 0.05), inset 0 1px 0 #ffffff;
         }
 
         /* Main Content Container */
@@ -253,8 +278,9 @@
             border-radius: var(--radius-sm);
             padding: 14px 18px;
             margin-bottom: 16px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
         }
+
         .summary-header {
             display: flex;
             justify-content: space-between;
@@ -263,6 +289,7 @@
             padding-bottom: 8px;
             border-bottom: 1px solid var(--border);
         }
+
         .summary-title {
             font-size: 0.92rem;
             font-weight: 800;
@@ -270,6 +297,7 @@
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
+
         .summary-link {
             font-size: 0.83rem;
             font-weight: 600;
@@ -279,7 +307,10 @@
             align-items: center;
             gap: 4px;
         }
-        .summary-link:hover { text-decoration: underline; }
+
+        .summary-link:hover {
+            text-decoration: underline;
+        }
 
         /* Tactile Tool Tabs (8 Công Cụ Khảo Sát) */
         .tool-tabs-nav {
@@ -293,6 +324,7 @@
             border-radius: 5px 5px 0 0;
             box-shadow: inset 0 1px 0 #ffffff;
         }
+
         .tool-tab {
             background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%);
             border: 1px solid #94a3b8;
@@ -307,14 +339,16 @@
             font-family: inherit;
             position: relative;
             transition: all 0.12s ease-in-out;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08), inset 0 1px 0 #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), inset 0 1px 0 #ffffff;
             user-select: none;
         }
+
         .tool-tab:hover {
             background: linear-gradient(180deg, #ffffff 0%, #edf2f7 100%);
             transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.12), inset 0 1px 0 #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), inset 0 1px 0 #ffffff;
         }
+
         .tool-tab.active {
             background: #ffffff !important;
             border: 2px solid var(--active-tool-accent, #002060) !important;
@@ -325,32 +359,72 @@
             font-size: 0.85rem;
             transform: translateY(-2px);
             z-index: 5;
-            box-shadow: 0 -4px 10px rgba(0,0,0,0.15), inset 0 1px 0 #ffffff;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.15), inset 0 1px 0 #ffffff;
         }
 
-        #toolBtn-P1 { --active-tool-accent: #15803d; }
-        #toolBtn-P1.active { color: #15803d !important; }
+        #toolBtn-P1 {
+            --active-tool-accent: #15803d;
+        }
 
-        #toolBtn-KIP { --active-tool-accent: #059669; }
-        #toolBtn-KIP.active { color: #059669 !important; }
+        #toolBtn-P1.active {
+            color: #15803d !important;
+        }
 
-        #toolBtn-MH { --active-tool-accent: #b45309; }
-        #toolBtn-MH.active { color: #b45309 !important; }
+        #toolBtn-KIP {
+            --active-tool-accent: #059669;
+        }
 
-        #toolBtn-NT { --active-tool-accent: #1d4ed8; }
-        #toolBtn-NT.active { color: #1d4ed8 !important; }
+        #toolBtn-KIP.active {
+            color: #059669 !important;
+        }
 
-        #toolBtn-SDM { --active-tool-accent: #4338ca; }
-        #toolBtn-SDM.active { color: #4338ca !important; }
+        #toolBtn-MH {
+            --active-tool-accent: #b45309;
+        }
 
-        #toolBtn-HTX { --active-tool-accent: #6d28d9; }
-        #toolBtn-HTX.active { color: #6d28d9 !important; }
+        #toolBtn-MH.active {
+            color: #b45309 !important;
+        }
 
-        #toolBtn-CQ { --active-tool-accent: #b91c1c; }
-        #toolBtn-CQ.active { color: #b91c1c !important; }
+        #toolBtn-NT {
+            --active-tool-accent: #1d4ed8;
+        }
 
-        #toolBtn-TT { --active-tool-accent: #334155; }
-        #toolBtn-TT.active { color: #334155 !important; }
+        #toolBtn-NT.active {
+            color: #1d4ed8 !important;
+        }
+
+        #toolBtn-SDM {
+            --active-tool-accent: #4338ca;
+        }
+
+        #toolBtn-SDM.active {
+            color: #4338ca !important;
+        }
+
+        #toolBtn-HTX {
+            --active-tool-accent: #6d28d9;
+        }
+
+        #toolBtn-HTX.active {
+            color: #6d28d9 !important;
+        }
+
+        #toolBtn-CQ {
+            --active-tool-accent: #b91c1c;
+        }
+
+        #toolBtn-CQ.active {
+            color: #b91c1c !important;
+        }
+
+        #toolBtn-TT {
+            --active-tool-accent: #334155;
+        }
+
+        #toolBtn-TT.active {
+            color: #334155 !important;
+        }
 
         /* QGIS Group Box Style for Form Sections (Nền Trắng #FFFFFF trên Xám #ECECEC) */
         .form-section {
@@ -359,9 +433,10 @@
             border-radius: var(--radius-sm);
             padding: 0 0 18px 0;
             margin-bottom: 16px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
             overflow: hidden;
         }
+
         .section-header {
             background: linear-gradient(180deg, #fdfdfd 0%, #ededed 100%);
             border-bottom: 1px solid var(--border);
@@ -374,6 +449,7 @@
             align-items: center;
             box-shadow: inset 0 1px 0 #ffffff;
         }
+
         .section-header .sub-note {
             font-size: 0.78rem;
             font-weight: normal;
@@ -386,12 +462,14 @@
             gap: 14px;
             padding: 14px 16px 0 16px;
         }
+
         .grid-3 {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 12px;
             padding: 14px 16px 0 16px;
         }
+
         .grid-4 {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -402,6 +480,7 @@
         .form-group {
             margin-bottom: 10px;
         }
+
         .form-group label {
             display: block;
             font-size: 0.83rem;
@@ -409,7 +488,11 @@
             color: var(--slate-700);
             margin-bottom: 4px;
         }
-        .req { color: #dc2626; font-weight: bold; }
+
+        .req {
+            color: #dc2626;
+            font-weight: bold;
+        }
 
         /* Khối Nhập Liệu Chuẩn Máy Tính / Desktop Form Controls */
         .form-control {
@@ -424,6 +507,7 @@
             font-family: inherit;
             box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
         }
+
         .form-control:focus {
             outline: none;
             border-color: #0078d7;
@@ -440,15 +524,18 @@
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
             transition: border-color 0.12s;
         }
+
         .question-card:hover {
             border-color: #b5b5b5;
         }
+
         .q-header {
             display: flex;
             align-items: baseline;
             justify-content: space-between;
             margin-bottom: 6px;
         }
+
         .q-code {
             display: inline-block;
             background: var(--primary);
@@ -460,7 +547,9 @@
             margin-right: 8px;
             font-family: 'Segoe UI', monospace;
         }
-        .q-cond, .q-condition {
+
+        .q-cond,
+        .q-condition {
             font-size: 0.76rem;
             color: #991b1b;
             background: #fee2e2;
@@ -470,12 +559,15 @@
             margin-top: 4px;
             display: inline-block;
         }
-        .question-title, .q-text {
+
+        .question-title,
+        .q-text {
             font-size: 0.90rem;
             font-weight: 700;
             color: var(--slate-900);
             line-height: 1.45;
         }
+
         .question-hint {
             font-size: 0.80rem;
             color: var(--slate-500);
@@ -489,7 +581,9 @@
             gap: 5px;
             margin-top: 8px;
         }
-        .radio-label, .checkbox-label {
+
+        .radio-label,
+        .checkbox-label {
             display: flex;
             align-items: center;
             gap: 9px;
@@ -500,20 +594,26 @@
             cursor: pointer;
             font-size: 0.85rem;
             color: var(--slate-700);
-            box-shadow: 0 1px 1px rgba(0,0,0,0.03);
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
             transition: all 0.1s;
         }
-        .radio-label:hover, .checkbox-label:hover {
+
+        .radio-label:hover,
+        .checkbox-label:hover {
             border-color: #94a3b8;
             background: #f8fafc;
         }
-        .radio-label.checked, .checkbox-label.checked {
+
+        .radio-label.checked,
+        .checkbox-label.checked {
             border-color: var(--primary);
             background: #edf3f9;
             font-weight: 600;
             color: var(--primary);
         }
-        .radio-label input[type="radio"], .checkbox-label input[type="checkbox"] {
+
+        .radio-label input[type="radio"],
+        .checkbox-label input[type="checkbox"] {
             margin: 0;
             accent-color: var(--primary);
             cursor: pointer;
@@ -526,6 +626,7 @@
             margin-top: 8px;
             flex-wrap: wrap;
         }
+
         .likert-btn {
             flex: 1;
             min-width: 58px;
@@ -535,22 +636,32 @@
             background: linear-gradient(180deg, #ffffff 0%, #f4f4f4 100%);
             text-align: center;
             cursor: pointer;
-            box-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0,0,0,0.05);
+            box-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.05);
             transition: all 0.1s;
         }
+
         .likert-btn:hover {
             border-color: #7eb4ea;
             background: #ebf4fc;
         }
+
         .likert-btn.checked {
             background: linear-gradient(180deg, #002d6e 0%, #001a44 100%);
             color: #ffffff;
             border-color: #001230;
             font-weight: 700;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
         }
-        .likert-btn .num { font-size: 0.98rem; font-weight: 700; display: block; }
-        .likert-btn .desc { font-size: 0.70rem; }
+
+        .likert-btn .num {
+            font-size: 0.98rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .likert-btn .desc {
+            font-size: 0.70rem;
+        }
 
         /* 4. Nút Bấm Cơ Học Nổi Xúc Giác (Tactile Desktop Buttons - QGIS Run/Close Style) */
         .submit-bar {
@@ -559,6 +670,7 @@
             margin-top: 16px;
             padding: 0 16px;
         }
+
         .btn-bottom-primary {
             flex: 1.5;
             background: linear-gradient(180deg, #003682 0%, #002460 50%, #001844 100%);
@@ -581,15 +693,18 @@
             transition: all 0.08s ease-in-out;
             user-select: none;
         }
+
         .btn-bottom-primary:hover {
             background: linear-gradient(180deg, #0045a8 0%, #003080 50%, #001f58 100%);
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 4px rgba(0, 32, 96, 0.3);
         }
+
         .btn-bottom-primary:active {
             background: #001844;
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
             transform: translateY(1px);
         }
+
         .btn-bottom-secondary {
             flex: 1;
             background: linear-gradient(180deg, #ffffff 0%, #f4f4f4 45%, #e5e5e5 100%);
@@ -610,12 +725,14 @@
             transition: all 0.08s ease-in-out;
             user-select: none;
         }
+
         .btn-bottom-secondary:hover {
             background: linear-gradient(180deg, #f7fafd 0%, #e8f2fa 45%, #d6e8f7 100%);
             border-color: #7eb4ea;
             color: #000000;
             box-shadow: inset 0 1px 0 #ffffff, 0 1px 3px rgba(0, 120, 215, 0.22);
         }
+
         .btn-bottom-secondary:active {
             background: linear-gradient(180deg, #cce4f7 0%, #b8dcf9 100%);
             border-color: #4b91d8;
@@ -631,6 +748,7 @@
             padding: 4px 16px 10px 16px;
             margin-bottom: 12px;
         }
+
         .jump-btn {
             background: linear-gradient(180deg, #ffffff 0%, #ececec 100%);
             border: 1px solid #b8b8b8;
@@ -642,27 +760,32 @@
             cursor: pointer;
             white-space: nowrap;
             font-family: inherit;
-            box-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0,0,0,0.06);
+            box-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.06);
             transition: all 0.08s ease-in-out;
             user-select: none;
         }
+
         .jump-btn:hover {
             background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
             color: #166534;
             border-color: #86efac;
         }
+
         .jump-btn.active {
             background: linear-gradient(180deg, #002d72 0%, #001740 100%);
             color: #ffffff !important;
             border-color: #001230;
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 1px 2px rgba(0,0,0,0.2);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         /* 5. QGIS Desktop Dialog Theme (Modal Windows) */
         .modal-overlay {
             display: none;
             position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             background: rgba(30, 41, 59, 0.55);
             z-index: 9999;
             align-items: center;
@@ -670,8 +793,13 @@
             padding: 16px;
             backdrop-filter: blur(3px);
         }
-        .modal-overlay.active { display: flex; }
-        .modal-card, .qgis-dialog-card {
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card,
+        .qgis-dialog-card {
             background: #ececec;
             border: 1px solid #707070;
             border-radius: var(--radius-md);
@@ -680,6 +808,7 @@
             padding: 0 !important;
             width: 100%;
         }
+
         .modal-title {
             font-size: 1.05rem;
             font-weight: 800;
@@ -689,6 +818,7 @@
             border-bottom: 1px solid var(--border);
             padding-bottom: 8px;
         }
+
         .qgis-dialog-titlebar {
             background: linear-gradient(180deg, #f5f7fa 0%, #e1e6eb 100%);
             color: #1e293b;
@@ -703,6 +833,7 @@
             border-bottom: 1px solid #b8b8b8;
             box-shadow: inset 0 1px 0 #ffffff;
         }
+
         .qgis-close-btn {
             background: linear-gradient(180deg, #ffffff 0%, #ececec 100%);
             border: 1px solid #adadad;
@@ -714,11 +845,13 @@
             border-radius: 2px;
             box-shadow: inset 0 1px 0 #ffffff;
         }
+
         .qgis-close-btn:hover {
             background: #dc2626;
             color: #ffffff;
             border-color: #b91c1c;
         }
+
         .qgis-dialog-body {
             padding: 14px 16px 16px 16px;
             background: #ececec;
@@ -738,6 +871,7 @@
             justify-items: center;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
         }
+
         .partner-logo-box {
             display: flex;
             flex-direction: column;
@@ -746,12 +880,14 @@
             text-align: center;
             width: 100%;
         }
+
         .partner-logo-box img {
             height: 42px;
             max-width: 100%;
             object-fit: contain;
-            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.06));
+            filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.06));
         }
+
         .partner-logo-title {
             font-size: 0.68rem;
             font-weight: 800;
@@ -771,6 +907,7 @@
             border-radius: 3px 3px 0 0;
             box-shadow: inset 0 1px 0 #ffffff;
         }
+
         .qgis-tab-btn {
             background: linear-gradient(180deg, #f8f8f8 0%, #ececec 50%, #dddddd 100%);
             border: 1px solid #b4b4b4;
@@ -790,11 +927,13 @@
             box-shadow: inset 0 1px 0 #ffffff;
             user-select: none;
         }
+
         .qgis-tab-btn:hover {
             background: linear-gradient(180deg, #ffffff 0%, #efefef 100%);
             color: var(--primary);
             border-color: #909090;
         }
+
         .qgis-tab-btn.active {
             background: #ffffff !important;
             color: var(--primary) !important;
@@ -805,6 +944,7 @@
             z-index: 3;
             box-shadow: 0 -2px 3px rgba(0, 0, 0, 0.05), inset 0 1px 0 #ffffff;
         }
+
         .qgis-tab-pane {
             background: #ffffff;
             border: 1px solid #a8a8a8;
@@ -833,15 +973,18 @@
             transition: all 0.08s ease-in-out;
             user-select: none;
         }
+
         .qgis-btn-primary:hover {
             background: linear-gradient(180deg, #0045a8 0%, #003080 50%, #001f58 100%);
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 4px rgba(0, 32, 96, 0.3);
         }
+
         .qgis-btn-primary:active {
             background: #001844;
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
             transform: translateY(1px);
         }
+
         .qgis-btn-secondary {
             background: linear-gradient(180deg, #ffffff 0%, #f4f4f4 45%, #e5e5e5 100%);
             border: 1px solid #adadad;
@@ -857,12 +1000,14 @@
             transition: all 0.08s ease-in-out;
             user-select: none;
         }
+
         .qgis-btn-secondary:hover {
             background: linear-gradient(180deg, #f7fafd 0%, #e8f2fa 45%, #d6e8f7 100%);
             border-color: #7eb4ea;
             color: #000000;
             box-shadow: inset 0 1px 0 #ffffff, 0 1px 3px rgba(0, 120, 215, 0.22);
         }
+
         .qgis-btn-secondary:active {
             background: linear-gradient(180deg, #cce4f7 0%, #b8dcf9 100%);
             border-color: #4b91d8;
@@ -879,11 +1024,14 @@
             background: #ffffff;
             border: 1px solid var(--border);
         }
-        .report-table th, .report-table td {
+
+        .report-table th,
+        .report-table td {
             border: 1px solid var(--border);
             padding: 7px 10px;
             text-align: left;
         }
+
         .report-table th {
             background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
             color: var(--slate-800);
@@ -893,12 +1041,15 @@
             box-shadow: inset 0 1px 0 #ffffff;
             letter-spacing: 0.2px;
         }
+
         .report-table tr:nth-child(even) td {
             background: #f9fafb;
         }
+
         .report-table tr:hover td {
             background: #edf4fb;
         }
+
         .stat-badge {
             display: inline-block;
             padding: 2px 7px;
@@ -906,9 +1057,24 @@
             font-size: 0.74rem;
             font-weight: 700;
         }
-        .stat-badge.pass { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-        .stat-badge.pending { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
-        .stat-badge.target { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+
+        .stat-badge.pass {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .stat-badge.pending {
+            background: #fef9c3;
+            color: #854d0e;
+            border: 1px solid #fef08a;
+        }
+
+        .stat-badge.target {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
 
         /* Footer Card */
         .footer-official {
@@ -923,20 +1089,24 @@
             line-height: 1.5;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
         }
+
         .footer-official .f-company {
             font-weight: 700;
             color: var(--slate-800);
             text-transform: uppercase;
         }
+
         .footer-official .f-links {
             margin-top: 6px;
         }
+
         .footer-official .f-links a {
             color: var(--primary);
             text-decoration: none;
             margin: 0 8px;
             font-weight: 600;
         }
+
         .footer-official .f-links a:hover {
             text-decoration: underline;
         }
@@ -944,15 +1114,18 @@
         .question-card.answered {
             border-left: 4px solid #15803d !important;
         }
+
         .question-card.unanswered-highlight {
             border-left: 4px solid #d97706 !important;
             background: #fffbeb !important;
         }
+
         .jump-btn.sec-complete {
             background: #dcfce7 !important;
             border-color: #86efac !important;
             color: #166534 !important;
         }
+
         .jump-btn.active.sec-complete {
             background: #15803d !important;
             color: #ffffff !important;
@@ -960,29 +1133,116 @@
 
         /* Mobile Optimization */
         @media (max-width: 768px) {
-            html, body { max-width: 100%; overflow-x: hidden; padding: 0; background-color: var(--bg-desktop); }
-            .container { border: none; border-radius: 0; box-shadow: none; width: 100%; }
-            .header-official, .view-switcher-bar, .main-content, .footer-official { margin: 0; }
+
+            html,
+            body {
+                max-width: 100%;
+                overflow-x: hidden;
+                padding: 0;
+                background-color: var(--bg-desktop);
+            }
+
+            .container {
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+                width: 100%;
+            }
+
+            .header-official,
+            .view-switcher-bar,
+            .main-content,
+            .footer-official {
+                margin: 0;
+            }
+
             .top-navbar {
                 flex-direction: column;
                 gap: 6px;
                 text-align: center;
                 padding: 8px 10px;
             }
-            .top-navbar > div { flex-wrap: wrap; justify-content: center; gap: 6px; }
-            .header-official { padding: 14px 10px 12px 10px; }
-            .header-official .org-title { font-size: 0.92rem; }
-            .header-official .group-title { font-size: 1.05rem; line-height: 1.3; }
-            .header-official .cert-code { font-size: 0.78rem; }
-            .meta-table-box { grid-template-columns: 1fr; gap: 6px; padding: 10px 12px; }
-            .meta-table-item { flex-direction: column; gap: 2px; border-bottom: 1px dashed var(--slate-200); padding-bottom: 4px; }
-            .view-switcher-bar { padding: 4px 6px 0 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
-            .view-tab-btn { padding: 9px 12px; font-size: 0.80rem; white-space: nowrap; flex-shrink: 0; }
-            .main-content { padding: 8px 6px 20px 6px; }
-            .summary-box { padding: 10px; margin-bottom: 10px; }
-            .summary-header { flex-direction: column; align-items: flex-start; gap: 4px; }
-            .tool-tabs-nav { flex-wrap: nowrap !important; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; gap: 6px; }
-            .tool-tab { white-space: nowrap; flex-shrink: 0; padding: 8px 12px; font-size: 0.82rem; }
+
+            .top-navbar>div {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 6px;
+            }
+
+            .header-official {
+                padding: 14px 10px 12px 10px;
+            }
+
+            .header-official .org-title {
+                font-size: 0.92rem;
+            }
+
+            .header-official .group-title {
+                font-size: 1.05rem;
+                line-height: 1.3;
+            }
+
+            .header-official .cert-code {
+                font-size: 0.78rem;
+            }
+
+            .meta-table-box {
+                grid-template-columns: 1fr;
+                gap: 6px;
+                padding: 10px 12px;
+            }
+
+            .meta-table-item {
+                flex-direction: column;
+                gap: 2px;
+                border-bottom: 1px dashed var(--slate-200);
+                padding-bottom: 4px;
+            }
+
+            .view-switcher-bar {
+                padding: 4px 6px 0 6px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                flex-wrap: nowrap;
+            }
+
+            .view-tab-btn {
+                padding: 9px 12px;
+                font-size: 0.80rem;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+
+            .main-content {
+                padding: 8px 6px 20px 6px;
+            }
+
+            .summary-box {
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+
+            .summary-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .tool-tabs-nav {
+                flex-wrap: nowrap !important;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 4px;
+                gap: 6px;
+            }
+
+            .tool-tab {
+                white-space: nowrap;
+                flex-shrink: 0;
+                padding: 8px 12px;
+                font-size: 0.82rem;
+            }
+
             .section-jump-nav {
                 position: sticky;
                 top: 0;
@@ -995,28 +1255,97 @@
                 gap: 6px !important;
                 border-bottom: 1px solid #cbd5e1;
             }
-            .jump-btn { white-space: nowrap; flex-shrink: 0; padding: 7px 11px !important; font-size: 0.80rem !important; }
-            .form-section { margin: 0 0 10px 0; }
-            .section-header { flex-direction: column; align-items: flex-start; gap: 4px; font-size: 0.84rem; padding: 10px 12px; }
-            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; gap: 10px; padding: 10px 12px 0 12px; }
-            .question-card { margin: 0 4px 12px 4px; padding: 12px !important; }
-            .question-text { font-size: 0.96rem !important; line-height: 1.48 !important; }
-            .radio-grid, .checkbox-grid, .options-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
-            .form-control, select.form-control {
+
+            .jump-btn {
+                white-space: nowrap;
+                flex-shrink: 0;
+                padding: 7px 11px !important;
+                font-size: 0.80rem !important;
+            }
+
+            .form-section {
+                margin: 0 0 10px 0;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+                font-size: 0.84rem;
+                padding: 10px 12px;
+            }
+
+            .grid-2,
+            .grid-3,
+            .grid-4 {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                padding: 10px 12px 0 12px;
+            }
+
+            .question-card {
+                margin: 0 4px 12px 4px;
+                padding: 12px !important;
+            }
+
+            .question-text {
+                font-size: 0.96rem !important;
+                line-height: 1.48 !important;
+            }
+
+            .radio-grid,
+            .checkbox-grid,
+            .options-grid {
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+            }
+
+            .form-control,
+            select.form-control {
                 font-size: 16px !important;
                 min-height: 44px;
             }
-            textarea.form-control { font-size: 16px !important; min-height: 88px; }
-            .radio-label, .checkbox-label { min-height: 44px; font-size: 0.90rem; padding: 8px 10px !important; }
-            .submit-bar { flex-direction: column; padding: 0 6px; gap: 8px; }
-            .btn-bottom-primary, .btn-bottom-secondary { width: 100%; min-height: 48px; font-size: 0.92rem; }
-            .modal-card, .qgis-dialog-card {
+
+            textarea.form-control {
+                font-size: 16px !important;
+                min-height: 88px;
+            }
+
+            .radio-label,
+            .checkbox-label {
+                min-height: 44px;
+                font-size: 0.90rem;
+                padding: 8px 10px !important;
+            }
+
+            .submit-bar {
+                flex-direction: column;
+                padding: 0 6px;
+                gap: 8px;
+            }
+
+            .btn-bottom-primary,
+            .btn-bottom-secondary {
+                width: 100%;
+                min-height: 48px;
+                font-size: 0.92rem;
+            }
+
+            .modal-card,
+            .qgis-dialog-card {
                 width: 96vw !important;
                 max-width: 96vw !important;
                 max-height: 92vh !important;
             }
-            .report-table { font-size: 0.78rem; }
-            .report-table th, .report-table td { padding: 6px 8px; }
+
+            .report-table {
+                font-size: 0.78rem;
+            }
+
+            .report-table th,
+            .report-table td {
+                padding: 6px 8px;
+            }
         }
 
         /* Chế độ bảo mật nghiêm ngặt cho tài khoản Chỉ Xem (View-Only Lock) */
@@ -1026,6 +1355,7 @@
             -ms-user-select: none !important;
             user-select: none !important;
         }
+
         body.viewer-locked-mode * {
             -webkit-user-select: none !important;
             -moz-user-select: none !important;
@@ -1033,6 +1363,7 @@
             user-select: none !important;
             -webkit-touch-callout: none !important;
         }
+
         body.viewer-locked-mode a[href*="/api/export/excel"],
         body.viewer-locked-mode a[href*="/pdf"],
         body.viewer-locked-mode .summary-link,
@@ -1041,6 +1372,7 @@
         body.viewer-locked-mode button[onclick="manualSaveDraft()"] {
             display: none !important;
         }
+
         @media print {
             body.viewer-locked-mode {
                 display: none !important;
@@ -1048,832 +1380,1056 @@
         }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <!-- Top Navbar -->
-    <div class="top-navbar">
-        <div>
-            <i class="fa-solid fa-seedling" style="color: #4ade80;"></i>
-            <strong>DAKMAN CƯ M'GAR</strong> — Hệ thống khảo sát & đánh giá cuối kỳ dự án (2021–2026)
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <button type="button" id="btnInstallPwa" onclick="installPwaApp()" style="background: #15803d; color: #fff; border: none; padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 700; cursor: pointer;" title="Cài đặt thành ứng dụng trên màn hình chính điện thoại">
-                <i class="fa-solid fa-mobile-screen-button"></i> Cài App
-            </button>
-            <button type="button" id="btnAdminStaffManage" onclick="openStaffModal()" style="display: none; background: #dc2626; color: #fff; border: none; padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 700; cursor: pointer;">
-                <i class="fa-solid fa-users-gear"></i> Cấp TK Nhân Viên (Zalo)
-            </button>
-            <span id="userSessionBadge" class="user-tag" onclick="showLoginModal()" style="cursor: pointer;" title="Nhấp để chuyển đổi tài khoản">
-                <i class="fa-solid fa-user"></i> <span id="badgeUserName">Đang xác thực...</span>
-            </span>
-            <button type="button" onclick="logoutSystem()" style="background: var(--slate-700); color: #fff; border: none; padding: 4px 8px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; cursor: pointer;" title="Đăng xuất khỏi hệ thống">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
-            </button>
-            <span id="serverBadge" style="color: #4ade80; font-size: 0.78rem;">
-                <i class="fa-solid fa-circle-check"></i> Trực tuyến • Đã kết nối máy chủ
-            </span>
-        </div>
-    </div>
-
-    <!-- Official Header -->
-    <div class="header-official">
-        <div class="org-title">CÔNG TY TNHH DAKMAN VIỆT NAM — BAN QUẢN LÝ DỰ ÁN</div>
-        <div class="group-title">DỰ ÁN CẢNH QUAN CÀ PHÊ BỀN VỮNG HUYỆN CƯ M'GAR</div>
-        <div class="cert-code">Đợt Đánh Giá Cuối Kỳ (Final Evaluation: 2021 – 2026) | Tài Trợ: IDH & JDE Peet's</div>
-        <div class="divider-line"></div>
-        <h1>PHIẾU THU THẬP THÔNG TIN VÀ PHỎNG VẤN HIỆN TRƯỜNG</h1>
-        <div class="doc-subtitle">Bộ công cụ khảo sát toàn diện (384 câu hỏi) thu thập dữ liệu kỹ thuật, kinh tế, xã hội, môi trường và mức độ sẵn sàng tuân thủ quy định EUDR</div>
-
-        <div class="meta-table-box">
-            <div class="meta-table-item">
-                <strong>Đơn vị điều tra:</strong>
-                <span>Công ty TNHH Dịch vụ và Tư vấn Tân Cao Nguyên</span>
+    <div class="container">
+        <!-- Top Navbar -->
+        <div class="top-navbar">
+            <div>
+                <i class="fa-solid fa-seedling" style="color: #4ade80;"></i>
+                <strong>DAKMAN CƯ M'GAR</strong> — Hệ thống khảo sát & đánh giá cuối kỳ dự án (2021–2026)
             </div>
-            <div class="meta-table-item">
-                <strong>Địa bàn thực hiện:</strong>
-                <span>Xã Ea Kiết, Xã Ea Tar, Xã Cư Dliê M'nông (Huyện Cư M'gar)</span>
-            </div>
-            <div class="meta-table-item">
-                <strong>Quy mô tham vấn:</strong>
-                <span>312 đối tượng (220 hộ nông dân, 12 thôn, 9 mô hình, ToT, HTX, Chính quyền)</span>
-            </div>
-            <div class="meta-table-item">
-                <strong>Thời gian thực hiện:</strong>
-                <span>01/11/2026 – 30/11/2026 (Theo Kế hoạch V5 phê duyệt)</span>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <button type="button" id="btnInstallPwa" onclick="installPwaApp()"
+                    style="background: #15803d; color: #fff; border: none; padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 700; cursor: pointer;"
+                    title="Cài đặt thành ứng dụng trên màn hình chính điện thoại">
+                    <i class="fa-solid fa-mobile-screen-button"></i> Cài App
+                </button>
+                <button type="button" id="btnAdminStaffManage" onclick="openStaffModal()"
+                    style="display: none; background: #dc2626; color: #fff; border: none; padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 700; cursor: pointer;">
+                    <i class="fa-solid fa-users-gear"></i> Cấp TK Nhân Viên (Zalo)
+                </button>
+                <span id="userSessionBadge" class="user-tag" onclick="showLoginModal()" style="cursor: pointer;"
+                    title="Nhấp để chuyển đổi tài khoản">
+                    <i class="fa-solid fa-user"></i> <span id="badgeUserName">Đang xác thực...</span>
+                </span>
+                <button type="button" onclick="logoutSystem()"
+                    style="background: var(--slate-700); color: #fff; border: none; padding: 4px 8px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; cursor: pointer;"
+                    title="Đăng xuất khỏi hệ thống">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
+                </button>
+                <span id="serverBadge" style="color: #4ade80; font-size: 0.78rem;">
+                    <i class="fa-solid fa-circle-check"></i> Trực tuyến • Đã kết nối máy chủ
+                </span>
             </div>
         </div>
-    </div>
 
-    <!-- View Switcher Bar (Tabs chính) -->
-    <div class="view-switcher-bar">
-        <button type="button" class="view-tab-btn active" id="btnViewSurvey" onclick="switchMainView('survey')">
-            <i class="fa-solid fa-clipboard-list"></i> 1. Phiếu Khảo Sát Hiện Trường
-        </button>
-        <button type="button" class="view-tab-btn" id="btnViewDashboard" onclick="switchMainView('dashboard')">
-            <i class="fa-solid fa-chart-pie"></i> 2. Báo Cáo Tiến Độ (Dashboard)
-        </button>
-        <button type="button" class="view-tab-btn" id="btnViewSchedule" onclick="switchMainView('schedule')">
-            <i class="fa-solid fa-calendar-days"></i> 3. Kế Hoạch 22 Hoạt Động
-        </button>
-        <button type="button" class="view-tab-btn" id="btnViewHistory" onclick="switchMainView('history')">
-            <i class="fa-solid fa-database"></i> 4. Dữ Liệu Đã Nộp
-        </button>
-    </div>
+        <!-- Official Header -->
+        <div class="header-official">
+            <div class="org-title">CÔNG TY TNHH DAKMAN VIỆT NAM — BAN QUẢN LÝ DỰ ÁN</div>
+            <div class="group-title">DỰ ÁN CẢNH QUAN CÀ PHÊ BỀN VỮNG HUYỆN CƯ M'GAR</div>
+            <div class="cert-code">Đợt Đánh Giá Cuối Kỳ (Final Evaluation: 2021 – 2026) | Tài Trợ: IDH & JDE Peet's
+            </div>
+            <div class="divider-line"></div>
+            <h1>PHIẾU THU THẬP THÔNG TIN VÀ PHỎNG VẤN HIỆN TRƯỜNG</h1>
+            <div class="doc-subtitle">Bộ công cụ khảo sát toàn diện (384 câu hỏi) thu thập dữ liệu kỹ thuật, kinh tế, xã
+                hội, môi trường và mức độ sẵn sàng tuân thủ quy định EUDR</div>
 
-    <!-- MAIN VIEW CONTENT -->
-    <div class="main-content">
-
-        <!-- ======================================================== -->
-        <!-- VIEW 1: FORM PHỎNG VẤN TRỰC TUYẾN                         -->
-        <!-- ======================================================== -->
-        <div id="view-survey" class="view-pane">
-            
-            <!-- Cảnh Báo Chế Độ Chỉ Xem -->
-            <div id="viewerAlertBanner" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 14px; font-size: 0.88rem; color: #92400e;">
-                <div style="font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-lock"></i> CHẾ ĐỘ CHỈ XEM (VIEW-ONLY)
+            <div class="meta-table-box">
+                <div class="meta-table-item">
+                    <strong>Đơn vị điều tra:</strong>
+                    <span>Công ty TNHH Dịch vụ và Tư vấn Tân Cao Nguyên</span>
                 </div>
-                <div style="margin-top: 4px; font-size: 0.84rem;">
-                    Bạn đang đăng nhập dưới quyền <strong>Khách Giám Sát (Chỉ Xem)</strong>. Bạn có toàn quyền theo dõi Dashboard, Lịch trình 22 hoạt động và Danh sách dữ liệu, nhưng không thể tạo mới hoặc chỉnh sửa phiếu khảo sát.
+                <div class="meta-table-item">
+                    <strong>Địa bàn thực hiện:</strong>
+                    <span>Xã Ea Kiết, Xã Ea Tar, Xã Cư Dliê M'nông (Huyện Cư M'gar)</span>
+                </div>
+                <div class="meta-table-item">
+                    <strong>Quy mô tham vấn:</strong>
+                    <span>312 đối tượng (220 hộ nông dân, 12 thôn, 9 mô hình, ToT, HTX, Chính quyền)</span>
+                </div>
+                <div class="meta-table-item">
+                    <strong>Thời gian thực hiện:</strong>
+                    <span>01/11/2026 – 30/11/2026 (Theo Kế hoạch V5 phê duyệt)</span>
                 </div>
             </div>
+        </div>
 
-            <!-- Tool Selector Box -->
-            <div class="summary-box">
-                <div class="summary-header">
-                    <div class="summary-title" id="currentToolHeading">CÔNG CỤ 1: P1 — PHIẾU PHỎNG VẤN HỘ NÔNG DÂN</div>
-                    <span id="draftIndicator" style="font-size: 0.8rem; color: #15803d; font-weight: 600;">
-                        <i class="fa-solid fa-floppy-disk"></i> Tự động lưu nháp
-                    </span>
+        <!-- View Switcher Bar (Tabs chính) -->
+        <div class="view-switcher-bar">
+            <button type="button" class="view-tab-btn active" id="btnViewSurvey" onclick="switchMainView('survey')">
+                <i class="fa-solid fa-clipboard-list"></i> 1. Phiếu Khảo Sát Hiện Trường
+            </button>
+            <button type="button" class="view-tab-btn" id="btnViewDashboard" onclick="switchMainView('dashboard')">
+                <i class="fa-solid fa-chart-pie"></i> 2. Báo Cáo Tiến Độ (Dashboard)
+            </button>
+            <button type="button" class="view-tab-btn" id="btnViewSchedule" onclick="switchMainView('schedule')">
+                <i class="fa-solid fa-calendar-days"></i> 3. Kế Hoạch 22 Hoạt Động
+            </button>
+            <button type="button" class="view-tab-btn" id="btnViewHistory" onclick="switchMainView('history')">
+                <i class="fa-solid fa-database"></i> 4. Dữ Liệu Đã Nộp
+            </button>
+        </div>
+
+        <!-- MAIN VIEW CONTENT -->
+        <div class="main-content">
+
+            <!-- ======================================================== -->
+            <!-- VIEW 1: FORM PHỎNG VẤN TRỰC TUYẾN                         -->
+            <!-- ======================================================== -->
+            <div id="view-survey" class="view-pane">
+
+                <!-- Cảnh Báo Chế Độ Chỉ Xem -->
+                <div id="viewerAlertBanner"
+                    style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 14px; font-size: 0.88rem; color: #92400e;">
+                    <div style="font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-lock"></i> CHẾ ĐỘ CHỈ XEM (VIEW-ONLY)
+                    </div>
+                    <div style="margin-top: 4px; font-size: 0.84rem;">
+                        Bạn đang đăng nhập dưới quyền <strong>Khách Giám Sát (Chỉ Xem)</strong>. Bạn có toàn quyền theo
+                        dõi Dashboard, Lịch trình 22 hoạt động và Danh sách dữ liệu, nhưng không thể tạo mới hoặc chỉnh
+                        sửa phiếu khảo sát.
+                    </div>
                 </div>
 
-                <div class="tool-tabs-nav">
-                    <button type="button" class="tool-tab active" onclick="selectTool('P1')" id="toolBtn-P1">P1: Nông Dân (220 phiếu)</button>
-                    <button type="button" class="tool-tab" onclick="selectTool('KIP')" id="toolBtn-KIP">KIP: Nhóm Thôn (12 cuộc)</button>
-                    <button type="button" class="tool-tab" onclick="selectTool('MH')" id="toolBtn-MH">MH: 9 Mô Hình</button>
-                    <button type="button" class="tool-tab" onclick="selectTool('NT')" id="toolBtn-NT">NT: Nhóm Trưởng ToT (3)</button>
-                    <button type="button" class="tool-tab" onclick="selectTool('SDM')" id="toolBtn-SDM">SDM: Tổ Dịch Vụ (1)</button>
-                    <button type="button" class="tool-tab" onclick="selectTool('HTX')" id="toolBtn-HTX">HTX: Ban Giám Đốc (3)</button>
-                    <button type="button" class="tool-tab" onclick="selectTool('CQ')" id="toolBtn-CQ">CQ: Chính Quyền (6)</button>
-                    <button type="button" class="tool-tab" onclick="selectTool('TT')" id="toolBtn-TT">TT: Nhà Tài Trợ (2)</button>
+                <!-- Tool Selector Box -->
+                <div class="summary-box">
+                    <div class="summary-header">
+                        <div class="summary-title" id="currentToolHeading">CÔNG CỤ 1: P1 — PHIẾU PHỎNG VẤN HỘ NÔNG DÂN
+                        </div>
+                        <span id="draftIndicator" style="font-size: 0.8rem; color: #15803d; font-weight: 600;">
+                            <i class="fa-solid fa-floppy-disk"></i> Tự động lưu nháp
+                        </span>
+                    </div>
+
+                    <div class="tool-tabs-nav">
+                        <button type="button" class="tool-tab active" onclick="selectTool('P1')" id="toolBtn-P1">P1:
+                            Nông Dân (220 phiếu)</button>
+                        <button type="button" class="tool-tab" onclick="selectTool('KIP')" id="toolBtn-KIP">KIP: Nhóm
+                            Thôn (12 cuộc)</button>
+                        <button type="button" class="tool-tab" onclick="selectTool('MH')" id="toolBtn-MH">MH: 9 Mô
+                            Hình</button>
+                        <button type="button" class="tool-tab" onclick="selectTool('NT')" id="toolBtn-NT">NT: Nhóm
+                            Trưởng ToT (3)</button>
+                        <button type="button" class="tool-tab" onclick="selectTool('SDM')" id="toolBtn-SDM">SDM: Tổ Dịch
+                            Vụ (1)</button>
+                        <button type="button" class="tool-tab" onclick="selectTool('HTX')" id="toolBtn-HTX">HTX: Ban
+                            Giám Đốc (3)</button>
+                        <button type="button" class="tool-tab" onclick="selectTool('CQ')" id="toolBtn-CQ">CQ: Chính
+                            Quyền (6)</button>
+                        <button type="button" class="tool-tab" onclick="selectTool('TT')" id="toolBtn-TT">TT: Nhà Tài
+                            Trợ (2)</button>
+                    </div>
                 </div>
+
+                <!-- Survey Form -->
+                <form id="onlineSurveyForm" onsubmit="handleSurveySubmit(event)">
+                    <!-- Section 1: Thông tin hành chính & Định vị -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <span>I. THÔNG TIN HÀNH CHÍNH & ĐỊNH VỊ KHẢO SÁT HIỆN TRƯỜNG</span>
+                            <span class="sub-note">(*) Bắt buộc ghi nhận chính xác</span>
+                        </div>
+
+                        <div class="grid-4">
+                            <div class="form-group">
+                                <label>Mã Phiếu / Mã Vườn PPI <span class="req">*</span></label>
+                                <input type="text" class="form-control" id="surveyCodeInput" required
+                                    placeholder="Ví dụ: CDMN_060">
+                            </div>
+                            <div class="form-group">
+                                <label>Địa Bàn Xã <span class="req">*</span></label>
+                                <select class="form-control" id="communeSelect" required>
+                                    <option value="Ea Kiết">Xã Ea Kiết</option>
+                                    <option value="Ea Tar">Xã Ea Tar</option>
+                                    <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Thôn / Buôn</label>
+                                <input type="text" class="form-control" id="hamletInput"
+                                    placeholder="Ví dụ: Buôn Thung">
+                            </div>
+                            <div class="form-group">
+                                <label>Họ Tên Người Được Phỏng Vấn <span class="req">*</span></label>
+                                <input type="text" class="form-control" id="respondentNameInput" required
+                                    placeholder="Họ và tên chủ hộ/đại diện">
+                            </div>
+                        </div>
+
+                        <div class="grid-4">
+                            <div class="form-group">
+                                <label>Mã Điều Tra Viên (ID)</label>
+                                <input type="text" class="form-control" id="surveyorIdInput" readonly
+                                    style="background: var(--slate-100); font-weight: 700; color: var(--primary);">
+                            </div>
+                            <div class="form-group">
+                                <label>Họ Tên Điều Tra Viên</label>
+                                <input type="text" class="form-control" id="surveyorNameInput" readonly
+                                    style="background: var(--slate-100);">
+                            </div>
+                            <div class="form-group">
+                                <label>Ngày Thực Hiện <span class="req">*</span></label>
+                                <input type="date" class="form-control" id="surveyDateInput" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Tọa Độ GPS Vườn / Nhà</label>
+                                <div style="display: flex; gap: 6px;">
+                                    <input type="text" class="form-control" id="gpsInput" placeholder="Vĩ độ, Kinh độ">
+                                    <button type="button" onclick="autoCaptureGPS()"
+                                        style="background: #15803d; color: #fff; border: none; padding: 0 12px; border-radius: var(--radius-sm); cursor: pointer; white-space: nowrap; font-size: 0.82rem; font-weight: 600;"
+                                        title="Lấy GPS từ điện thoại">
+                                        <i class="fa-solid fa-location-crosshairs"></i> GPS
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ảnh Chụp Đầu Tiên Cùng Chủ Hộ (Tự Động Đóng Watermark Thời Gian & Vị Trí) -->
+                        <div class="form-group"
+                            style="margin-top: 12px; padding: 12px; background: #f8f9fa; border: 1px solid #d0d0d0; border-radius: var(--radius-sm);">
+                            <label
+                                style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                                <span><i class="fa-solid fa-camera" style="color: #15803d;"></i> Ảnh Chụp Đầu Tiên Cùng
+                                    Chủ Hộ (Tự động đóng Watermark Thời gian & Vị trí GPS)</span>
+                                <span id="photoWatermarkStatus"
+                                    style="font-size: 0.78rem; font-weight: 600; color: #64748b;">Chưa chụp ảnh</span>
+                            </label>
+                            <input type="file" id="householdPhotoInput" accept="image/*" capture="environment"
+                                style="display: none;" onchange="handlePhotoSelected(event)">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <button type="button" onclick="triggerHouseholdPhotoCapture()"
+                                    style="background: linear-gradient(180deg, #ffffff 0%, #e6e6e6 100%); color: #1e293b; border: 1px solid #b0b0b0; padding: 6px 14px; border-radius: 3px; cursor: pointer; font-size: 0.84rem; font-weight: 600; box-shadow: 0 1px 1px rgba(0,0,0,0.06);">
+                                    <i class="fa-solid fa-camera-retro" style="color: #15803d;"></i> Chụp / Chọn Ảnh Chủ
+                                    Hộ
+                                </button>
+                                <button type="button" id="btnClearHouseholdPhoto" onclick="clearHouseholdPhoto()"
+                                    style="display: none; background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 0.82rem; font-weight: 600;">
+                                    <i class="fa-solid fa-trash-can"></i> Xóa ảnh
+                                </button>
+                                <span style="font-size: 0.76rem; color: #64748b;">Hệ thống tự lấy GPS hiện tại (nếu
+                                    trống) và đóng dấu Thời gian + Tọa độ + Mã phiếu lên góc ảnh.</span>
+                            </div>
+                            <div id="photoPreviewBox"
+                                style="display: none; margin-top: 10px; background: #ffffff; border: 1px solid #d0d0d0; padding: 8px; border-radius: 3px;">
+                                <img id="photoPreviewImg" src="" alt="Ảnh hiện trường có watermark"
+                                    style="max-width: 100%; max-height: 360px; display: block; border: 1px solid #e2e8f0; border-radius: 2px;">
+                                <div id="photoWatermarkMeta"
+                                    style="margin-top: 6px; font-size: 0.78rem; color: #334155; font-family: monospace;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress & Missing Question Check Bar -->
+                    <div id="surveyProgressBar"
+                        style="background: #ffffff; border: 1px solid #d0d0d0; border-radius: 3px; padding: 8px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <div style="flex: 1; min-width: 180px;">
+                            <div
+                                style="display: flex; justify-content: space-between; font-size: 0.80rem; font-weight: 700; color: #1e293b; margin-bottom: 4px;">
+                                <span id="surveyProgressText">Tiến độ: 0 / 0 câu hỏi</span>
+                                <span id="surveyProgressPct" style="color: #15803d;">0%</span>
+                            </div>
+                            <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                                <div id="surveyProgressFill"
+                                    style="height: 100%; width: 0%; background: #15803d; transition: width 0.2s;"></div>
+                            </div>
+                        </div>
+                        <button type="button" onclick="jumpToFirstUnanswered()"
+                            style="background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; padding: 6px 10px; border-radius: 3px; font-size: 0.78rem; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                            <i class="fa-solid fa-magnifying-glass"></i> Tìm câu chưa điền
+                        </button>
+                    </div>
+
+                    <!-- Section Fast-Jump Navigation -->
+                    <div class="section-jump-nav" id="sectionJumpNav">
+                        <!-- Rendered by JS -->
+                    </div>
+
+                    <!-- Questions Container -->
+                    <div id="surveyQuestionsBox">
+                        <div style="text-align: center; padding: 40px; color: var(--slate-500);">
+                            <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                            <p style="margin-top: 10px;">Đang tải danh mục câu hỏi...</p>
+                        </div>
+                    </div>
+
+                    <!-- Section Prev/Next Bar -->
+                    <div id="sectionStepNav"
+                        style="display: none; justify-content: space-between; gap: 10px; margin: 10px 0 14px 0;">
+                        <button type="button" id="btnPrevSection" onclick="stepSection(-1)" class="qgis-btn-secondary"
+                            style="flex: 1; min-height: 42px; font-weight: 700;">
+                            <i class="fa-solid fa-arrow-left"></i> Phần trước
+                        </button>
+                        <button type="button" id="btnNextSection" onclick="stepSection(1)" class="qgis-btn-primary"
+                            style="flex: 1; min-height: 42px; font-weight: 700;">
+                            Phần tiếp theo <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- Bottom Submit Bar -->
+                    <div class="submit-bar">
+                        <button type="submit" class="btn-bottom-primary" id="btnSubmitForm">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> GỬI KẾT QUẢ LÊN HỆ THỐNG DAKMAN
+                        </button>
+                        <button type="button" class="btn-bottom-secondary" onclick="manualSaveDraft()">
+                            <i class="fa-solid fa-floppy-disk"></i> LƯU TẠM BẢN NHÁP TRÊN THIẾT BỊ
+                        </button>
+                    </div>
+                </form>
             </div>
 
-            <!-- Survey Form -->
-            <form id="onlineSurveyForm" onsubmit="handleSurveySubmit(event)">
-                <!-- Section 1: Thông tin hành chính & Định vị -->
+            <!-- ======================================================== -->
+            <!-- VIEW 2: BÁO CÁO TIẾN ĐỘ THỰC ĐỊA (DASHBOARD)              -->
+            <!-- ======================================================== -->
+            <div id="view-dashboard" class="view-pane" style="display: none;">
                 <div class="form-section">
                     <div class="section-header">
-                        <span>I. THÔNG TIN HÀNH CHÍNH & ĐỊNH VỊ KHẢO SÁT HIỆN TRƯỜNG</span>
-                        <span class="sub-note">(*) Bắt buộc ghi nhận chính xác</span>
+                        <span>TỔNG HỢP TIẾN ĐỘ THU THẬP THÔNG TIN CUỐI KỲ</span>
+                        <a href="/api/export/excel" class="summary-link"
+                            style="background: #15803d; color: #fff; padding: 5px 12px; border-radius: var(--radius-sm); text-decoration: none;">
+                            <i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo Excel Tổng Hợp (3 Sheet)
+                        </a>
                     </div>
 
-                    <div class="grid-4">
-                        <div class="form-group">
-                            <label>Mã Phiếu / Mã Vườn PPI <span class="req">*</span></label>
-                            <input type="text" class="form-control" id="surveyCodeInput" required placeholder="Ví dụ: CDMN_060">
+                    <!-- 4 KPI Summary Cards -->
+                    <div class="grid-4" style="margin-bottom: 20px;">
+                        <div
+                            style="background: #ffffff; border: 1px solid var(--border); border-left: 4px solid var(--primary); padding: 14px 16px; border-radius: var(--radius-sm); box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                            <div
+                                style="font-size: 0.78rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">
+                                Tổng Mục Tiêu</div>
+                            <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-top: 4px;">
+                                312</div>
+                            <div style="font-size: 0.78rem; color: var(--slate-600);">Đối tượng tham vấn</div>
                         </div>
-                        <div class="form-group">
-                            <label>Địa Bàn Xã <span class="req">*</span></label>
-                            <select class="form-control" id="communeSelect" required>
-                                <option value="Ea Kiết">Xã Ea Kiết</option>
-                                <option value="Ea Tar">Xã Ea Tar</option>
-                                <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Thôn / Buôn</label>
-                            <input type="text" class="form-control" id="hamletInput" placeholder="Ví dụ: Buôn Thung">
-                        </div>
-                        <div class="form-group">
-                            <label>Họ Tên Người Được Phỏng Vấn <span class="req">*</span></label>
-                            <input type="text" class="form-control" id="respondentNameInput" required placeholder="Họ và tên chủ hộ/đại diện">
-                        </div>
-                    </div>
 
-                    <div class="grid-4">
-                        <div class="form-group">
-                            <label>Mã Điều Tra Viên (ID)</label>
-                            <input type="text" class="form-control" id="surveyorIdInput" readonly style="background: var(--slate-100); font-weight: 700; color: var(--primary);">
+                        <div
+                            style="background: #ffffff; border: 1px solid var(--border); border-left: 4px solid #15803d; padding: 14px 16px; border-radius: var(--radius-sm); box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                            <div
+                                style="font-size: 0.78rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">
+                                Đã Hoàn Thành</div>
+                            <div id="statDashCompleted"
+                                style="font-size: 1.8rem; font-weight: 800; color: #15803d; margin-top: 4px;">0</div>
+                            <div style="font-size: 0.78rem; color: var(--slate-600);">Phiếu lưu trên VPS</div>
                         </div>
-                        <div class="form-group">
-                            <label>Họ Tên Điều Tra Viên</label>
-                            <input type="text" class="form-control" id="surveyorNameInput" readonly style="background: var(--slate-100);">
-                        </div>
-                        <div class="form-group">
-                            <label>Ngày Thực Hiện <span class="req">*</span></label>
-                            <input type="date" class="form-control" id="surveyDateInput" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Tọa Độ GPS Vườn / Nhà</label>
-                            <div style="display: flex; gap: 6px;">
-                                <input type="text" class="form-control" id="gpsInput" placeholder="Vĩ độ, Kinh độ">
-                                <button type="button" onclick="autoCaptureGPS()" style="background: #15803d; color: #fff; border: none; padding: 0 12px; border-radius: var(--radius-sm); cursor: pointer; white-space: nowrap; font-size: 0.82rem; font-weight: 600;" title="Lấy GPS từ điện thoại">
-                                    <i class="fa-solid fa-location-crosshairs"></i> GPS
-                                </button>
+
+                        <div
+                            style="background: #ffffff; border: 1px solid var(--border); border-left: 4px solid #d97706; padding: 14px 16px; border-radius: var(--radius-sm); box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                            <div
+                                style="font-size: 0.78rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">
+                                Hộ Nông Dân (P1)</div>
+                            <div id="statDashP1"
+                                style="font-size: 1.8rem; font-weight: 800; color: #d97706; margin-top: 4px;">0 / 220
                             </div>
+                            <div style="font-size: 0.78rem; color: var(--slate-600);">Mục tiêu 220 hộ</div>
+                        </div>
+
+                        <div
+                            style="background: #ffffff; border: 1px solid var(--border); border-left: 4px solid #7c3aed; padding: 14px 16px; border-radius: var(--radius-sm); box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                            <div
+                                style="font-size: 0.78rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">
+                                Tỷ Lệ Đạt Được</div>
+                            <div id="statDashPercent"
+                                style="font-size: 1.8rem; font-weight: 800; color: #7c3aed; margin-top: 4px;">0%</div>
+                            <div style="font-size: 0.78rem; color: var(--slate-600);">So với kế hoạch</div>
                         </div>
                     </div>
 
-                    <!-- Ảnh Chụp Đầu Tiên Cùng Chủ Hộ (Tự Động Đóng Watermark Thời Gian & Vị Trí) -->
-                    <div class="form-group" style="margin-top: 12px; padding: 12px; background: #f8f9fa; border: 1px solid #d0d0d0; border-radius: var(--radius-sm);">
-                        <label style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
-                            <span><i class="fa-solid fa-camera" style="color: #15803d;"></i> Ảnh Chụp Đầu Tiên Cùng Chủ Hộ (Tự động đóng Watermark Thời gian & Vị trí GPS)</span>
-                            <span id="photoWatermarkStatus" style="font-size: 0.78rem; font-weight: 600; color: #64748b;">Chưa chụp ảnh</span>
-                        </label>
-                        <input type="file" id="householdPhotoInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoSelected(event)">
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <button type="button" onclick="triggerHouseholdPhotoCapture()" style="background: linear-gradient(180deg, #ffffff 0%, #e6e6e6 100%); color: #1e293b; border: 1px solid #b0b0b0; padding: 6px 14px; border-radius: 3px; cursor: pointer; font-size: 0.84rem; font-weight: 600; box-shadow: 0 1px 1px rgba(0,0,0,0.06);">
-                                <i class="fa-solid fa-camera-retro" style="color: #15803d;"></i> Chụp / Chọn Ảnh Chủ Hộ
-                            </button>
-                            <button type="button" id="btnClearHouseholdPhoto" onclick="clearHouseholdPhoto()" style="display: none; background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 0.82rem; font-weight: 600;">
-                                <i class="fa-solid fa-trash-can"></i> Xóa ảnh
-                            </button>
-                            <span style="font-size: 0.76rem; color: #64748b;">Hệ thống tự lấy GPS hiện tại (nếu trống) và đóng dấu Thời gian + Tọa độ + Mã phiếu lên góc ảnh.</span>
-                        </div>
-                        <div id="photoPreviewBox" style="display: none; margin-top: 10px; background: #ffffff; border: 1px solid #d0d0d0; padding: 8px; border-radius: 3px;">
-                            <img id="photoPreviewImg" src="" alt="Ảnh hiện trường có watermark" style="max-width: 100%; max-height: 360px; display: block; border: 1px solid #e2e8f0; border-radius: 2px;">
-                            <div id="photoWatermarkMeta" style="margin-top: 6px; font-size: 0.78rem; color: #334155; font-family: monospace;"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Progress & Missing Question Check Bar -->
-                <div id="surveyProgressBar" style="background: #ffffff; border: 1px solid #d0d0d0; border-radius: 3px; padding: 8px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                    <div style="flex: 1; min-width: 180px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.80rem; font-weight: 700; color: #1e293b; margin-bottom: 4px;">
-                            <span id="surveyProgressText">Tiến độ: 0 / 0 câu hỏi</span>
-                            <span id="surveyProgressPct" style="color: #15803d;">0%</span>
-                        </div>
-                        <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
-                            <div id="surveyProgressFill" style="height: 100%; width: 0%; background: #15803d; transition: width 0.2s;"></div>
-                        </div>
-                    </div>
-                    <button type="button" onclick="jumpToFirstUnanswered()" style="background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; padding: 6px 10px; border-radius: 3px; font-size: 0.78rem; font-weight: 700; cursor: pointer; white-space: nowrap;">
-                        <i class="fa-solid fa-magnifying-glass"></i> Tìm câu chưa điền
-                    </button>
-                </div>
-
-                <!-- Section Fast-Jump Navigation -->
-                <div class="section-jump-nav" id="sectionJumpNav">
-                    <!-- Rendered by JS -->
-                </div>
-
-                <!-- Questions Container -->
-                <div id="surveyQuestionsBox">
-                    <div style="text-align: center; padding: 40px; color: var(--slate-500);">
-                        <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-                        <p style="margin-top: 10px;">Đang tải danh mục câu hỏi...</p>
-                    </div>
-                </div>
-
-                <!-- Section Prev/Next Bar -->
-                <div id="sectionStepNav" style="display: none; justify-content: space-between; gap: 10px; margin: 10px 0 14px 0;">
-                    <button type="button" id="btnPrevSection" onclick="stepSection(-1)" class="qgis-btn-secondary" style="flex: 1; min-height: 42px; font-weight: 700;">
-                        <i class="fa-solid fa-arrow-left"></i> Phần trước
-                    </button>
-                    <button type="button" id="btnNextSection" onclick="stepSection(1)" class="qgis-btn-primary" style="flex: 1; min-height: 42px; font-weight: 700;">
-                        Phần tiếp theo <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                </div>
-
-                <!-- Bottom Submit Bar -->
-                <div class="submit-bar">
-                    <button type="submit" class="btn-bottom-primary" id="btnSubmitForm">
-                        <i class="fa-solid fa-cloud-arrow-up"></i> GỬI KẾT QUẢ LÊN HỆ THỐNG DAKMAN
-                    </button>
-                    <button type="button" class="btn-bottom-secondary" onclick="manualSaveDraft()">
-                        <i class="fa-solid fa-floppy-disk"></i> LƯU TẠM BẢN NHÁP TRÊN THIẾT BỊ
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- ======================================================== -->
-        <!-- VIEW 2: BÁO CÁO TIẾN ĐỘ THỰC ĐỊA (DASHBOARD)              -->
-        <!-- ======================================================== -->
-        <div id="view-dashboard" class="view-pane" style="display: none;">
-            <div class="form-section">
-                <div class="section-header">
-                    <span>TỔNG HỢP TIẾN ĐỘ THU THẬP THÔNG TIN CUỐI KỲ</span>
-                    <a href="/api/export/excel" class="summary-link" style="background: #15803d; color: #fff; padding: 5px 12px; border-radius: var(--radius-sm); text-decoration: none;">
-                        <i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo Excel Tổng Hợp (3 Sheet)
-                    </a>
-                </div>
-
-                <!-- 4 KPI Summary Cards -->
-                <div class="grid-4" style="margin-bottom: 20px;">
-                    <div style="background: #ffffff; border: 1px solid var(--border); border-left: 4px solid var(--primary); padding: 14px 16px; border-radius: var(--radius-sm); box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">Tổng Mục Tiêu</div>
-                        <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-top: 4px;">312</div>
-                        <div style="font-size: 0.78rem; color: var(--slate-600);">Đối tượng tham vấn</div>
-                    </div>
-
-                    <div style="background: #ffffff; border: 1px solid var(--border); border-left: 4px solid #15803d; padding: 14px 16px; border-radius: var(--radius-sm); box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">Đã Hoàn Thành</div>
-                        <div id="statDashCompleted" style="font-size: 1.8rem; font-weight: 800; color: #15803d; margin-top: 4px;">0</div>
-                        <div style="font-size: 0.78rem; color: var(--slate-600);">Phiếu lưu trên VPS</div>
-                    </div>
-
-                    <div style="background: #ffffff; border: 1px solid var(--border); border-left: 4px solid #d97706; padding: 14px 16px; border-radius: var(--radius-sm); box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">Hộ Nông Dân (P1)</div>
-                        <div id="statDashP1" style="font-size: 1.8rem; font-weight: 800; color: #d97706; margin-top: 4px;">0 / 220</div>
-                        <div style="font-size: 0.78rem; color: var(--slate-600);">Mục tiêu 220 hộ</div>
-                    </div>
-
-                    <div style="background: #ffffff; border: 1px solid var(--border); border-left: 4px solid #7c3aed; padding: 14px 16px; border-radius: var(--radius-sm); box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">Tỷ Lệ Đạt Được</div>
-                        <div id="statDashPercent" style="font-size: 1.8rem; font-weight: 800; color: #7c3aed; margin-top: 4px;">0%</div>
-                        <div style="font-size: 0.78rem; color: var(--slate-600);">So với kế hoạch</div>
-                    </div>
-                </div>
-
-                <!-- Progress by 4 Target Groups -->
-                <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--navy); margin: 20px 0 10px 0; text-transform: uppercase;">
-                    1. Tiến độ theo 4 Nhóm đối tượng tham vấn
-                </h3>
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th>Nhóm Đối Tượng</th>
-                            <th>Mã Công Cụ</th>
-                            <th>Hình Thức Khảo Sát</th>
-                            <th style="text-align: center;">Mục Tiêu</th>
-                            <th style="text-align: center;">Đã Thu</th>
-                            <th style="text-align: center;">Tỷ Lệ %</th>
-                            <th style="text-align: center;">Trạng Thái</th>
-                        </tr>
-                    </thead>
-                    <tbody id="groupProgressTbody">
-                        <!-- Rendered by JS -->
-                    </tbody>
-                </table>
-
-                <!-- Progress by 3 Communes -->
-                <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--navy); margin: 24px 0 10px 0; text-transform: uppercase;">
-                    2. Tiến độ khảo sát hộ nông dân (P1) theo 3 Xã trọng điểm
-                </h3>
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th>Địa Bàn Xã</th>
-                            <th>Lịch Trình Khảo Sát</th>
-                            <th>Lực Lượng Thực Hiện</th>
-                            <th style="text-align: center;">Chỉ Tiêu (Phiếu)</th>
-                            <th style="text-align: center;">Đã Thu</th>
-                            <th style="text-align: center;">Tỷ Lệ %</th>
-                            <th style="text-align: center;">Đánh Giá</th>
-                        </tr>
-                    </thead>
-                    <tbody id="communeProgressTbody">
-                        <!-- Rendered by JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ======================================================== -->
-        <!-- VIEW 3: KẾ HOẠCH TIẾN ĐỘ 22 HOẠT ĐỘNG (ROADMAP)           -->
-        <!-- ======================================================== -->
-        <div id="view-schedule" class="view-pane" style="display: none;">
-            <div class="form-section">
-                <div class="section-header">
-                    <span>KẾ HOẠCH BẮT ĐẦU VÀ KẾT THÚC (01/11/2026 – 30/11/2026)</span>
-                    <span class="sub-note">Căn cứ theo Bảng tiến độ F1 VN trong Kế hoạch V5</span>
-                </div>
-
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th style="text-align: center; width: 45px;">STT</th>
-                            <th>Tên Hoạt Động & Nội Dung Chi Tiết</th>
-                            <th>Người Phụ Trách</th>
-                            <th style="text-align: center; width: 95px;">Từ Ngày</th>
-                            <th style="text-align: center; width: 95px;">Đến Ngày</th>
-                            <th style="text-align: center; width: 65px;">Số Ngày</th>
-                            <th style="text-align: center; width: 110px;">Trạng Thái</th>
-                        </tr>
-                    </thead>
-                    <tbody id="scheduleListTbody">
-                        <!-- Rendered by JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ======================================================== -->
-        <!-- VIEW 4: DANH SÁCH DỮ LIỆU ĐÃ NỘP                          -->
-        <!-- ======================================================== -->
-        <div id="view-history" class="view-pane" style="display: none;">
-            <div class="form-section">
-                <div class="section-header">
-                    <span>DANH SÁCH PHIẾU KHẢO SÁT ĐÃ LƯU TRÊN MÁY CHỦ VPS</span>
-                    <a href="/api/export/excel" class="summary-link">
-                        <i class="fa-solid fa-download"></i> Tải Toàn Bộ File Excel (.xlsx)
-                    </a>
-                </div>
-
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th>Mã Phiếu</th>
-                            <th>Công Cụ</th>
-                            <th>Địa Bàn</th>
-                            <th>Người Được Phỏng Vấn</th>
-                            <th>Điều Tra Viên</th>
-                            <th>Ngày Khảo Sát</th>
-                            <th style="text-align: center;">Hành Động</th>
-                        </tr>
-                    </thead>
-                    <tbody id="surveyHistoryTbody">
-                        <!-- Rendered by JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Official Footer -->
-    <div class="footer-official">
-        <div class="f-company">CÔNG TY TNHH DAKMAN VIỆT NAM — PHÒNG DỰ ÁN BỀN VỮNG</div>
-        <div>Địa chỉ: Km 7, Quốc lộ 26, Phường Tân Hòa, TP. Buôn Ma Thuột, Tỉnh Đắk Lắk</div>
-        <div class="f-links">
-            <span>Hệ thống Thu thập Dữ liệu Thực địa Dakman</span>
-            <span>•</span>
-            <a href="/api/export/excel">Tải dữ liệu Excel</a>
-            <span>•</span>
-            <span>Tác giả hệ thống: <strong>Lộc Vũ Trung</strong></span>
-        </div>
-    </div>
-</div>
-
-<!-- Cửa Sổ Khóa Bảo Mật & Đăng Nhập Hệ Thống (Chuẩn QGIS Desktop Dialog — Ghép 03 Logo) -->
-<div id="userLoginModal" class="modal-overlay" style="backdrop-filter: blur(5px);">
-    <div class="modal-card qgis-dialog-card" style="max-width: 580px;">
-        <!-- QGIS Titlebar -->
-        <div class="qgis-dialog-titlebar">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-layer-group" style="color: #60a5fa;"></i>
-                <span>DAKMAN CƯ M'GAR — HỆ THỐNG ĐIỀU TRA ĐÁNH GIÁ CUỐI KỲ</span>
-            </div>
-            <span style="font-size: 0.72rem; background: rgba(255,255,255,0.15); padding: 2px 7px; border-radius: 2px; font-family: monospace;">v2.5</span>
-        </div>
-
-        <div class="qgis-dialog-body">
-            <!-- 3 Logos Ribbon (Dakman - TCN - IDH/JDE) -->
-            <div class="partner-logos-ribbon">
-                <div class="partner-logo-box">
-                    <img src="img/logo_dakman.png" alt="Dakman Vietnam" title="Công ty TNHH Dakman Việt Nam — Đơn vị chủ trì dự án">
-                    <div class="partner-logo-title" style="color: #1e3a5f;">DAKMAN VIỆT NAM</div>
-                </div>
-                <div class="partner-logo-box" style="border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
-                    <img src="img/logo_tcn_thumb.png" alt="Tân Cao Nguyên" title="Công ty TNHH Dịch vụ và Tư vấn Tân Cao Nguyên — Đơn vị tư vấn độc lập">
-                    <div class="partner-logo-title" style="color: #15803d;">TÂN CAO NGUYÊN</div>
-                </div>
-                <div class="partner-logo-box">
-                    <img src="img/logo_idh.png" alt="IDH Landscape" title="Chương trình Cảnh quan Bền vững IDH & JDE Peet's">
-                    <div class="partner-logo-title" style="color: #0369a1;">IDH & JDE PEET'S</div>
-                </div>
-            </div>
-
-            <!-- Project Headline -->
-            <div style="text-align: center; margin-bottom: 14px;">
-                <div style="font-size: 0.88rem; font-weight: 800; color: #002060; text-transform: uppercase; letter-spacing: 0.3px;">
-                    DỰ ÁN CẢNH QUAN CÀ PHÊ BỀN VỮNG HUYỆN CƯ M'GAR (2021–2026)
-                </div>
-                <div style="font-size: 0.78rem; color: var(--slate-600); margin-top: 2px;">
-                    Thu thập & đánh giá 384 chỉ số hiện trường — Đơn vị tư vấn: <strong>Cty TNHH Dịch vụ và Tư vấn Tân Cao Nguyên</strong>
-                </div>
-            </div>
-
-            <!-- 3 Role Tabs (QGIS Processing Tab Style) -->
-            <div class="qgis-tab-bar">
-                <button type="button" class="qgis-tab-btn active" id="btnTierEditor" onclick="selectLoginTier('editor')">
-                    <i class="fa-solid fa-user-pen" style="color: #15803d;"></i> 1. Điều Tra Viên
-                </button>
-                <button type="button" class="qgis-tab-btn" id="btnTierViewer" onclick="selectLoginTier('viewer')">
-                    <i class="fa-solid fa-eye" style="color: #2563eb;"></i> 2. Chỉ Xem
-                </button>
-                <button type="button" class="qgis-tab-btn" id="btnTierAdmin" onclick="selectLoginTier('admin')">
-                    <i class="fa-solid fa-user-shield" style="color: #dc2626;"></i> 3. Quản Trị Viên
-                </button>
-            </div>
-
-            <!-- Form Content Box -->
-            <div class="qgis-tab-pane">
-                <form onsubmit="saveUserLogin(event)">
-                    <input type="hidden" id="loginSelectedRole" value="editor">
-
-                    <!-- Thông Tin Điều Tra Viên (Đúng Họ tên + Mã nhân viên + Mật khẩu riêng) -->
-                    <div id="editorStaffFields">
-                        <div class="form-group" style="margin-bottom: 10px;">
-                            <label style="font-size: 0.83rem; font-weight: 700;">Họ Và Tên Điều Tra Viên <span class="req">*</span></label>
-                            <input type="text" class="form-control" id="modalUserName" placeholder="Đánh đúng họ và tên của bạn...">
-                        </div>
-                        <div class="form-group" style="margin-bottom: 10px;">
-                            <label style="font-size: 0.83rem; font-weight: 700;">Mã Nhân Viên Được Cấp (TCN-XX-hhmmss) <span class="req">*</span></label>
-                            <input type="text" class="form-control" id="modalUserId" placeholder="Nhập đúng mã nhân viên được cấp qua Zalo...">
-                        </div>
-                        <input type="hidden" id="modalUserCommune" value="Ea Kiết">
-                        <input type="hidden" id="modalUserDate" value="">
-                    </div>
-
-                    <!-- Ô Mật Khẩu (Dấu toàn bộ mật khẩu trên mọi panel) -->
-                    <div class="form-group" style="margin-top: 10px;">
-                        <label id="lblPasswordTier" style="font-size: 0.83rem; font-weight: 700;">Mật Khẩu Điều Tra Viên <span class="req">*</span></label>
-                        <input type="password" class="form-control" id="modalUserPassword" required placeholder="Nhập mật khẩu truy cập...">
-                    </div>
-
-                    <div id="loginErrorMsg" style="display: none; background: #fee2e2; border: 1px solid #f87171; color: #b91c1c; padding: 8px 12px; border-radius: 3px; font-size: 0.82rem; margin-top: 10px; font-weight: 600;"></div>
-
-                    <!-- QGIS Desktop Dialog Action Buttons -->
-                    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
-                        <button type="submit" class="qgis-btn-primary" id="btnLoginSubmit">
-                            <i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng Nhập Hệ Thống
-                        </button>
-                        <button type="button" class="qgis-btn-secondary" id="btnLoginCloseBtn" onclick="hideLoginModal()">
-                            Đóng Cửa Sổ
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- Modal Chỉnh Sửa & Cấp Lại Mật Khẩu Nhân Viên (Admin - QGIS Desktop Style) -->
-<div id="staffEditModal" class="modal-overlay">
-    <div class="modal-card qgis-dialog-card" style="max-width: 520px;">
-        <div class="qgis-dialog-titlebar">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-user-shield" style="color: #60a5fa;"></i>
-                <span>CẬP NHẬT & CẤP LẠI MẬT KHẨU NHÂN VIÊN</span>
-            </div>
-            <button type="button" class="qgis-close-btn" onclick="hideEditStaffModal()">✕</button>
-        </div>
-        <div class="qgis-dialog-body" style="background: #ffffff; padding: 18px;">
-        <form onsubmit="handleEditStaffSubmit(event)">
-            <input type="hidden" id="editStaffOrigId">
-            <div class="form-group" style="margin-bottom: 10px;">
-                <label>Mã Nhân Viên</label>
-                <input type="text" class="form-control" id="editStaffId" readonly style="background: var(--slate-100); font-weight: 700; color: var(--primary);">
-            </div>
-            <div class="form-group" style="margin-bottom: 10px;">
-                <label>Họ Và Tên Điều Tra Viên <span class="req">*</span></label>
-                <input type="text" class="form-control" id="editStaffName" required>
-            </div>
-            <div class="grid-2" style="margin-bottom: 10px;">
-                <div class="form-group">
-                    <label>Số Điện Thoại / Zalo</label>
-                    <input type="text" class="form-control" id="editStaffPhone">
-                </div>
-                <div class="form-group">
-                    <label>Địa Bàn Phân Công</label>
-                    <select class="form-control" id="editStaffCommune">
-                        <option value="Ea Kiết">Xã Ea Kiết</option>
-                        <option value="Ea Tar">Xã Ea Tar</option>
-                        <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
-                        <option value="Toàn vùng">Toàn vùng Cư M'gar (Giám sát viên)</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group" style="margin-bottom: 14px;">
-                <label>Cấp Lại Mật Khẩu Mới Cho Nhân Viên <span class="req">*</span></label>
-                <div style="display: flex; gap: 6px;">
-                    <input type="text" class="form-control" id="editStaffPassword" required style="font-weight: 700; color: #dc2626;">
-                    <button type="button" onclick="generateRandomStaffPass()" style="background: var(--slate-200); border: 1px solid var(--border); padding: 0 10px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap;">
-                        <i class="fa-solid fa-arrows-rotate"></i> Tạo MK
-                    </button>
-                </div>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button type="submit" class="btn-bottom-primary" style="flex: 2;">
-                    <i class="fa-solid fa-paper-plane"></i> LƯU & SAO CHÉP GỬI ZALO
-                </button>
-                <button type="button" class="btn-bottom-secondary" style="flex: 1;" onclick="hideEditStaffModal()">
-                    HỦY
-                </button>
-            </div>
-        </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Quản Lý Hệ Thống & Cấp Tài Khoản (QGIS Desktop Style — Dành riêng cho Admin) -->
-<div id="staffManagerModal" class="modal-overlay">
-    <div class="modal-card qgis-dialog-card" style="max-width: 760px; max-height: 90vh; display: flex; flex-direction: column;">
-        <div class="qgis-dialog-titlebar">
-            <span><i class="fa-solid fa-users-gear" style="color: #60a5fa;"></i> QUẢN TRỊ HỆ THỐNG — ĐIỀU TRA VIÊN & BẢO MẬT</span>
-            <button type="button" class="qgis-close-btn" onclick="hideStaffModal()">✕</button>
-        </div>
-
-        <div style="background: #dcdcdc; padding: 5px 12px 0 12px; display: flex; gap: 4px; border-bottom: 1px solid #b8b8b8; flex-wrap: wrap;">
-            <button type="button" class="qgis-tab-btn active" id="btnAdminTabStaff" onclick="switchAdminSubTab('staff')">
-                <i class="fa-solid fa-users"></i> 1. Quản Lý Điều Tra Viên
-            </button>
-            <button type="button" class="qgis-tab-btn" id="btnAdminTabSecurity" onclick="switchAdminSubTab('security')">
-                <i class="fa-solid fa-shield-halved"></i> 2. Mật Khẩu Admin & Hệ Thống
-            </button>
-            <button type="button" class="qgis-tab-btn" id="btnAdminTabTrash" onclick="switchAdminSubTab('trash')">
-                <i class="fa-solid fa-clock-rotate-left"></i> 3. Khôi Phục & Sao Lưu
-            </button>
-        </div>
-
-        <div style="padding: 16px; overflow-y: auto; flex-grow: 1; background: #ffffff;">
-            <!-- SUB-TAB 1: STAFF MANAGEMENT -->
-            <div id="adminTabPaneStaff">
-                <form onsubmit="handleCreateStaffSubmit(event)" style="margin-bottom: 14px; background: #ffffff; border: 1px solid #d0d0d0; padding: 12px; border-radius: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                    <div style="font-size: 0.82rem; font-weight: 700; color: #002060; margin-bottom: 8px;">
-                        <i class="fa-solid fa-user-plus"></i> CẤP TÀI KHOẢN ĐIỀU TRA VIÊN MỚI
-                    </div>
-                    <div class="grid-3" style="margin-bottom: 8px;">
-                        <div class="form-group">
-                            <label>Mã Nhân Viên (TCN-XX-hhmmss) <span class="req">*</span></label>
-                            <div style="display: flex; gap: 4px;">
-                                <input type="text" class="form-control" id="newStaffId" required placeholder="TCN-01-hhmmss">
-                                <button type="button" class="qgis-btn-secondary" onclick="generateStaffId()" style="padding: 0 8px; font-size: 0.76rem;" title="Tạo mã tự động">
-                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Tạo
-                                </button>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Họ Và Tên Nhân Sự <span class="req">*</span></label>
-                            <input type="text" class="form-control" id="newStaffName" required placeholder="Ví dụ: Nguyễn Văn An">
-                        </div>
-                        <div class="form-group">
-                            <label>Số Điện Thoại / Zalo</label>
-                            <input type="text" class="form-control" id="newStaffPhone" placeholder="0901234567">
-                        </div>
-                    </div>
-
-                    <div class="grid-2" style="margin-bottom: 12px;">
-                        <div class="form-group">
-                            <label>Địa Bàn Phân Công</label>
-                            <select class="form-control" id="newStaffCommune">
-                                <option value="Ea Kiết">Xã Ea Kiết</option>
-                                <option value="Ea Tar">Xã Ea Tar</option>
-                                <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
-                                <option value="Toàn vùng">Toàn vùng Cư M'gar (Giám sát viên)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Mật Khẩu Cấp Cho Nhân Viên <span class="req">*</span></label>
-                            <input type="text" class="form-control" id="newStaffPassword" required placeholder="Nhập hoặc bấm nút tạo ngẫu nhiên...">
-                        </div>
-                    </div>
-
-                    <div style="text-align: right;">
-                        <button type="submit" class="qgis-btn-primary">
-                            <i class="fa-solid fa-paper-plane"></i> Lưu & Tự Động Copy Gửi Zalo
-                        </button>
-                    </div>
-                </form>
-
-                <h4 style="font-size: 0.86rem; font-weight: 700; color: #002060; text-transform: uppercase; margin-bottom: 8px;">
-                    <i class="fa-solid fa-list-check"></i> Danh Sách Điều Tra Viên Đã Cấp Quyền:
-                </h4>
-                <div style="overflow-y: auto; max-height: 240px; border: 1px solid #cbd5e1;">
-                    <table class="report-table" style="margin-top: 0; font-size: 0.8rem;">
+                    <!-- Progress by 4 Target Groups -->
+                    <h3
+                        style="font-size: 0.95rem; font-weight: 700; color: var(--navy); margin: 20px 0 10px 0; text-transform: uppercase;">
+                        1. Tiến độ theo 4 Nhóm đối tượng tham vấn
+                    </h3>
+                    <table class="report-table">
                         <thead>
                             <tr>
-                                <th style="width: 38px; text-align: center;">STT</th>
-                                <th>Mã NV (TCN-XX-hhmmss)</th>
-                                <th>Họ Và Tên</th>
-                                <th>Địa Bàn</th>
-                                <th>Mật Khẩu</th>
-                                <th style="text-align: center;">Hành Động</th>
+                                <th>Nhóm Đối Tượng</th>
+                                <th>Mã Công Cụ</th>
+                                <th>Hình Thức Khảo Sát</th>
+                                <th style="text-align: center;">Mục Tiêu</th>
+                                <th style="text-align: center;">Đã Thu</th>
+                                <th style="text-align: center;">Tỷ Lệ %</th>
+                                <th style="text-align: center;">Trạng Thái</th>
                             </tr>
                         </thead>
-                        <tbody id="staffListTbody">
+                        <tbody id="groupProgressTbody">
+                            <!-- Rendered by JS -->
+                        </tbody>
+                    </table>
+
+                    <!-- Progress by 3 Communes -->
+                    <h3
+                        style="font-size: 0.95rem; font-weight: 700; color: var(--navy); margin: 24px 0 10px 0; text-transform: uppercase;">
+                        2. Tiến độ khảo sát hộ nông dân (P1) theo 3 Xã trọng điểm
+                    </h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Địa Bàn Xã</th>
+                                <th>Lịch Trình Khảo Sát</th>
+                                <th>Lực Lượng Thực Hiện</th>
+                                <th style="text-align: center;">Chỉ Tiêu (Phiếu)</th>
+                                <th style="text-align: center;">Đã Thu</th>
+                                <th style="text-align: center;">Tỷ Lệ %</th>
+                                <th style="text-align: center;">Đánh Giá</th>
+                            </tr>
+                        </thead>
+                        <tbody id="communeProgressTbody">
                             <!-- Rendered by JS -->
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- SUB-TAB 2: SECURITY & ADMIN PASSWORDS -->
-            <div id="adminTabPaneSecurity" style="display: none;">
-                <form onsubmit="handleSaveAdminSettings(event)" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 18px; border-radius: 3px; max-width: 580px; margin: 0 auto;">
-                    <div style="font-size: 0.9rem; font-weight: 700; color: #002060; margin-bottom: 14px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;">
-                        <i class="fa-solid fa-key"></i> THIẾT LẬP MẬT KHẨU QUẢN TRỊ VIÊN & HỆ THỐNG
+            <!-- ======================================================== -->
+            <!-- VIEW 3: KẾ HOẠCH TIẾN ĐỘ 22 HOẠT ĐỘNG (ROADMAP)           -->
+            <!-- ======================================================== -->
+            <div id="view-schedule" class="view-pane" style="display: none;">
+                <div class="form-section">
+                    <div class="section-header">
+                        <span>KẾ HOẠCH BẮT ĐẦU VÀ KẾT THÚC (01/11/2026 – 30/11/2026)</span>
+                        <span class="sub-note">Căn cứ theo Bảng tiến độ F1 VN trong Kế hoạch V5</span>
                     </div>
 
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label>Tên Hiển Thị Quản Trị Viên <span class="req">*</span></label>
-                        <input type="text" class="form-control" id="cfgAdminName" required value="Quản Trị Viên (Admin)">
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label>Mật Khẩu Quản Trị Viên Cấp Cao (Admin Master Password) <span class="req">*</span></label>
-                        <input type="text" class="form-control" id="cfgAdminPass" required placeholder="Nhập mật khẩu Admin mới..." style="font-weight: 700; color: #dc2626;">
-                        <div style="font-size: 0.76rem; color: var(--slate-500); margin-top: 2px;">(Nhập mật khẩu quản trị viên mới nếu cần đổi)</div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 16px;">
-                        <label>Mật Khẩu Khách Giám Sát (Chỉ Xem) <span class="req">*</span></label>
-                        <input type="text" class="form-control" id="cfgViewerPass" required placeholder="Nhập mật khẩu View mới..." style="font-weight: 700; color: #2563eb;">
-                        <div style="font-size: 0.76rem; color: var(--slate-500); margin-top: 2px;">(Nhập mật khẩu chỉ xem mới nếu cần đổi)</div>
-                    </div>
-
-                    <div id="adminSettingsMsg" style="display: none; padding: 8px 12px; border-radius: 3px; font-size: 0.82rem; margin-bottom: 12px; font-weight: 600;"></div>
-
-                    <div style="text-align: right;">
-                        <button type="submit" class="qgis-btn-primary">
-                            <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi Mật Khẩu
-                        </button>
-                    </div>
-                </form>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: center; width: 45px;">STT</th>
+                                <th>Tên Hoạt Động & Nội Dung Chi Tiết</th>
+                                <th>Người Phụ Trách</th>
+                                <th style="text-align: center; width: 95px;">Từ Ngày</th>
+                                <th style="text-align: center; width: 95px;">Đến Ngày</th>
+                                <th style="text-align: center; width: 65px;">Số Ngày</th>
+                                <th style="text-align: center; width: 110px;">Trạng Thái</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleListTbody">
+                            <!-- Rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <!-- SUB-TAB 3: TRASH RECOVERY & BACKUP -->
-            <div id="adminTabPaneTrash" style="display: none;">
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 12px; border-radius: 3px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                    <div style="font-size: 0.80rem; color: #166534;">
-                        <strong><i class="fa-solid fa-shield-check"></i> Bảo vệ dữ liệu liên tục:</strong> Mọi phiếu và nhân sự bị Admin xóa đều được lưu vào Thùng rác lưu trữ trên máy chủ và sao lưu định kỳ mỗi 15 phút.
+            <!-- ======================================================== -->
+            <!-- VIEW 4: DANH SÁCH DỮ LIỆU ĐÃ NỘP                          -->
+            <!-- ======================================================== -->
+            <div id="view-history" class="view-pane" style="display: none;">
+                <div class="form-section">
+                    <div class="section-header">
+                        <span>DANH SÁCH PHIẾU KHẢO SÁT ĐÃ LƯU TRÊN MÁY CHỦ VPS</span>
+                        <a href="/api/export/excel" class="summary-link">
+                            <i class="fa-solid fa-download"></i> Tải Toàn Bộ File Excel (.xlsx)
+                        </a>
                     </div>
-                    <button type="button" onclick="downloadDatabaseBackup()" class="qgis-btn-primary" style="background: #15803d; border-color: #166534;">
-                        <i class="fa-solid fa-database"></i> Tải Bản Sao Lưu SQLite
-                    </button>
-                </div>
 
-                <h4 style="font-size: 0.84rem; font-weight: 700; color: #002060; margin-bottom: 6px;">
-                    <i class="fa-solid fa-file-circle-xmark"></i> Phiếu Khảo Sát Đã Xóa (Có Thể Khôi Phục)
-                </h4>
-                <div style="overflow-x: auto; max-height: 180px; border: 1px solid #cbd5e1; margin-bottom: 14px;">
-                    <table class="report-table" style="margin-top: 0; font-size: 0.78rem;">
+                    <table class="report-table">
                         <thead>
                             <tr>
                                 <th>Mã Phiếu</th>
                                 <th>Công Cụ</th>
-                                <th>Chủ Hộ</th>
-                                <th>Thời Gian Xóa</th>
-                                <th style="text-align: center;">Khôi Phục</th>
-                            </tr>
-                        </thead>
-                        <tbody id="trashSurveysTbody">
-                            <tr><td colspan="5" style="text-align: center; padding: 12px; color: #64748b;">Đang tải...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <h4 style="font-size: 0.84rem; font-weight: 700; color: #002060; margin-bottom: 6px;">
-                    <i class="fa-solid fa-user-xmark"></i> Tài Khoản Nhân Sự Đã Xóa (Có Thể Khôi Phục)
-                </h4>
-                <div style="overflow-x: auto; max-height: 160px; border: 1px solid #cbd5e1;">
-                    <table class="report-table" style="margin-top: 0; font-size: 0.78rem;">
-                        <thead>
-                            <tr>
-                                <th>Mã NV</th>
-                                <th>Họ Tên</th>
                                 <th>Địa Bàn</th>
-                                <th>Thời Gian Xóa</th>
-                                <th style="text-align: center;">Khôi Phục</th>
+                                <th>Người Được Phỏng Vấn</th>
+                                <th>Điều Tra Viên</th>
+                                <th>Ngày Khảo Sát</th>
+                                <th style="text-align: center;">Hành Động</th>
                             </tr>
                         </thead>
-                        <tbody id="trashUsersTbody">
-                            <tr><td colspan="5" style="text-align: center; padding: 12px; color: #64748b;">Đang tải...</td></tr>
+                        <tbody id="surveyHistoryTbody">
+                            <!-- Rendered by JS -->
                         </tbody>
                     </table>
                 </div>
             </div>
+
         </div>
 
-        <div style="text-align: right; padding: 10px 16px; background: #f1f5f9; border-top: 1px solid #cbd5e1;">
-            <button type="button" class="qgis-btn-secondary" onclick="hideStaffModal()">Đóng cửa sổ</button>
+        <!-- Official Footer -->
+        <div class="footer-official">
+            <div class="f-company">CÔNG TY TNHH DAKMAN VIỆT NAM — PHÒNG DỰ ÁN BỀN VỮNG</div>
+            <div>Địa chỉ: Km 7, Quốc lộ 26, Phường Tân Hòa, TP. Buôn Ma Thuột, Tỉnh Đắk Lắk</div>
+            <div class="f-links">
+                <span>Hệ thống Thu thập Dữ liệu Thực địa Dakman</span>
+                <span>•</span>
+                <a href="/api/export/excel">Tải dữ liệu Excel</a>
+                <span>•</span>
+                <span>Tác giả hệ thống: <strong>Lộc Vũ Trung</strong></span>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Modal Chỉnh Sửa Nội Dung Phiếu Khảo Sát (Dành cho Admin & Người lập) -->
-<div id="surveyEditModal" class="modal-overlay">
-    <div class="modal-card qgis-dialog-card" style="max-width: 680px; max-height: 88vh; display: flex; flex-direction: column;">
-        <div class="qgis-dialog-titlebar">
-            <span><i class="fa-solid fa-pen-to-square"></i> CẬP NHẬT & HIỆU CHỈNH PHIẾU KHẢO SÁT HIỆN TRƯỜNG</span>
-            <button type="button" class="qgis-close-btn" onclick="hideEditSurveyModal()">✕</button>
+    <!-- Cửa Sổ Khóa Bảo Mật & Đăng Nhập Hệ Thống (Chuẩn QGIS Desktop Dialog — Ghép 03 Logo) -->
+    <div id="userLoginModal" class="modal-overlay" style="backdrop-filter: blur(5px);">
+        <div class="modal-card qgis-dialog-card" style="max-width: 580px;">
+            <!-- QGIS Titlebar -->
+            <div class="qgis-dialog-titlebar">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-layer-group" style="color: #60a5fa;"></i>
+                    <span>DAKMAN CƯ M'GAR — HỆ THỐNG ĐIỀU TRA ĐÁNH GIÁ CUỐI KỲ</span>
+                </div>
+                <span
+                    style="font-size: 0.72rem; background: rgba(255,255,255,0.15); padding: 2px 7px; border-radius: 2px; font-family: monospace;">v2.5</span>
+            </div>
+
+            <div class="qgis-dialog-body">
+                <!-- 3 Logos Ribbon (Dakman - TCN - IDH/JDE) -->
+                <div class="partner-logos-ribbon">
+                    <div class="partner-logo-box">
+                        <img src="img/logo_dakman.png" alt="Dakman Vietnam"
+                            title="Công ty TNHH Dakman Việt Nam — Đơn vị chủ trì dự án">
+                        <div class="partner-logo-title" style="color: #1e3a5f;">DAKMAN VIỆT NAM</div>
+                    </div>
+                    <div class="partner-logo-box"
+                        style="border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+                        <img src="img/logo_tcn_thumb.png" alt="Tân Cao Nguyên"
+                            title="Công ty TNHH Dịch vụ và Tư vấn Tân Cao Nguyên — Đơn vị tư vấn độc lập">
+                        <div class="partner-logo-title" style="color: #15803d;">TÂN CAO NGUYÊN</div>
+                    </div>
+                    <div class="partner-logo-box">
+                        <img src="img/logo_idh.png" alt="IDH Landscape"
+                            title="Chương trình Cảnh quan Bền vững IDH & JDE Peet's">
+                        <div class="partner-logo-title" style="color: #0369a1;">IDH & JDE PEET'S</div>
+                    </div>
+                </div>
+
+                <!-- Project Headline -->
+                <div style="text-align: center; margin-bottom: 14px;">
+                    <div
+                        style="font-size: 0.88rem; font-weight: 800; color: #002060; text-transform: uppercase; letter-spacing: 0.3px;">
+                        DỰ ÁN CẢNH QUAN CÀ PHÊ BỀN VỮNG HUYỆN CƯ M'GAR (2021–2026)
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--slate-600); margin-top: 2px;">
+                        Thu thập & đánh giá 384 chỉ số hiện trường — Đơn vị tư vấn: <strong>Cty TNHH Dịch vụ và Tư vấn
+                            Tân Cao Nguyên</strong>
+                    </div>
+                </div>
+
+                <!-- 3 Role Tabs (QGIS Processing Tab Style) -->
+                <div class="qgis-tab-bar">
+                    <button type="button" class="qgis-tab-btn active" id="btnTierEditor"
+                        onclick="selectLoginTier('editor')">
+                        <i class="fa-solid fa-user-pen" style="color: #15803d;"></i> 1. Điều Tra Viên
+                    </button>
+                    <button type="button" class="qgis-tab-btn" id="btnTierViewer" onclick="selectLoginTier('viewer')">
+                        <i class="fa-solid fa-eye" style="color: #2563eb;"></i> 2. Chỉ Xem
+                    </button>
+                    <button type="button" class="qgis-tab-btn" id="btnTierAdmin" onclick="selectLoginTier('admin')">
+                        <i class="fa-solid fa-user-shield" style="color: #dc2626;"></i> 3. Quản Trị Viên
+                    </button>
+                </div>
+
+                <!-- Form Content Box -->
+                <div class="qgis-tab-pane">
+                    <form onsubmit="saveUserLogin(event)">
+                        <input type="hidden" id="loginSelectedRole" value="editor">
+
+                        <!-- Thông Tin Điều Tra Viên (Đúng Họ tên + Mã nhân viên + Mật khẩu riêng) -->
+                        <div id="editorStaffFields">
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <label style="font-size: 0.83rem; font-weight: 700;">Họ Và Tên Điều Tra Viên <span
+                                        class="req">*</span></label>
+                                <input type="text" class="form-control" id="modalUserName"
+                                    placeholder="Đánh đúng họ và tên của bạn...">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <label style="font-size: 0.83rem; font-weight: 700;">Mã Nhân Viên Được Cấp
+                                    (TCN-XX-hhmmss) <span class="req">*</span></label>
+                                <input type="text" class="form-control" id="modalUserId"
+                                    placeholder="Nhập đúng mã nhân viên được cấp qua Zalo...">
+                            </div>
+                            <input type="hidden" id="modalUserCommune" value="Ea Kiết">
+                            <input type="hidden" id="modalUserDate" value="">
+                        </div>
+
+                        <!-- Ô Mật Khẩu (Dấu toàn bộ mật khẩu trên mọi panel) -->
+                        <div class="form-group" style="margin-top: 10px;">
+                            <label id="lblPasswordTier" style="font-size: 0.83rem; font-weight: 700;">Mật Khẩu Điều Tra
+                                Viên <span class="req">*</span></label>
+                            <input type="password" class="form-control" id="modalUserPassword" required
+                                placeholder="Nhập mật khẩu truy cập...">
+                        </div>
+
+                        <div id="loginErrorMsg"
+                            style="display: none; background: #fee2e2; border: 1px solid #f87171; color: #b91c1c; padding: 8px 12px; border-radius: 3px; font-size: 0.82rem; margin-top: 10px; font-weight: 600;">
+                        </div>
+
+                        <!-- QGIS Desktop Dialog Action Buttons -->
+                        <div
+                            style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+                            <button type="submit" class="qgis-btn-primary" id="btnLoginSubmit">
+                                <i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng Nhập Hệ Thống
+                            </button>
+                            <button type="button" class="qgis-btn-secondary" id="btnLoginCloseBtn"
+                                onclick="hideLoginModal()">
+                                Đóng Cửa Sổ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        <form onsubmit="handleEditSurveySubmit(event)" style="padding: 16px; overflow-y: auto; flex-grow: 1; background: #ffffff;">
-            <input type="hidden" id="editSurveyId">
-            <div class="grid-3" style="margin-bottom: 10px;">
-                <div class="form-group">
-                    <label>Mã Phiếu / Vườn <span class="req">*</span></label>
-                    <input type="text" class="form-control" id="editSurveyCode" required>
+    </div>
+
+
+    <!-- Modal Chỉnh Sửa & Cấp Lại Mật Khẩu Nhân Viên (Admin - QGIS Desktop Style) -->
+    <div id="staffEditModal" class="modal-overlay">
+        <div class="modal-card qgis-dialog-card" style="max-width: 520px;">
+            <div class="qgis-dialog-titlebar">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-user-shield" style="color: #60a5fa;"></i>
+                    <span>CẬP NHẬT & CẤP LẠI MẬT KHẨU NHÂN VIÊN</span>
                 </div>
-                <div class="form-group">
-                    <label>Địa Bàn Xã <span class="req">*</span></label>
-                    <select class="form-control" id="editSurveyCommune" required>
-                        <option value="Ea Kiết">Xã Ea Kiết</option>
-                        <option value="Ea Tar">Xã Ea Tar</option>
-                        <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Thôn / Buôn</label>
-                    <input type="text" class="form-control" id="editSurveyHamlet">
-                </div>
+                <button type="button" class="qgis-close-btn" onclick="hideEditStaffModal()">✕</button>
+            </div>
+            <div class="qgis-dialog-body" style="background: #ffffff; padding: 18px;">
+                <form onsubmit="handleEditStaffSubmit(event)">
+                    <input type="hidden" id="editStaffOrigId">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Mã Nhân Viên</label>
+                        <input type="text" class="form-control" id="editStaffId" readonly
+                            style="background: var(--slate-100); font-weight: 700; color: var(--primary);">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Họ Và Tên Điều Tra Viên <span class="req">*</span></label>
+                        <input type="text" class="form-control" id="editStaffName" required>
+                    </div>
+                    <div class="grid-2" style="margin-bottom: 10px;">
+                        <div class="form-group">
+                            <label>Số Điện Thoại / Zalo</label>
+                            <input type="text" class="form-control" id="editStaffPhone">
+                        </div>
+                        <div class="form-group">
+                            <label>Địa Bàn Phân Công</label>
+                            <select class="form-control" id="editStaffCommune">
+                                <option value="Ea Kiết">Xã Ea Kiết</option>
+                                <option value="Ea Tar">Xã Ea Tar</option>
+                                <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
+                                <option value="Toàn vùng">Toàn vùng Cư M'gar (Giám sát viên)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label>Cấp Lại Mật Khẩu Mới Cho Nhân Viên <span class="req">*</span></label>
+                        <div style="display: flex; gap: 6px;">
+                            <input type="text" class="form-control" id="editStaffPassword" required
+                                style="font-weight: 700; color: #dc2626;">
+                            <button type="button" onclick="generateRandomStaffPass()"
+                                style="background: var(--slate-200); border: 1px solid var(--border); padding: 0 10px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap;">
+                                <i class="fa-solid fa-arrows-rotate"></i> Tạo MK
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn-bottom-primary" style="flex: 2;">
+                            <i class="fa-solid fa-paper-plane"></i> LƯU & SAO CHÉP GỬI ZALO
+                        </button>
+                        <button type="button" class="btn-bottom-secondary" style="flex: 1;"
+                            onclick="hideEditStaffModal()">
+                            HỦY
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Quản Lý Hệ Thống & Cấp Tài Khoản (QGIS Desktop Style — Dành riêng cho Admin) -->
+    <div id="staffManagerModal" class="modal-overlay">
+        <div class="modal-card qgis-dialog-card"
+            style="max-width: 760px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="qgis-dialog-titlebar">
+                <span><i class="fa-solid fa-users-gear" style="color: #60a5fa;"></i> QUẢN TRỊ HỆ THỐNG — ĐIỀU TRA VIÊN &
+                    BẢO MẬT</span>
+                <button type="button" class="qgis-close-btn" onclick="hideStaffModal()">✕</button>
             </div>
 
-            <div class="grid-3" style="margin-bottom: 10px;">
-                <div class="form-group">
-                    <label>Họ Tên Người Được Phỏng Vấn <span class="req">*</span></label>
-                    <input type="text" class="form-control" id="editSurveyRespondent" required>
-                </div>
-                <div class="form-group">
-                    <label>Số ĐT Người Được Phỏng Vấn</label>
-                    <input type="text" class="form-control" id="editSurveyPhone">
-                </div>
-                <div class="form-group">
-                    <label>Ngày Khảo Sát <span class="req">*</span></label>
-                    <input type="date" class="form-control" id="editSurveyDate" required>
-                </div>
-            </div>
-
-            <div class="grid-2" style="margin-bottom: 10px;">
-                <div class="form-group">
-                    <label>Mã Điều Tra Viên (ID)</label>
-                    <input type="text" class="form-control" id="editSurveySurveyorId">
-                </div>
-                <div class="form-group">
-                    <label>Họ Tên Điều Tra Viên</label>
-                    <input type="text" class="form-control" id="editSurveySurveyorName">
-                </div>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 10px;">
-                <label>Tọa Độ GPS (Vĩ độ, Kinh độ)</label>
-                <input type="text" class="form-control" id="editSurveyGPS" placeholder="Ví dụ: 12.89432, 108.12456">
-            </div>
-
-            <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px;">
-                <button type="submit" class="qgis-btn-primary">
-                    <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+            <div
+                style="background: #dcdcdc; padding: 5px 12px 0 12px; display: flex; gap: 4px; border-bottom: 1px solid #b8b8b8; flex-wrap: wrap;">
+                <button type="button" class="qgis-tab-btn active" id="btnAdminTabStaff"
+                    onclick="switchAdminSubTab('staff')">
+                    <i class="fa-solid fa-users"></i> 1. Quản Lý Điều Tra Viên
                 </button>
-                <button type="button" class="qgis-btn-secondary" onclick="hideEditSurveyModal()">
-                    Hủy Bỏ
+                <button type="button" class="qgis-tab-btn" id="btnAdminTabSecurity"
+                    onclick="switchAdminSubTab('security')">
+                    <i class="fa-solid fa-shield-halved"></i> 2. Mật Khẩu Admin & Hệ Thống
+                </button>
+                <button type="button" class="qgis-tab-btn" id="btnAdminTabTrash" onclick="switchAdminSubTab('trash')">
+                    <i class="fa-solid fa-clock-rotate-left"></i> 3. Khôi Phục & Sao Lưu
+                </button>
+                <button type="button" class="qgis-tab-btn" id="btnAdminTabQuestions" onclick="switchAdminSubTab('questions')">
+                    <i class="fa-solid fa-list-ul"></i> 4. Quản Lý Câu Hỏi
                 </button>
             </div>
-        </form>
-    </div>
-</div>
 
-<!-- Modal Xem Chi Tiết Phiếu Đã Nộp -->
-<div id="surveyDetailModal" class="modal-overlay">
-    <div class="modal-card qgis-dialog-card" style="max-width: 720px; max-height: 85vh; display: flex; flex-direction: column;">
-        <div class="qgis-dialog-titlebar">
-            <span id="detailModalTitle"><i class="fa-solid fa-file-lines"></i> CHI TIẾT PHIẾU KHẢO SÁT</span>
-            <button type="button" class="qgis-close-btn" onclick="hideDetailModal()">✕</button>
-        </div>
-        <div id="detailModalBody" style="overflow-y: auto; flex-grow: 1; padding: 16px; font-size: 0.88rem; background: #ffffff;"></div>
-        <div style="text-align: right; padding: 10px 16px; background: #f1f5f9; border-top: 1px solid #cbd5e1;">
-            <button type="button" class="qgis-btn-secondary" onclick="hideDetailModal()">Đóng cửa sổ</button>
+            <div style="padding: 16px; overflow-y: auto; flex-grow: 1; background: #ffffff;">
+                <!-- SUB-TAB 1: STAFF MANAGEMENT -->
+                <div id="adminTabPaneStaff">
+                    <form onsubmit="handleCreateStaffSubmit(event)"
+                        style="margin-bottom: 14px; background: #ffffff; border: 1px solid #d0d0d0; padding: 12px; border-radius: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        <div style="font-size: 0.82rem; font-weight: 700; color: #002060; margin-bottom: 8px;">
+                            <i class="fa-solid fa-user-plus"></i> CẤP TÀI KHOẢN ĐIỀU TRA VIÊN MỚI
+                        </div>
+                        <div class="grid-3" style="margin-bottom: 8px;">
+                            <div class="form-group">
+                                <label>Mã Nhân Viên (TCN-XX-hhmmss) <span class="req">*</span></label>
+                                <div style="display: flex; gap: 4px;">
+                                    <input type="text" class="form-control" id="newStaffId" required
+                                        placeholder="TCN-01-hhmmss">
+                                    <button type="button" class="qgis-btn-secondary" onclick="generateStaffId()"
+                                        style="padding: 0 8px; font-size: 0.76rem;" title="Tạo mã tự động">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> Tạo
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Họ Và Tên Nhân Sự <span class="req">*</span></label>
+                                <input type="text" class="form-control" id="newStaffName" required
+                                    placeholder="Ví dụ: Nguyễn Văn An">
+                            </div>
+                            <div class="form-group">
+                                <label>Số Điện Thoại / Zalo</label>
+                                <input type="text" class="form-control" id="newStaffPhone" placeholder="0901234567">
+                            </div>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom: 12px;">
+                            <div class="form-group">
+                                <label>Địa Bàn Phân Công</label>
+                                <select class="form-control" id="newStaffCommune">
+                                    <option value="Ea Kiết">Xã Ea Kiết</option>
+                                    <option value="Ea Tar">Xã Ea Tar</option>
+                                    <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
+                                    <option value="Toàn vùng">Toàn vùng Cư M'gar (Giám sát viên)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Mật Khẩu Cấp Cho Nhân Viên <span class="req">*</span></label>
+                                <input type="text" class="form-control" id="newStaffPassword" required
+                                    placeholder="Nhập hoặc bấm nút tạo ngẫu nhiên...">
+                            </div>
+                        </div>
+
+                        <div style="text-align: right;">
+                            <button type="submit" class="qgis-btn-primary">
+                                <i class="fa-solid fa-paper-plane"></i> Lưu & Tự Động Copy Gửi Zalo
+                            </button>
+                        </div>
+                    </form>
+
+                    <h4
+                        style="font-size: 0.86rem; font-weight: 700; color: #002060; text-transform: uppercase; margin-bottom: 8px;">
+                        <i class="fa-solid fa-list-check"></i> Danh Sách Điều Tra Viên Đã Cấp Quyền:
+                    </h4>
+                    <div style="overflow-y: auto; max-height: 240px; border: 1px solid #cbd5e1;">
+                        <table class="report-table" style="margin-top: 0; font-size: 0.8rem;">
+                            <thead>
+                                <tr>
+                                    <th style="width: 38px; text-align: center;">STT</th>
+                                    <th>Mã NV (TCN-XX-hhmmss)</th>
+                                    <th>Họ Và Tên</th>
+                                    <th>Địa Bàn</th>
+                                    <th>Mật Khẩu</th>
+                                    <th style="text-align: center;">Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffListTbody">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SUB-TAB 2: SECURITY & ADMIN PASSWORDS -->
+                <div id="adminTabPaneSecurity" style="display: none;">
+                    <form onsubmit="handleSaveAdminSettings(event)"
+                        style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 18px; border-radius: 3px; max-width: 580px; margin: 0 auto;">
+                        <div
+                            style="font-size: 0.9rem; font-weight: 700; color: #002060; margin-bottom: 14px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;">
+                            <i class="fa-solid fa-key"></i> THIẾT LẬP MẬT KHẨU QUẢN TRỊ VIÊN & HỆ THỐNG
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label>Tên Hiển Thị Quản Trị Viên <span class="req">*</span></label>
+                            <input type="text" class="form-control" id="cfgAdminName" required
+                                value="Quản Trị Viên (Admin)">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label>Mật Khẩu Quản Trị Viên Cấp Cao (Admin Master Password) <span
+                                    class="req">*</span></label>
+                            <input type="text" class="form-control" id="cfgAdminPass" required
+                                placeholder="Nhập mật khẩu Admin mới..." style="font-weight: 700; color: #dc2626;">
+                            <div style="font-size: 0.76rem; color: var(--slate-500); margin-top: 2px;">(Nhập mật khẩu
+                                quản trị viên mới nếu cần đổi)</div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label>Mật Khẩu Khách Giám Sát (Chỉ Xem) <span class="req">*</span></label>
+                            <input type="text" class="form-control" id="cfgViewerPass" required
+                                placeholder="Nhập mật khẩu View mới..." style="font-weight: 700; color: #2563eb;">
+                            <div style="font-size: 0.76rem; color: var(--slate-500); margin-top: 2px;">(Nhập mật khẩu
+                                chỉ xem mới nếu cần đổi)</div>
+                        </div>
+
+                        <div id="adminSettingsMsg"
+                            style="display: none; padding: 8px 12px; border-radius: 3px; font-size: 0.82rem; margin-bottom: 12px; font-weight: 600;">
+                        </div>
+
+                        <div style="text-align: right;">
+                            <button type="submit" class="qgis-btn-primary">
+                                <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi Mật Khẩu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- SUB-TAB 3: TRASH RECOVERY & BACKUP -->
+                <div id="adminTabPaneTrash" style="display: none;">
+                    <div
+                        style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 12px; border-radius: 3px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <div style="font-size: 0.80rem; color: #166534;">
+                            <strong><i class="fa-solid fa-shield-check"></i> Bảo vệ dữ liệu liên tục:</strong> Mọi phiếu
+                            và nhân sự bị Admin xóa đều được lưu vào Thùng rác lưu trữ trên máy chủ và sao lưu định kỳ
+                            mỗi 15 phút.
+                        </div>
+                        <button type="button" onclick="downloadDatabaseBackup()" class="qgis-btn-primary"
+                            style="background: #15803d; border-color: #166534;">
+                            <i class="fa-solid fa-database"></i> Tải Bản Sao Lưu SQLite
+                        </button>
+                    </div>
+
+                    <h4 style="font-size: 0.84rem; font-weight: 700; color: #002060; margin-bottom: 6px;">
+                        <i class="fa-solid fa-file-circle-xmark"></i> Phiếu Khảo Sát Đã Xóa (Có Thể Khôi Phục)
+                    </h4>
+                    <div style="overflow-x: auto; max-height: 180px; border: 1px solid #cbd5e1; margin-bottom: 14px;">
+                        <table class="report-table" style="margin-top: 0; font-size: 0.78rem;">
+                            <thead>
+                                <tr>
+                                    <th>Mã Phiếu</th>
+                                    <th>Công Cụ</th>
+                                    <th>Chủ Hộ</th>
+                                    <th>Thời Gian Xóa</th>
+                                    <th style="text-align: center;">Khôi Phục</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trashSurveysTbody">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 12px; color: #64748b;">Đang
+                                        tải...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4 style="font-size: 0.84rem; font-weight: 700; color: #002060; margin-bottom: 6px;">
+                        <i class="fa-solid fa-user-xmark"></i> Tài Khoản Nhân Sự Đã Xóa (Có Thể Khôi Phục)
+                    </h4>
+                    <div style="overflow-x: auto; max-height: 160px; border: 1px solid #cbd5e1;">
+                        <table class="report-table" style="margin-top: 0; font-size: 0.78rem;">
+                            <thead>
+                                <tr>
+                                    <th>Mã NV</th>
+                                    <th>Họ Tên</th>
+                                    <th>Địa Bàn</th>
+                                    <th>Thời Gian Xóa</th>
+                                    <th style="text-align: center;">Khôi Phục</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trashUsersTbody">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 12px; color: #64748b;">Đang
+                                        tải...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SUB-TAB 4: QUESTION MANAGER -->
+                <div id="adminTabPaneQuestions" style="display: none;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <label style="font-size: 0.82rem; font-weight: 700; color: #002060;">Chọn công cụ:</label>
+                            <select id="adminQuestionToolSelect" class="form-control" style="width: auto; min-width: 190px; height: 34px; font-size: 0.82rem;" onchange="loadAdminQuestionsTable()">
+                                <option value="P1">P1 — Phiếu hộ nông dân</option>
+                                <option value="KIP">KIP — Thảo luận nhóm thôn</option>
+                                <option value="MH">MH — 9 Mô hình</option>
+                                <option value="NT">NT — Nhóm trưởng ToT</option>
+                                <option value="SDM">SDM — Tổ dịch vụ</option>
+                                <option value="HTX">HTX — Ban Giám đốc HTX</option>
+                                <option value="CQ">CQ — Chính quyền</option>
+                                <option value="TT">TT — Nhà tài trợ</option>
+                            </select>
+                            <input type="text" id="adminQuestionSearch" class="form-control" style="width: 180px; height: 34px; font-size: 0.82rem;" placeholder="Tìm mã / nội dung..." oninput="loadAdminQuestionsTable()">
+                        </div>
+                        <button type="button" class="qgis-btn-primary" onclick="openAddQuestionForm()" style="background: #15803d; border-color: #166534;">
+                            <i class="fa-solid fa-plus"></i> Thêm Câu Hỏi Mới
+                        </button>
+                    </div>
+
+                    <!-- Form Thêm / Sửa Câu Hỏi -->
+                    <form id="questionEditorBox" onsubmit="saveAdminQuestion(event)" style="display: none; background: #f8fafc; border: 1px solid #94a3b8; border-left: 4px solid #002060; padding: 12px; border-radius: 3px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong id="questionEditorTitle" style="font-size: 0.84rem; color: #002060;">CHỈNH SỬA / THÊM CÂU HỎI</strong>
+                            <button type="button" onclick="closeQuestionEditorForm()" style="background: none; border: none; color: #64748b; cursor: pointer; font-weight: 700;">✕ Đóng</button>
+                        </div>
+                        <input type="hidden" id="qEditOrigCode">
+                        <div class="grid-3" style="margin-bottom: 8px;">
+                            <div class="form-group">
+                                <label>Mã Câu Hỏi <span class="req">*</span></label>
+                                <input type="text" id="qEditCode" class="form-control" required placeholder="VD: B12">
+                            </div>
+                            <div class="form-group">
+                                <label>Phần / Mục (Section) <span class="req">*</span></label>
+                                <input type="text" id="qEditSection" list="qSectionDatalist" class="form-control" required placeholder="VD: B. Canh tác cà phê">
+                                <datalist id="qSectionDatalist"></datalist>
+                            </div>
+                            <div class="form-group">
+                                <label>Kiểu Trả Lời <span class="req">*</span></label>
+                                <select id="qEditType" class="form-control" onchange="onQuestionTypeChange()">
+                                    <option value="SC">Chọn 1 đáp án (Radio)</option>
+                                    <option value="DR">Danh sách thả xuống (Dropdown / Droplist)</option>
+                                    <option value="MO">Chọn nhiều đáp án (Checkbox)</option>
+                                    <option value="SO">Nhập số liệu (Number)</option>
+                                    <option value="TX">Văn bản tự do (Text)</option>
+                                    <option value="LK">Thang điểm Likert (1–5)</option>
+                                    <option value="DT">Ngày tháng (Date)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 8px;">
+                            <label>Nội Dung Câu Hỏi <span class="req">*</span></label>
+                            <textarea id="qEditText" class="form-control" rows="2" required placeholder="Nhập nội dung câu hỏi hiển thị cho điều tra viên..."></textarea>
+                        </div>
+                        <div id="qEditOptionsWrap" class="form-group" style="margin-bottom: 8px; display: none;">
+                            <label>Danh Sách Đáp Án (Mỗi dòng 1 lựa chọn — VD: <code>1=Có</code> hoặc nhập thẳng <code>Có</code>)</label>
+                            <textarea id="qEditOptions" class="form-control" rows="4" placeholder="1=Có&#10;2=Không&#10;3=Không biết"></textarea>
+                        </div>
+                        <div class="grid-2" style="margin-bottom: 10px;">
+                            <div class="form-group">
+                                <label>Gợi Ý / Ghi Chú cho ĐTV</label>
+                                <input type="text" id="qEditHint" class="form-control" placeholder="VD: Đơn vị tính bằng ha...">
+                            </div>
+                            <div class="form-group">
+                                <label>Điều Kiện Hiển Thị (nếu có)</label>
+                                <input type="text" id="qEditCondition" class="form-control" placeholder="VD: A02=1">
+                            </div>
+                        </div>
+                        <div style="text-align: right; display: flex; justify-content: flex-end; gap: 8px;">
+                            <button type="button" class="qgis-btn-secondary" onclick="closeQuestionEditorForm()">Hủy</button>
+                            <button type="submit" class="qgis-btn-primary"><i class="fa-solid fa-floppy-disk"></i> Lưu Câu Hỏi</button>
+                        </div>
+                    </form>
+
+                    <div style="overflow-y: auto; max-height: 300px; border: 1px solid #cbd5e1;">
+                        <table class="report-table" style="margin-top: 0; font-size: 0.78rem;">
+                            <thead>
+                                <tr>
+                                    <th style="width: 65px;">Mã</th>
+                                    <th style="width: 145px;">Phần</th>
+                                    <th>Nội Dung Câu Hỏi</th>
+                                    <th style="width: 95px;">Kiểu</th>
+                                    <th style="width: 110px; text-align: center;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminQuestionsTbody">
+                                <tr><td colspan="5" style="text-align: center; padding: 14px; color: #64748b;">Đang tải...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: right; padding: 10px 16px; background: #f1f5f9; border-top: 1px solid #cbd5e1;">
+                <button type="button" class="qgis-btn-secondary" onclick="hideStaffModal()">Đóng cửa sổ</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Application Logic -->
-<script src="app.js?v=2.6"></script>
+    <!-- Modal Chỉnh Sửa Nội Dung Phiếu Khảo Sát (Dành cho Admin & Người lập) -->
+    <div id="surveyEditModal" class="modal-overlay">
+        <div class="modal-card qgis-dialog-card"
+            style="max-width: 680px; max-height: 88vh; display: flex; flex-direction: column;">
+            <div class="qgis-dialog-titlebar">
+                <span><i class="fa-solid fa-pen-to-square"></i> CẬP NHẬT & HIỆU CHỈNH PHIẾU KHẢO SÁT HIỆN TRƯỜNG</span>
+                <button type="button" class="qgis-close-btn" onclick="hideEditSurveyModal()">✕</button>
+            </div>
+            <form onsubmit="handleEditSurveySubmit(event)"
+                style="padding: 16px; overflow-y: auto; flex-grow: 1; background: #ffffff;">
+                <input type="hidden" id="editSurveyId">
+                <div class="grid-3" style="margin-bottom: 10px;">
+                    <div class="form-group">
+                        <label>Mã Phiếu / Vườn <span class="req">*</span></label>
+                        <input type="text" class="form-control" id="editSurveyCode" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Địa Bàn Xã <span class="req">*</span></label>
+                        <select class="form-control" id="editSurveyCommune" required>
+                            <option value="Ea Kiết">Xã Ea Kiết</option>
+                            <option value="Ea Tar">Xã Ea Tar</option>
+                            <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Thôn / Buôn</label>
+                        <input type="text" class="form-control" id="editSurveyHamlet">
+                    </div>
+                </div>
+
+                <div class="grid-3" style="margin-bottom: 10px;">
+                    <div class="form-group">
+                        <label>Họ Tên Người Được Phỏng Vấn <span class="req">*</span></label>
+                        <input type="text" class="form-control" id="editSurveyRespondent" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Số ĐT Người Được Phỏng Vấn</label>
+                        <input type="text" class="form-control" id="editSurveyPhone">
+                    </div>
+                    <div class="form-group">
+                        <label>Ngày Khảo Sát <span class="req">*</span></label>
+                        <input type="date" class="form-control" id="editSurveyDate" required>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-bottom: 10px;">
+                    <div class="form-group">
+                        <label>Mã Điều Tra Viên (ID)</label>
+                        <input type="text" class="form-control" id="editSurveySurveyorId">
+                    </div>
+                    <div class="form-group">
+                        <label>Họ Tên Điều Tra Viên</label>
+                        <input type="text" class="form-control" id="editSurveySurveyorName">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label>Tọa Độ GPS (Vĩ độ, Kinh độ)</label>
+                    <input type="text" class="form-control" id="editSurveyGPS" placeholder="Ví dụ: 12.89432, 108.12456">
+                </div>
+
+                <div
+                    style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px;">
+                    <button type="submit" class="qgis-btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+                    </button>
+                    <button type="button" class="qgis-btn-secondary" onclick="hideEditSurveyModal()">
+                        Hủy Bỏ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Xem Chi Tiết Phiếu Đã Nộp -->
+    <div id="surveyDetailModal" class="modal-overlay">
+        <div class="modal-card qgis-dialog-card"
+            style="max-width: 720px; max-height: 85vh; display: flex; flex-direction: column;">
+            <div class="qgis-dialog-titlebar">
+                <span id="detailModalTitle"><i class="fa-solid fa-file-lines"></i> CHI TIẾT PHIẾU KHẢO SÁT</span>
+                <button type="button" class="qgis-close-btn" onclick="hideDetailModal()">✕</button>
+            </div>
+            <div id="detailModalBody"
+                style="overflow-y: auto; flex-grow: 1; padding: 16px; font-size: 0.88rem; background: #ffffff;"></div>
+            <div style="text-align: right; padding: 10px 16px; background: #f1f5f9; border-top: 1px solid #cbd5e1;">
+                <button type="button" class="qgis-btn-secondary" onclick="hideDetailModal()">Đóng cửa sổ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script src="app.js?v=2.6"></script>
 
 </body>
+
 </html>

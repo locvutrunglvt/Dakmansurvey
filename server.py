@@ -1097,6 +1097,109 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': str(e)}, 400)
             return
 
+        elif path == '/api/admin/questions':
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền chỉnh sửa bộ câu hỏi!'}, 403)
+                return
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+                action = (data.get('action') or 'upsert').strip().lower()
+                tool_code = str(data.get('tool_code') or '').strip()
+                if not tool_code:
+                    self._send_json({'error': 'Thiếu mã công cụ (tool_code)'}, 400)
+                    return
+
+                if not os.path.exists(QUESTIONS_FILE):
+                    self._send_json({'error': 'Không tìm thấy file questions_data.json'}, 404)
+                    return
+
+                with open(QUESTIONS_FILE, 'r', encoding='utf-8') as f:
+                    all_q = json.load(f)
+
+                if tool_code not in all_q:
+                    self._send_json({'error': f'Công cụ [{tool_code}] không tồn tại'}, 404)
+                    return
+
+                # Sao lưu questions_data.json trước khi thay đổi
+                ts_q = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                q_bk_path = os.path.join(AUDIT_DIR, f'questions_backup_{ts_q}.json')
+                with open(q_bk_path, 'w', encoding='utf-8') as bkf:
+                    json.dump(all_q, bkf, ensure_ascii=False, indent=2)
+
+                tool_obj = all_q[tool_code]
+                q_list = tool_obj.get('questions') or []
+
+                if action == 'delete':
+                    q_code = str(data.get('code') or '').strip()
+                    deleted_items = [q for q in q_list if str(q.get('code')) == q_code]
+                    if not deleted_items:
+                        self._send_json({'error': f'Không tìm thấy câu hỏi [{q_code}]'}, 404)
+                        return
+                    tool_obj['questions'] = [q for q in q_list if str(q.get('code')) != q_code]
+                    append_audit_event('DELETE_QUESTION', {'tool_code': tool_code, 'question': deleted_items[0]})
+                    msg = f'Đã xóa câu hỏi [{q_code}] khỏi công cụ {tool_code} (đã sao lưu bản cũ).'
+                else:
+                    q_in = data.get('question') or {}
+                    orig_code = str(data.get('orig_code') or '').strip()
+                    new_code = str(q_in.get('code') or '').strip()
+                    q_text = str(q_in.get('text') or '').strip()
+                    q_sec = str(q_in.get('section') or 'Thông tin chung').strip()
+                    q_type = str(q_in.get('type') or 'TX').strip().upper()
+                    q_opts = q_in.get('options') or []
+                    q_opts_raw = str(q_in.get('options_raw') or '').strip()
+                    q_cond = str(q_in.get('condition') or '').strip()
+
+                    if not new_code or not q_text:
+                        self._send_json({'error': 'Mã câu hỏi và Nội dung câu hỏi không được để trống!'}, 400)
+                        return
+
+                    new_q_obj = {
+                        'tool_code': tool_code,
+                        'tool_name': tool_obj.get('tool_name', tool_code),
+                        'group': tool_obj.get('group', ''),
+                        'code': new_code,
+                        'orig_code': new_code,
+                        'section': q_sec,
+                        'text': q_text,
+                        'type': q_type,
+                        'options_raw': q_opts_raw,
+                        'options': q_opts,
+                        'condition': q_cond,
+                        'indicator': str(q_in.get('indicator') or ''),
+                        'dac': str(q_in.get('dac') or '')
+                    }
+
+                    target_code = orig_code or new_code
+                    idx_found = next((idx for idx, item in enumerate(q_list) if str(item.get('code')) == target_code), None)
+                    if idx_found is not None:
+                        old_q = q_list[idx_found]
+                        new_q_obj['indicator'] = old_q.get('indicator', new_q_obj['indicator'])
+                        new_q_obj['dac'] = old_q.get('dac', new_q_obj['dac'])
+                        q_list[idx_found] = new_q_obj
+                        append_audit_event('UPDATE_QUESTION', {'tool_code': tool_code, 'old': old_q, 'new': new_q_obj})
+                        msg = f'Đã cập nhật câu hỏi [{new_code}] thành công!'
+                    else:
+                        if any(str(item.get('code')) == new_code for item in q_list):
+                            self._send_json({'error': f'Mã câu hỏi [{new_code}] đã tồn tại trong {tool_code}!'}, 400)
+                            return
+                        q_list.append(new_q_obj)
+                        append_audit_event('ADD_QUESTION', {'tool_code': tool_code, 'question': new_q_obj})
+                        msg = f'Đã bổ sung câu hỏi mới [{new_code}] vào công cụ {tool_code}!'
+                    tool_obj['questions'] = q_list
+
+                with open(QUESTIONS_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(all_q, f, ensure_ascii=False, indent=2)
+
+                self._send_json({'success': True, 'message': msg, 'all_questions': all_q})
+                return
+            except Exception as e:
+                self._send_json({'error': f'Lỗi cập nhật câu hỏi: {str(e)}'}, 400)
+                return
+
         elif path == '/api/admin/settings':
             cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
