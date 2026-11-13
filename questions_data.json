@@ -11,9 +11,9 @@
         "code": "A01",
         "orig_code": "A01",
         "section": "A. Thông tin phiếu",
-        "text": "Mã vườn theo danh sách PPI (ví dụ CDMN_060), mã điểm lưới mới (LW-xã-số) hoặc mã hộ bổ sung",
+        "text": "Mã số / ID nông hộ",
         "type": "TX",
-        "options_raw": "Hộ panel giữ đúng mã vòng 2025",
+        "options_raw": "Tự động điền từ danh sách hộ mẫu hoặc nhập mã Mã Xã - Mã Buôn - STT (VD: EK-JV-001)",
         "options": [],
         "condition": "",
         "indicator": "",
@@ -26,25 +26,25 @@
         "code": "A02",
         "orig_code": "A02",
         "section": "A. Thông tin phiếu",
-        "text": "Hộ thuộc nhóm nào trong mẫu?",
+        "text": "Phân loại hộ phỏng vấn (thuộc nhóm nào?)",
         "type": "SC",
-        "options_raw": "1=Hộ panel PPI; 2=Hộ mới rải lưới; 3=Hộ bổ sung theo hoạt động; 4=Hộ thay thế panel",
+        "options_raw": "1=Hộ trong danh sách mẫu; 2=Hộ mới phỏng vấn lần đầu; 3=Hộ tham gia mô hình dự án; 4=Hộ phỏng vấn thay thế",
         "options": [
           {
             "value": "1",
-            "label": "Hộ panel PPI"
+            "label": "Hộ trong danh sách mẫu (đã tham gia dự án / khảo sát trước đây)"
           },
           {
             "value": "2",
-            "label": "Hộ mới rải lưới"
+            "label": "Hộ mới phỏng vấn lần đầu (chưa từng khảo sát)"
           },
           {
             "value": "3",
-            "label": "Hộ bổ sung theo hoạt động"
+            "label": "Hộ tham gia mô hình / hoạt động của dự án"
           },
           {
             "value": "4",
-            "label": "Hộ thay thế panel"
+            "label": "Hộ phỏng vấn thay thế (do hộ trong danh sách vắng / bán vườn / từ chối)"
           }
         ],
         "condition": "",
@@ -58,37 +58,37 @@
         "code": "A02b",
         "orig_code": "A02b",
         "section": "A. Thông tin phiếu",
-        "text": "Hộ bổ sung cho hoạt động nào?",
+        "text": "Hộ tham gia mô hình / hỗ trợ nào của dự án?",
         "type": "SC",
-        "options_raw": "A2.1 Mẫu đất; A2.7 Mô hình cỏ; A3.3 Mô hình tưới; A3.4 Thùng rác; A4.5 Cây gỗ bản địa; A4.6 PPE; A5.3 Dịch vụ SDM",
+        "options_raw": "Mô hình lấy mẫu đất; Mô hình giữ cỏ / thảm phủ; Mô hình tưới tiết kiệm; Hỗ trợ thùng rác thuốc BVTV; Trồng cây gỗ bản địa; Trang bị đồ bảo hộ lao động (PPE); Dịch vụ kỹ thuật / Khác",
         "options": [
           {
-            "value": "A2.1 Mẫu đất",
-            "label": "A2.1 Mẫu đất"
+            "value": "Mô hình lấy mẫu đất",
+            "label": "Mô hình lấy mẫu đất"
           },
           {
-            "value": "A2.7 Mô hình cỏ",
-            "label": "A2.7 Mô hình cỏ"
+            "value": "Mô hình giữ cỏ / thảm phủ",
+            "label": "Mô hình giữ cỏ / thảm phủ"
           },
           {
-            "value": "A3.3 Mô hình tưới",
-            "label": "A3.3 Mô hình tưới"
+            "value": "Mô hình tưới tiết kiệm",
+            "label": "Mô hình tưới tiết kiệm"
           },
           {
-            "value": "A3.4 Thùng rác",
-            "label": "A3.4 Thùng rác"
+            "value": "Hỗ trợ thùng rác thuốc BVTV",
+            "label": "Hỗ trợ thùng rác thuốc BVTV"
           },
           {
-            "value": "A4.5 Cây gỗ bản địa",
-            "label": "A4.5 Cây gỗ bản địa"
+            "value": "Trồng cây gỗ bản địa",
+            "label": "Trồng cây gỗ bản địa"
           },
           {
-            "value": "A4.6 PPE",
-            "label": "A4.6 PPE"
+            "value": "Trang bị đồ bảo hộ lao động (PPE)",
+            "label": "Trang bị đồ bảo hộ lao động (PPE)"
           },
           {
-            "value": "A5.3 Dịch vụ SDM",
-            "label": "A5.3 Dịch vụ SDM"
+            "value": "Dịch vụ kỹ thuật / Khác",
+            "label": "Dịch vụ kỹ thuật / Khác"
           }
         ],
         "condition": "A02=3",
@@ -102,13 +102,13 @@
         "code": "A02c",
         "orig_code": "A02c",
         "section": "A. Thông tin phiếu",
-        "text": "Nếu là hộ thay thế: lý do thay hộ panel",
+        "text": "Nếu là hộ thay thế: lý do thay hộ cũ là gì?",
         "type": "SC",
-        "options_raw": "1=Vắng sau 2 lần hẹn; 2=Đã bán vườn; 3=Từ chối; 4=Khác",
+        "options_raw": "1=Vắng mặt sau 2 lần hẹn; 2=Đã bán vườn; 3=Từ chối phỏng vấn; 4=Lý do khác",
         "options": [
           {
             "value": "1",
-            "label": "Vắng sau 2 lần hẹn"
+            "label": "Vắng mặt sau 2 lần hẹn"
           },
           {
             "value": "2",
@@ -116,11 +116,11 @@
           },
           {
             "value": "3",
-            "label": "Từ chối"
+            "label": "Từ chối phỏng vấn"
           },
           {
             "value": "4",
-            "label": "Khác"
+            "label": "Lý do khác"
           }
         ],
         "condition": "A02=4",
@@ -134,9 +134,9 @@
         "code": "A03",
         "orig_code": "A03",
         "section": "A. Thông tin phiếu",
-        "text": "Xã (theo ranh giới trước 7/2025)",
+        "text": "Xã",
         "type": "SC",
-        "options_raw": "1=Ea Kiết; 2=Ea Tar; 3=Cư Dliê M'nông",
+        "options_raw": "1=Ea Kiết; 2=Ea Tul (Ea Tar cũ); 3=Cư Dliê M'nông",
         "options": [
           {
             "value": "1",
@@ -144,7 +144,7 @@
           },
           {
             "value": "2",
-            "label": "Ea Tar"
+            "label": "Ea Tul (Ea Tar cũ)"
           },
           {
             "value": "3",
