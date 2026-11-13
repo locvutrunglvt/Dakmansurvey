@@ -439,8 +439,8 @@
         "code": "LD01",
         "orig_code": "plot_soil_type",
         "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "Trên vườn anh/chị có những loại đất nào?",
-        "type": "MC",
+        "text": "Loại đất trên vườn cà phê của anh/chị?",
+        "type": "MO",
         "options_raw": "Đất đỏ Bazan; Đất xám; Đất bô xít; Đất cát pha; Đất sỏi-đá; Đất khác",
         "options": [
           {
@@ -468,91 +468,6 @@
             "label": "Đất khác"
           }
         ],
-        "condition": "",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "LD02",
-        "orig_code": "plot_soil_percent",
-        "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "Tỷ lệ đất từng loại đất đã chọn trên vườn?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "LD03",
-        "orig_code": "plot_soil_type",
-        "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "**QUAN SÁT** Điều tra viên nhận định những loại đất hiện có trên vườn",
-        "type": "MC",
-        "options_raw": "Đất đỏ Bazan; Đất xám; Đất bô xít; Đất cát pha; Đất sỏi-đá; Đất khác",
-        "options": [
-          {
-            "value": "Đất đỏ Bazan",
-            "label": "Đất đỏ Bazan"
-          },
-          {
-            "value": "Đất xám",
-            "label": "Đất xám"
-          },
-          {
-            "value": "Đất bô xít",
-            "label": "Đất bô xít"
-          },
-          {
-            "value": "Đất cát pha",
-            "label": "Đất cát pha"
-          },
-          {
-            "value": "Đất sỏi-đá",
-            "label": "Đất sỏi-đá"
-          },
-          {
-            "value": "Đất khác",
-            "label": "Đất khác"
-          }
-        ],
-        "condition": "",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "LD04",
-        "orig_code": "plot_soil_percent",
-        "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "Tỷ lệ đất từng loại đất đã chọn trên vườn?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "LD05",
-        "orig_code": "plot_typography_know_type",
-        "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "Anh chị có biết trên vườn có những loại địa hình nào không?",
-        "type": "SC",
-        "options_raw": "",
-        "options": [],
         "condition": "",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
@@ -565,28 +480,28 @@
         "orig_code": "plot_typography_type",
         "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Trên vườn anh/chị có những loại địa hình nào?",
-        "type": "MC",
-        "options_raw": "Địa hình tương đối bằng phẳng (Độ dốc nhỏ hơn 8%);  Địa hình dốc thoải (Độ dốc từ 8% - 15%);  Địa hình dốc đồi (Độ dốc từ 16% - 25%); Địa hình dốc cao (Độ dốc từ 26% - 35%); Địa hình dốc đứng (Độ dốc trên 36%); Địa hình uốn lượn",
+        "type": "MO",
+        "options_raw": "Địa hình tương đối bằng phẳng; Địa hình dốc thoải; Địa hình dốc đồi; Địa hình dốc cao; Địa hình dốc đứng; Địa hình uốn lượn",
         "options": [
           {
-            "value": "Địa hình tương đối bằng phẳng (Độ dốc nhỏ hơn 8%)",
-            "label": "Địa hình tương đối bằng phẳng (Độ dốc nhỏ hơn 8%)"
+            "value": "Địa hình tương đối bằng phẳng",
+            "label": "Địa hình tương đối bằng phẳng"
           },
           {
-            "value": "Địa hình dốc thoải (Độ dốc từ 8% - 15%)",
-            "label": "Địa hình dốc thoải (Độ dốc từ 8% - 15%)"
+            "value": "Địa hình dốc thoải",
+            "label": "Địa hình dốc thoải"
           },
           {
-            "value": "Địa hình dốc đồi (Độ dốc từ 16% - 25%)",
-            "label": "Địa hình dốc đồi (Độ dốc từ 16% - 25%)"
+            "value": "Địa hình dốc đồi",
+            "label": "Địa hình dốc đồi"
           },
           {
-            "value": "Địa hình dốc cao (Độ dốc từ 26% - 35%)",
-            "label": "Địa hình dốc cao (Độ dốc từ 26% - 35%)"
+            "value": "Địa hình dốc cao",
+            "label": "Địa hình dốc cao"
           },
           {
-            "value": "Địa hình dốc đứng (Độ dốc trên 36%)",
-            "label": "Địa hình dốc đứng (Độ dốc trên 36%)"
+            "value": "Địa hình dốc đứng",
+            "label": "Địa hình dốc đứng"
           },
           {
             "value": "Địa hình uốn lượn",
@@ -620,28 +535,28 @@
         "orig_code": "plot_typography_type",
         "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "**QUAN SÁT** Điều tra viên nhận định những loại địa hình hiện có trên vườn",
-        "type": "MC",
-        "options_raw": "Địa hình tương đối bằng phẳng (Độ dốc nhỏ hơn 8%);  Địa hình dốc thoải (Độ dốc từ 8% - 15%);  Địa hình dốc đồi (Độ dốc từ 16% - 25%); Địa hình dốc cao (Độ dốc từ 26% - 35%); Địa hình dốc đứng (Độ dốc trên 36%); Địa hình uốn lượn",
+        "type": "MO",
+        "options_raw": "Địa hình tương đối bằng phẳng; Địa hình dốc thoải; Địa hình dốc đồi; Địa hình dốc cao; Địa hình dốc đứng; Địa hình uốn lượn",
         "options": [
           {
-            "value": "Địa hình tương đối bằng phẳng (Độ dốc nhỏ hơn 8%)",
-            "label": "Địa hình tương đối bằng phẳng (Độ dốc nhỏ hơn 8%)"
+            "value": "Địa hình tương đối bằng phẳng",
+            "label": "Địa hình tương đối bằng phẳng"
           },
           {
-            "value": "Địa hình dốc thoải (Độ dốc từ 8% - 15%)",
-            "label": "Địa hình dốc thoải (Độ dốc từ 8% - 15%)"
+            "value": "Địa hình dốc thoải",
+            "label": "Địa hình dốc thoải"
           },
           {
-            "value": "Địa hình dốc đồi (Độ dốc từ 16% - 25%)",
-            "label": "Địa hình dốc đồi (Độ dốc từ 16% - 25%)"
+            "value": "Địa hình dốc đồi",
+            "label": "Địa hình dốc đồi"
           },
           {
-            "value": "Địa hình dốc cao (Độ dốc từ 26% - 35%)",
-            "label": "Địa hình dốc cao (Độ dốc từ 26% - 35%)"
+            "value": "Địa hình dốc cao",
+            "label": "Địa hình dốc cao"
           },
           {
-            "value": "Địa hình dốc đứng (Độ dốc trên 36%)",
-            "label": "Địa hình dốc đứng (Độ dốc trên 36%)"
+            "value": "Địa hình dốc đứng",
+            "label": "Địa hình dốc đứng"
           },
           {
             "value": "Địa hình uốn lượn",
@@ -675,7 +590,7 @@
         "orig_code": "plot_water_type",
         "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Trên vườn anh/chị có những nguồn nước nào?",
-        "type": "MC",
+        "type": "MO",
         "options_raw": "Sông; Suối; Ao; Hồ/Đập; Nước giếng đào; Nước giếng khoan; Mua nước sử dụng; Không có nguồn nước",
         "options": [
           {
@@ -738,7 +653,7 @@
         "orig_code": "plot_contiguous",
         "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Vườn này của anh/chị có tiếp giáp với ... hay không?",
-        "type": "MC",
+        "type": "MO",
         "options_raw": "Sông; Suối; Hồ/Đập; Rừng; Hàng rào bằng cây trồng; Hàng rào bằng thép, trụ, tường",
         "options": [
           {
@@ -778,8 +693,8 @@
         "orig_code": "plot_tree_exiting_type",
         "section": "Thông tin phân bổ loại đất trên vườn",
         "text": "Trên vườn anh/chị đang tồn tại những cây trồng nào nào?",
-        "type": "MC",
-        "options_raw": "Cà phê; Sầu riêng; XoàI; ChuốI; Mắc ca; Bơ; Dổi; Tiêu ...",
+        "type": "MO",
+        "options_raw": "Cà phê; Sầu riêng; Xoài; Chuối; Mắc ca; Bơ; Dổi; Tiêu; Khác",
         "options": [
           {
             "value": "Cà phê",
@@ -790,12 +705,12 @@
             "label": "Sầu riêng"
           },
           {
-            "value": "XoàI",
-            "label": "XoàI"
+            "value": "Xoài",
+            "label": "Xoài"
           },
           {
-            "value": "ChuốI",
-            "label": "ChuốI"
+            "value": "Chuối",
+            "label": "Chuối"
           },
           {
             "value": "Mắc ca",
@@ -810,8 +725,12 @@
             "label": "Dổi"
           },
           {
-            "value": "Tiêu ...",
-            "label": "Tiêu ..."
+            "value": "Tiêu",
+            "label": "Tiêu"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
           }
         ],
         "condition": "",
