@@ -3,7 +3,7 @@ const SHELL_FILES = [
   './',
   './index.html',
   './app.js',
-  './manifest.json',
+  './manifest.webmanifest',
   './img/pwa-icon-192.png',
   './img/pwa-icon-512.png'
 ];
