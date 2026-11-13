@@ -1169,13 +1169,15 @@
         "code": "PB10",
         "orig_code": "organic_fertilizers_qty",
         "section": "PPI - Danh sách phân bón sử dụng",
-        "text": "Số lượng phân hữu cơ trên đã sử dụng trên vườn?",
+        "text": "Khối lượng phân hữu cơ nêu trên đã sử dụng trên vườn là bao nhiêu?",
         "type": "SO",
         "options_raw": "",
         "options": [],
         "condition": "PB01=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "min": 0,
+        "unit": "kg"
       },
       {
         "tool_code": "P1",
@@ -1184,13 +1186,15 @@
         "code": "PB11",
         "orig_code": "organic_fertilizers_total",
         "section": "PPI - Danh sách phân bón sử dụng",
-        "text": "Tổng số tiền bỏ ra để mua phân này?",
+        "text": "Tổng chi phí mua phân là bao nhiêu?",
         "type": "SO",
         "options_raw": "",
         "options": [],
         "condition": "PB01=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "min": 0,
+        "unit": "đồng"
       },
       {
         "tool_code": "P1",
@@ -1205,7 +1209,9 @@
         "options": [],
         "condition": "PB01=1",
         "indicator": "Phân hữu cơ, phân hóa học (RA2 Outcome 1, 2)",
-        "dac": "Tác động"
+        "dac": "Tác động",
+        "min": 0,
+        "unit": "kg/cây"
       },
       {
         "tool_code": "P1",
@@ -1216,15 +1222,15 @@
         "section": "PPI - Danh sách phân bón sử dụng",
         "text": "Anh/chị có bón lấp phân hữu cơ hay không?",
         "type": "SC",
-        "options_raw": "Không; Có",
+        "options_raw": "Có; Không",
         "options": [
-          {
-            "value": "Không",
-            "label": "Không"
-          },
           {
             "value": "Có",
             "label": "Có"
+          },
+          {
+            "value": "Không",
+            "label": "Không"
           }
         ],
         "condition": "PB01=1",
