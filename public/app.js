@@ -410,6 +410,7 @@ function updateUserDisplay() {
     if (communeSelect && currentUser.commune && currentUser.commune !== 'Toàn vùng') {
         communeSelect.value = currentUser.commune;
     }
+    autoSelectSampleFilterForUser();
 }
 
 function updateNetworkStatus() {
@@ -474,6 +475,7 @@ async function loadSampleHouseholds() {
         if (res.ok) {
             sampleHouseholds = await res.json();
             populateSampleGuideFilter('');
+            autoSelectSampleFilterForUser();
             if (interviewedSurveyCodes.size === 0) {
                 loadSurveysList();
             } else {
@@ -482,6 +484,27 @@ async function loadSampleHouseholds() {
         }
     } catch (e) {
         console.warn('Không tải được danh sách hộ mẫu:', e);
+    }
+}
+
+function autoSelectSampleFilterForUser() {
+    if (!currentUser || currentUser.role === 'admin') return;
+    const nvSelect = document.getElementById('sampleFilterNV');
+    if (!nvSelect) return;
+    const fullName = String(currentUser.full_name || '').trim();
+    if (!fullName) return;
+
+    const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
+    const words = norm(fullName).split(/\s+/);
+    const nvKeys = ['Duy', 'Vọng', 'Trụ', 'Thao', 'Phuc', 'Sinh'];
+    const matched = nvKeys.find(k => words.includes(norm(k)) || norm(fullName).endsWith(' ' + norm(k)));
+    if (matched) {
+        nvSelect.value = matched;
+        const opt = Array.from(nvSelect.options).find(o => o.value === matched);
+        if (opt && !opt.textContent.includes(fullName)) {
+            opt.textContent = `${fullName} (${opt.textContent})`;
+        }
+        onSampleNVFilterChange();
     }
 }
 
