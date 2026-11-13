@@ -971,6 +971,9 @@ function renderQuestionsForSection(secName) {
             const topSurveyor = document.getElementById('surveyorIdInput')?.value?.trim() || currentUser?.surveyor_id;
             if (topSurveyor) currentDraftAnswers['A07'] = topSurveyor;
         }
+        const dynMeta = getDynamicQuestionTextAndUnit(q);
+        const qDisplayText = dynMeta.text;
+        const qDisplayUnit = dynMeta.unit;
         const val = currentDraftAnswers[code] || '';
         const qType = (q.type || 'TX').toUpperCase();
 
@@ -1086,7 +1089,7 @@ function renderQuestionsForSection(secName) {
                            ${isViewer ? 'disabled' : ''}
                            oninput="onAnswerChange('${code}', this, false)" 
                            placeholder="Nhập số lượng / giá trị...">
-                    ${q.unit ? `<span style="font-weight:700; color:#475569; white-space:nowrap;">${escapeHtml(q.unit)}</span>` : ''}
+                    ${qDisplayUnit ? `<span class="q-unit" style="font-weight:700; color:#475569; white-space:nowrap;">${escapeHtml(qDisplayUnit)}</span>` : ''}
                 </div>
             `;
         } else if (qType.includes('DATETIME')) {
@@ -1148,7 +1151,7 @@ function renderQuestionsForSection(secName) {
             <div class="question-card" id="qCard_${code}" data-code="${code}" data-condition="${escapeQuotes(q.condition || '')}">
                 <div class="q-header">
                     <span class="q-code">${code}</span>
-                    <span class="q-text">${q.text}</span>
+                    <span class="q-text">${qDisplayText}</span>
                     ${adminActionsHtml}
                 </div>
                 ${q.condition ? `<div class="q-condition"><i class="fa-solid fa-code-branch"></i> Điều kiện xuất hiện: ${q.condition}</div>` : ''}
@@ -1253,6 +1256,23 @@ function checkConditionMet(condStr, answers) {
 /**
  * Quét toàn bộ câu hỏi và ẩn/hiện động theo câu trả lời hiện tại
  */
+function getDynamicQuestionTextAndUnit(q) {
+    if (q.code === 'CT07') {
+        const raw = currentDraftAnswers['CT03'];
+        const arr = Array.isArray(raw) ? raw : (raw ? [String(raw)] : []);
+        const hasGraft = arr.some(v => v.includes('Ghép chồi'));
+        const hasPlant = arr.some(v => v && !v.includes('Ghép chồi'));
+        if (hasGraft && !hasPlant) {
+            return { text: 'Tổng số chồi thực hiện?', unit: 'chồi' };
+        }
+        if (hasPlant && !hasGraft) {
+            return { text: 'Tổng số cây thực hiện?', unit: 'cây' };
+        }
+        return { text: 'Tổng số cây/chồi thực hiện?', unit: 'cây/chồi' };
+    }
+    return { text: q.text, unit: q.unit || '' };
+}
+
 function evaluateQuestionConditions() {
     const cards = document.querySelectorAll('.question-card');
     let hasChanges = false;
@@ -1283,6 +1303,15 @@ function evaluateQuestionConditions() {
             }
         }
     });
+
+    const ct07Card = document.getElementById('qCard_CT07');
+    if (ct07Card) {
+        const dyn = getDynamicQuestionTextAndUnit({ code: 'CT07', text: 'Tổng số cây/chồi thực hiện?', unit: 'cây/chồi' });
+        const tEl = ct07Card.querySelector('.q-text');
+        const uEl = ct07Card.querySelector('.q-unit');
+        if (tEl) tEl.textContent = dyn.text;
+        if (uEl) uEl.textContent = dyn.unit;
+    }
 
     let visibleCount = 0;
     const hiddenConds = new Set();
