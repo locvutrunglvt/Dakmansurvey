@@ -608,6 +608,24 @@
         "tool_code": "P1",
         "tool_name": "P1 - Phiếu hộ",
         "group": "Nhóm 1: Nông Dân",
+        "code": "LD12",
+        "orig_code": "coffee_start_year",
+        "section": "Thông tin phân bổ loại đất trên vườn",
+        "text": "Năm anh/chị bắt đầu trồng của vườn cà phê trên vườn?",
+        "type": "SO",
+        "min": 1950,
+        "max": 2026,
+        "unit": "năm",
+        "options_raw": "",
+        "options": [],
+        "condition": "",
+        "indicator": "Đất, vườn; đối chiếu EUDR",
+        "dac": "Hiệu quả"
+      },
+      {
+        "tool_code": "P1",
+        "tool_name": "P1 - Phiếu hộ",
+        "group": "Nhóm 1: Nông Dân",
         "code": "LD13",
         "orig_code": "plot_tree_exiting_type",
         "section": "Thông tin phân bổ loại đất trên vườn",
@@ -664,22 +682,29 @@
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả",
         "follow_up_on": "Khác",
-        "follow_up_placeholder": "Ghi rõ tên cây trồng xen khác..."
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "LD14",
-        "orig_code": "plot_tree_exiting_year",
-        "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "Năm trồng cây cây trồng hiện có",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
+        "follow_up_placeholder": "Ghi rõ tên cây trồng xen khác...",
+        "per_option_details": {
+          "exclude": [
+            "Không trồng xen"
+          ],
+          "fields": [
+            {
+              "key": "year",
+              "label": "Năm bắt đầu trồng",
+              "type": "number",
+              "min": 1950,
+              "max": 2026,
+              "placeholder": "VD: 2018"
+            },
+            {
+              "key": "count",
+              "label": "Số cây hiện có",
+              "type": "number",
+              "min": 0,
+              "placeholder": "VD: 50"
+            }
+          ]
+        }
       },
       {
         "tool_code": "P1",

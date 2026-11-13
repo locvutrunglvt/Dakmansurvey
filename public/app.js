@@ -1047,6 +1047,7 @@ function renderQuestionsForSection(secName) {
                         </div>
                     `;
                 })() : ''}
+                ${q.per_option_details ? `<div id="optionDetails_${code}" style="margin-top: 10px;">${renderOptionDetailsHtml(q, val, isViewer)}</div>` : ''}
             `;
         } else if (qType.includes('LK')) {
             const lkOpts = (q.options && q.options.length === 5) ? q.options : [
@@ -1340,8 +1341,25 @@ function onAnswerChange(code, el, isMulti) {
             currentDraftAnswers[code] = [];
         }
         if (el.checked) {
-            if (!currentDraftAnswers[code].includes(el.value)) {
-                currentDraftAnswers[code].push(el.value);
+            if (el.value === 'Không trồng xen') {
+                currentDraftAnswers[code] = ['Không trồng xen'];
+                document.querySelectorAll(`input[name="q_${code}"]`).forEach(cb => {
+                    if (cb.value !== 'Không trồng xen') {
+                        cb.checked = false;
+                        if (cb.parentElement) cb.parentElement.classList.remove('selected');
+                    }
+                });
+            } else {
+                currentDraftAnswers[code] = currentDraftAnswers[code].filter(v => v !== 'Không trồng xen');
+                document.querySelectorAll(`input[name="q_${code}"]`).forEach(cb => {
+                    if (cb.value === 'Không trồng xen') {
+                        cb.checked = false;
+                        if (cb.parentElement) cb.parentElement.classList.remove('selected');
+                    }
+                });
+                if (!currentDraftAnswers[code].includes(el.value)) {
+                    currentDraftAnswers[code].push(el.value);
+                }
             }
         } else {
             currentDraftAnswers[code] = currentDraftAnswers[code].filter(v => v !== el.value);
@@ -1371,9 +1389,93 @@ function onAnswerChange(code, el, isMulti) {
         }
     }
 
+    const detailsBox = document.getElementById(`optionDetails_${code}`);
+    if (detailsBox) {
+        const qObj = (allQuestionsData[currentTool]?.questions || []).find(q => q.code === code);
+        if (qObj && qObj.per_option_details) {
+            const selectedArr = Array.isArray(currentDraftAnswers[code]) ? currentDraftAnswers[code] : [];
+            const detailsObj = currentDraftAnswers[code + '_details'];
+            if (detailsObj && typeof detailsObj === 'object') {
+                Object.keys(detailsObj).forEach(k => {
+                    if (!selectedArr.includes(k)) delete detailsObj[k];
+                });
+                if (Object.keys(detailsObj).length === 0) delete currentDraftAnswers[code + '_details'];
+            }
+            detailsBox.innerHTML = renderOptionDetailsHtml(qObj, currentDraftAnswers[code], currentUser?.role === 'viewer');
+        }
+    }
+
     saveDraftLocal(false);
     evaluateQuestionConditions();
     updateAnsweredSummaryBadge();
+}
+
+function renderOptionDetailsHtml(q, val, isViewer) {
+    const cfg = q.per_option_details;
+    if (!cfg || !Array.isArray(cfg.fields)) return '';
+    const selected = Array.isArray(val) ? val : [];
+    const excluded = cfg.exclude || [];
+    const items = selected.filter(v => !excluded.includes(v));
+    if (items.length === 0) return '';
+
+    const details = currentDraftAnswers[q.code + '_details'] || {};
+    return `
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 12px; background: #f8fafc;">
+            <div style="font-size: 0.82rem; font-weight: 700; color: #1e3a8a; margin-bottom: 8px;">
+                <i class="fa-solid fa-seedling"></i> Chi tiết theo từng loài cây đã chọn:
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                ${items.map(optVal => {
+                    const rowData = details[optVal] || {};
+                    const displayLabel = (optVal === 'Khác' && currentDraftAnswers[q.code + '_note'])
+                        ? `Khác (${currentDraftAnswers[q.code + '_note']})`
+                        : optVal;
+                    return `
+                        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 8px; background: #fff; border: 1px solid #e2e8f0; border-radius: 4px;">
+                            <div style="min-width: 140px; font-weight: 600; color: #0f172a; font-size: 0.88rem;">${escapeHtml(displayLabel)}</div>
+                            ${cfg.fields.map(f => {
+                                const fVal = rowData[f.key] ?? '';
+                                const minA = f.min !== undefined ? `min="${f.min}"` : '';
+                                const maxA = f.max !== undefined ? `max="${f.max}"` : '';
+                                return `
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: #334155;">
+                                        <span>${escapeHtml(f.label)}:</span>
+                                        <input type="${escapeHtml(f.type || 'text')}"
+                                               ${minA} ${maxA}
+                                               class="form-control"
+                                               style="width: 115px; padding: 4px 8px; font-size: 0.85rem;"
+                                               value="${escapeHtml(fVal)}"
+                                               placeholder="${escapeHtml(f.placeholder || '')}"
+                                               ${isViewer ? 'disabled' : ''}
+                                               oninput="onOptionDetailChange('${escapeQuotes(q.code)}', '${escapeQuotes(optVal)}', '${escapeQuotes(f.key)}', this.value)">
+                                    </label>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function onOptionDetailChange(code, optVal, fieldKey, fieldVal) {
+    if (currentUser?.role === 'viewer') return;
+    if (!currentDraftAnswers[code + '_details'] || typeof currentDraftAnswers[code + '_details'] !== 'object') {
+        currentDraftAnswers[code + '_details'] = {};
+    }
+    if (!currentDraftAnswers[code + '_details'][optVal]) {
+        currentDraftAnswers[code + '_details'][optVal] = {};
+    }
+    if (fieldVal !== undefined && String(fieldVal).trim() !== '') {
+        currentDraftAnswers[code + '_details'][optVal][fieldKey] = fieldVal;
+    } else {
+        delete currentDraftAnswers[code + '_details'][optVal][fieldKey];
+        if (Object.keys(currentDraftAnswers[code + '_details'][optVal]).length === 0) {
+            delete currentDraftAnswers[code + '_details'][optVal];
+        }
+    }
+    saveDraftLocal(false);
 }
 
 function onFollowUpChange(code, textVal) {
