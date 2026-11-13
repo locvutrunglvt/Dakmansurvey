@@ -840,6 +840,23 @@ function renderQuestionsForSection(secName) {
                     ${q.unit ? `<span style="font-weight:700; color:#475569; white-space:nowrap;">${escapeHtml(q.unit)}</span>` : ''}
                 </div>
             `;
+        } else if (qType.includes('DATETIME')) {
+            let dtVal = val;
+            if (!dtVal && !isViewer) {
+                const now = new Date();
+                const pad = n => String(n).padStart(2, '0');
+                dtVal = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                currentDraftAnswers[code] = dtVal;
+            }
+            inputHtml = `
+                <div style="margin-top: 8px; max-width: 280px;">
+                    <input type="datetime-local"
+                           class="form-control"
+                           value="${escapeHtml(dtVal)}"
+                           ${isViewer ? 'disabled' : ''}
+                           onchange="onAnswerChange('${code}', this, false)">
+                </div>
+            `;
         } else if (qType.includes('DT') || qType.includes('DATE')) {
             inputHtml = `
                 <div style="margin-top: 8px; max-width: 260px;">
@@ -1436,10 +1453,15 @@ async function handleSurveySubmit(e) {
     const respondentName = document.getElementById('respondentNameInput').value.trim();
     const gpsStr = document.getElementById('gpsInput').value.trim();
     let gpsLat = 0.0, gpsLng = 0.0;
-    if (gpsStr.includes(',')) {
-        const parts = gpsStr.split(',');
-        gpsLat = parseFloat(parts[0]) || 0.0;
-        gpsLng = parseFloat(parts[1]) || 0.0;
+    const coordMatch = gpsStr.match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+    if (coordMatch) {
+        gpsLat = parseFloat(coordMatch[1]) || 0.0;
+        gpsLng = parseFloat(coordMatch[2]) || 0.0;
+    }
+    if (gpsStr) {
+        currentDraftAnswers['_gps_text'] = gpsStr;
+    } else {
+        delete currentDraftAnswers['_gps_text'];
     }
 
     const toolObj = allQuestionsData[currentTool] || {};
@@ -1821,7 +1843,9 @@ async function reloadSurveyIntoForm(id) {
         document.getElementById('hamletInput').value = item.hamlet || '';
         document.getElementById('respondentNameInput').value = item.respondent_name || '';
         if (item.survey_date) document.getElementById('surveyDateInput').value = item.survey_date;
-        document.getElementById('gpsInput').value = (item.gps_lat && item.gps_lng) ? `${item.gps_lat}, ${item.gps_lng}` : '';
+        document.getElementById('gpsInput').value = (item.answers && item.answers._gps_text)
+            ? item.answers._gps_text
+            : ((item.gps_lat && item.gps_lng) ? `${item.gps_lat}, ${item.gps_lng}` : '');
 
         currentDraftAnswers = Object.assign({}, item.answers || {});
         if (item.photo_url) {
