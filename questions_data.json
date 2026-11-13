@@ -710,45 +710,6 @@
         "tool_code": "P1",
         "tool_name": "P1 - Phiếu hộ",
         "group": "Nhóm 1: Nông Dân",
-        "code": "LD15",
-        "orig_code": "plot_tree_exiting_qty",
-        "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "Số cây cây trồng hiện có (theo từng năm trồng) trên vườn?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "LD16",
-        "orig_code": "plot_tree_exiting_year_more",
-        "section": "Thông tin phân bổ loại đất trên vườn",
-        "text": "Còn năm trồng nào khác đối với cây cây trồng hiện có này không?",
-        "type": "SC",
-        "options_raw": "Không; Có",
-        "options": [
-          {
-            "value": "Không",
-            "label": "Không"
-          },
-          {
-            "value": "Có",
-            "label": "Có"
-          }
-        ],
-        "condition": "",
-        "indicator": "Đất, vườn; đối chiếu EUDR",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "P1",
-        "tool_name": "P1 - Phiếu hộ",
-        "group": "Nhóm 1: Nông Dân",
         "code": "CT01",
         "orig_code": "plot_tree_planting_yes",
         "section": "PPI - Thông tin cải tạo vườn trong 12 tháng qua",
