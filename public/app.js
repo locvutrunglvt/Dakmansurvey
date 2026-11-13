@@ -2349,8 +2349,12 @@ function openAddQuestionForm() {
 
 function inlineEditQuestion(code) {
     if (currentUser?.role !== 'admin') return;
-    openAdminModal();
-    switchAdminTab('questions');
+    const modal = document.getElementById('staffManagerModal');
+    if (modal) {
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    }
+    switchAdminSubTab('questions');
     const sel = document.getElementById('adminQuestionToolSelect');
     if (sel && currentTool) sel.value = currentTool;
     loadAdminQuestionsTable();
