@@ -17,6 +17,7 @@ function apiUrl(path) {
 
 let currentHouseholdPhotoData = '';
 let currentHouseholdPhotoMeta = '';
+let editingSurveyId = null;
 
 // Lá Chắn An Ninh Cấp Độ Cao: Chặn F12, Chặn Inspect, Chặn View-Source, Chặn Chuột Phải
 (function initSecurityShield() {
@@ -456,6 +457,9 @@ function formatDateVN(dateStr) {
 // ========================================================
 function selectTool(toolCode) {
     currentTool = toolCode;
+    editingSurveyId = null;
+    const submitBtn = document.getElementById('btnSubmitForm');
+    if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> GỬI KẾT QUẢ LÊN HỆ THỐNG DAKMAN';
 
     document.querySelectorAll('.tool-tab').forEach(btn => btn.classList.remove('active'));
     const activeBtn = document.getElementById(`toolBtn-${toolCode}`);
@@ -512,6 +516,32 @@ function selectTool(toolCode) {
     renderSectionJumpNav(sections);
     currentSection = sections[0] || null;
     renderQuestionsForSection(currentSection);
+    updateSectionStepButtons(sections);
+    updateAnsweredSummaryBadge();
+}
+
+function getToolSections(toolCode = currentTool) {
+    const toolObj = allQuestionsData[toolCode];
+    if (!toolObj) return [];
+    const sections = [];
+    (toolObj.questions || []).forEach(q => {
+        const s = q.section || 'Thông tin chung';
+        if (!sections.includes(s)) sections.push(s);
+    });
+    return sections;
+}
+
+function isQuestionAnswered(code) {
+    const v = currentDraftAnswers[code];
+    if (v === undefined || v === null) return false;
+    if (Array.isArray(v)) return v.length > 0;
+    return String(v).trim() !== '';
+}
+
+function getVisibleQuestions(toolCode = currentTool) {
+    const toolObj = allQuestionsData[toolCode];
+    if (!toolObj) return [];
+    return (toolObj.questions || []).filter(q => !q.condition || checkConditionMet(q.condition, currentDraftAnswers));
 }
 
 function renderSectionJumpNav(sections) {
@@ -528,8 +558,9 @@ function renderSectionJumpNav(sections) {
         <button type="button" 
                 class="jump-btn ${idx === 0 ? 'active' : ''}" 
                 id="jumpBtn-${idx}" 
+                data-section="${escapeHtml(sec)}"
                 onclick="selectSection('${escapeQuotes(sec)}', ${idx})">
-            ${sec}
+            ${escapeHtml(sec)}
         </button>
     `).join('');
 }
@@ -538,9 +569,70 @@ function selectSection(secName, idx) {
     currentSection = secName;
     document.querySelectorAll('.jump-btn').forEach(b => b.classList.remove('active'));
     const btn = document.getElementById(`jumpBtn-${idx}`);
-    if (btn) btn.classList.add('active');
+    if (btn) {
+        btn.classList.add('active');
+        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
 
     renderQuestionsForSection(secName);
+    updateSectionStepButtons();
+    updateAnsweredSummaryBadge();
+
+    const navEl = document.getElementById('sectionJumpNav');
+    if (navEl && window.innerWidth <= 768) {
+        navEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function updateSectionStepButtons(sections) {
+    const list = sections || getToolSections();
+    const stepBar = document.getElementById('sectionStepNav');
+    const prevBtn = document.getElementById('btnPrevSection');
+    const nextBtn = document.getElementById('btnNextSection');
+    if (!stepBar || !prevBtn || !nextBtn) return;
+
+    if (list.length <= 1) {
+        stepBar.style.display = 'none';
+        return;
+    }
+    stepBar.style.display = 'flex';
+    const curIdx = Math.max(0, list.indexOf(currentSection));
+    prevBtn.disabled = (curIdx <= 0);
+    prevBtn.style.opacity = curIdx <= 0 ? '0.45' : '1';
+    nextBtn.disabled = (curIdx >= list.length - 1);
+    nextBtn.style.opacity = curIdx >= list.length - 1 ? '0.45' : '1';
+}
+
+function stepSection(delta) {
+    const list = getToolSections();
+    if (!list.length) return;
+    const curIdx = Math.max(0, list.indexOf(currentSection));
+    const nextIdx = Math.min(list.length - 1, Math.max(0, curIdx + delta));
+    if (nextIdx !== curIdx) {
+        selectSection(list[nextIdx], nextIdx);
+    }
+}
+
+function jumpToFirstUnanswered() {
+    const visible = getVisibleQuestions();
+    const missing = visible.find(q => !isQuestionAnswered(q.code));
+    if (!missing) {
+        alert('Tuyệt vời! Bạn đã trả lời đầy đủ tất cả các câu hỏi hiện tại.');
+        return;
+    }
+    const secName = missing.section || 'Thông tin chung';
+    const sections = getToolSections();
+    const secIdx = sections.indexOf(secName);
+    if (secIdx >= 0 && currentSection !== secName) {
+        selectSection(secName, secIdx);
+    }
+    setTimeout(() => {
+        const card = document.getElementById(`qCard_${missing.code}`);
+        if (card) {
+            card.classList.add('unanswered-highlight');
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 100);
 }
 
 // ========================================================
@@ -852,16 +944,45 @@ function updateDraftTimeDisplay(timeStr) {
 }
 
 function updateAnsweredSummaryBadge() {
-    const count = Object.keys(currentDraftAnswers).filter(k => {
-        const v = currentDraftAnswers[k];
-        return v !== '' && v !== null && !(Array.isArray(v) && v.length === 0);
-    }).length;
-    const toolObj = allQuestionsData[currentTool];
-    const totalQ = toolObj?.questions?.length || 0;
+    const visible = getVisibleQuestions();
+    const totalQ = visible.length;
+    const answeredCount = visible.filter(q => isQuestionAnswered(q.code)).length;
+    const pct = totalQ > 0 ? Math.round((answeredCount / totalQ) * 100) : 0;
+
+    const pText = document.getElementById('surveyProgressText');
+    const pPct = document.getElementById('surveyProgressPct');
+    const pFill = document.getElementById('surveyProgressFill');
+    if (pText) pText.textContent = `Tiến độ: ${answeredCount} / ${totalQ} câu hỏi`;
+    if (pPct) pPct.textContent = `${pct}%`;
+    if (pFill) pFill.style.width = `${pct}%`;
+
     const indicator = document.getElementById('draftIndicator');
     if (indicator && totalQ > 0) {
-        indicator.title = `Đã trả lời ${count}/${totalQ} câu hỏi`;
+        indicator.title = `Đã trả lời ${answeredCount}/${totalQ} câu hỏi`;
     }
+
+    // Cập nhật trạng thái từng card đang hiển thị
+    document.querySelectorAll('.question-card').forEach(card => {
+        const code = card.dataset.code;
+        if (isQuestionAnswered(code)) {
+            card.classList.add('answered');
+            card.classList.remove('unanswered-highlight');
+        } else {
+            card.classList.remove('answered');
+        }
+    });
+
+    // Cập nhật số đếm (đã trả lời / tổng) trên từng tab Phần
+    const sections = getToolSections();
+    sections.forEach((sec, idx) => {
+        const btn = document.getElementById(`jumpBtn-${idx}`);
+        if (!btn) return;
+        const secVisible = visible.filter(q => (q.section || 'Thông tin chung') === sec);
+        const secAns = secVisible.filter(q => isQuestionAnswered(q.code)).length;
+        const done = secVisible.length > 0 && secAns === secVisible.length;
+        btn.classList.toggle('sec-complete', done);
+        btn.innerHTML = `${escapeHtml(sec)} <span style="opacity:0.85; font-size:0.75em;">(${secAns}/${secVisible.length}${done ? ' ✓' : ''})</span>`;
+    });
 }
 
 // ========================================================
@@ -1078,6 +1199,27 @@ async function handleSurveySubmit(e) {
         return;
     }
 
+    const visible = getVisibleQuestions();
+    const missing = visible.filter(q => !isQuestionAnswered(q.code));
+    if (missing.length > 0) {
+        const bySec = {};
+        missing.forEach(q => {
+            const s = q.section || 'Thông tin chung';
+            if (!bySec[s]) bySec[s] = [];
+            bySec[s].push(q.code);
+        });
+        const summary = Object.entries(bySec).map(([s, codes]) => `- ${s}: ${codes.slice(0, 5).join(', ')}${codes.length > 5 ? '...' : ''}`).join('\n');
+        const proceed = confirm(
+            `CẢNH BÁO BỎ SÓT CÂU HỎI!\nCòn ${missing.length} câu hỏi chưa có câu trả lời:\n${summary}\n\n` +
+            `• Bấm [Hủy / Cancel] để quay lại điền tiếp câu hỏi còn thiếu (khuyên dùng).\n` +
+            `• Bấm [OK] nếu chủ hộ từ chối trả lời và bạn vẫn muốn nộp phiếu.`
+        );
+        if (!proceed) {
+            jumpToFirstUnanswered();
+            return;
+        }
+    }
+
     const btn = document.getElementById('btnSubmitForm');
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG GỬI KẾT QUẢ...';
@@ -1115,18 +1257,23 @@ async function handleSurveySubmit(e) {
     };
 
     try {
-        const res = await fetch(apiUrl('/api/surveys'), {
-            method: 'POST',
+        const isEditing = !!editingSurveyId;
+        const targetUrl = isEditing ? apiUrl(`/api/surveys/${editingSurveyId}`) : apiUrl('/api/surveys');
+        const res = await fetch(targetUrl, {
+            method: isEditing ? 'PUT' : 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
         if (res.ok) {
             const data = await res.json();
-            alert(`THÀNH CÔNG!\nPhiếu phỏng vấn ${surveyCode} đã được lưu an toàn lên hệ thống.`);
+            alert(isEditing
+                ? `THÀNH CÔNG!\nĐã cập nhật lại toàn bộ nội dung phiếu ${surveyCode} trên hệ thống.`
+                : `THÀNH CÔNG!\nPhiếu phỏng vấn ${surveyCode} đã được lưu an toàn lên hệ thống.`);
 
             localStorage.removeItem(`dakman_draft_${currentTool}`);
             currentDraftAnswers = {};
+            editingSurveyId = null;
             clearHouseholdPhoto(true);
 
             await refreshDashboardData();
@@ -1416,7 +1563,10 @@ async function viewSurveyDetail(id) {
                     <div><strong>Công cụ:</strong> ${item.tool_code} — ${item.tool_name}</div>
                 </div>
             </div>
-            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); text-transform: uppercase;">Dữ liệu chi tiết từng câu hỏi (${keys.length} câu đã trả lời):</h4>
+            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <span>Dữ liệu chi tiết từng câu hỏi (${keys.length} câu đã trả lời):</span>
+                ${currentUser?.role !== 'viewer' ? `<button type="button" onclick="reloadSurveyIntoForm(${item.id})" style="background:#002060;color:#fff;border:none;padding:5px 10px;border-radius:3px;font-size:0.78rem;cursor:pointer;font-weight:600;"><i class="fa-solid fa-pen-to-square"></i> Mở lên Form để nhập liệu lại</button>` : ''}
+            </h4>
             ${photoHtml}
             ${ansHtml}
         `;
@@ -1430,6 +1580,45 @@ async function viewSurveyDetail(id) {
 function hideDetailModal() {
     const modal = document.getElementById('surveyDetailModal');
     if (modal) modal.classList.remove('active');
+}
+
+async function reloadSurveyIntoForm(id) {
+    try {
+        const res = await fetch(apiUrl(`/api/surveys/${id}`));
+        if (!res.ok) return;
+        const item = await res.json();
+        hideDetailModal();
+        switchMainView('survey');
+        selectTool(item.tool_code || 'P1');
+
+        editingSurveyId = item.id;
+        document.getElementById('surveyCodeInput').value = item.survey_code || '';
+        if (item.commune) document.getElementById('communeSelect').value = item.commune;
+        document.getElementById('hamletInput').value = item.hamlet || '';
+        document.getElementById('respondentNameInput').value = item.respondent_name || '';
+        if (item.survey_date) document.getElementById('surveyDateInput').value = item.survey_date;
+        document.getElementById('gpsInput').value = (item.gps_lat && item.gps_lng) ? `${item.gps_lat}, ${item.gps_lng}` : '';
+
+        currentDraftAnswers = Object.assign({}, item.answers || {});
+        if (item.photo_url) {
+            setHouseholdPhotoPreview(apiUrl(item.photo_url), `Ảnh đã lưu trên máy chủ (${item.survey_code})`);
+            // Không gửi lại URL thành base64 nếu không chụp ảnh mới
+            currentHouseholdPhotoData = '';
+        } else {
+            clearHouseholdPhoto(true);
+        }
+
+        renderQuestionsForSection(currentSection);
+        updateAnsweredSummaryBadge();
+
+        const btn = document.getElementById('btnSubmitForm');
+        if (btn) {
+            btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> CẬP NHẬT LẠI PHIẾU [${escapeHtml(item.survey_code)}]`;
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+        alert('Không thể nạp dữ liệu phiếu lên Form.');
+    }
 }
 
 // ========================================================
@@ -1670,21 +1859,127 @@ function hideStaffModal() {
 function switchAdminSubTab(subTab) {
     const btnStaff = document.getElementById('btnAdminTabStaff');
     const btnSec = document.getElementById('btnAdminTabSecurity');
+    const btnTrash = document.getElementById('btnAdminTabTrash');
     const paneStaff = document.getElementById('adminTabPaneStaff');
     const paneSec = document.getElementById('adminTabPaneSecurity');
+    const paneTrash = document.getElementById('adminTabPaneTrash');
+
+    [btnStaff, btnSec, btnTrash].forEach(b => b && b.classList.remove('active'));
+    [paneStaff, paneSec, paneTrash].forEach(p => { if (p) p.style.display = 'none'; });
 
     if (subTab === 'staff') {
         if (btnStaff) btnStaff.classList.add('active');
-        if (btnSec) btnSec.classList.remove('active');
         if (paneStaff) paneStaff.style.display = 'block';
-        if (paneSec) paneSec.style.display = 'none';
-    } else {
-        if (btnStaff) btnStaff.classList.remove('active');
+    } else if (subTab === 'security') {
         if (btnSec) btnSec.classList.add('active');
-        if (paneStaff) paneStaff.style.display = 'none';
         if (paneSec) paneSec.style.display = 'block';
         loadAdminSettings();
+    } else if (subTab === 'trash') {
+        if (btnTrash) btnTrash.classList.add('active');
+        if (paneTrash) paneTrash.style.display = 'block';
+        loadTrashList();
     }
+}
+
+async function loadTrashList() {
+    const sBody = document.getElementById('trashSurveysTbody');
+    const uBody = document.getElementById('trashUsersTbody');
+    if (!sBody || !uBody) return;
+    try {
+        const res = await fetch(apiUrl('/api/admin/trash'), {
+            headers: { 'X-Admin-Key': getAdminKey() }
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            const msg = escapeHtml(err.error || 'Không tải được dữ liệu thùng rác.');
+            sBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:10px;">${msg}</td></tr>`;
+            uBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:10px;">${msg}</td></tr>`;
+            return;
+        }
+        const data = await res.json();
+        const surveys = data.deleted_surveys || [];
+        const users = data.deleted_users || [];
+
+        sBody.innerHTML = surveys.length === 0
+            ? '<tr><td colspan="5" style="text-align:center;color:#64748b;padding:12px;">Chưa có phiếu nào bị xóa.</td></tr>'
+            : surveys.map(s => `
+                <tr>
+                    <td style="font-family:monospace;font-weight:700;">${escapeHtml(s.survey_code)}</td>
+                    <td>${escapeHtml(s.tool_code)}</td>
+                    <td>${escapeHtml(s.respondent_name || '—')}</td>
+                    <td style="font-size:0.74rem;">${escapeHtml(s.deleted_at || '')}</td>
+                    <td style="text-align:center;">
+                        <button type="button" onclick="restoreSurveyFromTrash(${s.archive_id}, '${escapeQuotes(s.survey_code)}')" style="background:#15803d;color:#fff;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.75rem;font-weight:600;">
+                            <i class="fa-solid fa-rotate-left"></i> Khôi phục
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+        uBody.innerHTML = users.length === 0
+            ? '<tr><td colspan="5" style="text-align:center;color:#64748b;padding:12px;">Chưa có nhân sự nào bị xóa.</td></tr>'
+            : users.map(u => `
+                <tr>
+                    <td style="font-family:monospace;font-weight:700;">${escapeHtml(u.surveyor_id)}</td>
+                    <td>${escapeHtml(u.full_name)}</td>
+                    <td>${escapeHtml(u.commune_assigned || '—')}</td>
+                    <td style="font-size:0.74rem;">${escapeHtml(u.deleted_at || '')}</td>
+                    <td style="text-align:center;">
+                        <button type="button" onclick="restoreUserFromTrash(${u.archive_id}, '${escapeQuotes(u.surveyor_id)}')" style="background:#15803d;color:#fff;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.75rem;font-weight:600;">
+                            <i class="fa-solid fa-rotate-left"></i> Khôi phục
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+    } catch (e) {
+        sBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:10px;">Lỗi kết nối máy chủ.</td></tr>';
+    }
+}
+
+async function restoreSurveyFromTrash(archiveId, code) {
+    if (!confirm(`Khôi phục lại phiếu [${code}] vào danh sách chính?`)) return;
+    try {
+        const res = await fetch(apiUrl(`/api/admin/restore/survey/${archiveId}`), {
+            method: 'POST',
+            headers: { 'X-Admin-Key': getAdminKey() }
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            alert(data.message);
+            await loadTrashList();
+            await loadSurveysList();
+            await refreshDashboardData();
+        } else {
+            alert('Lỗi: ' + (data.error || 'Không thể khôi phục'));
+        }
+    } catch (e) {
+        alert('Lỗi kết nối máy chủ.');
+    }
+}
+
+async function restoreUserFromTrash(archiveId, sid) {
+    if (!confirm(`Khôi phục lại tài khoản nhân sự [${sid}]?`)) return;
+    try {
+        const res = await fetch(apiUrl(`/api/admin/restore/user/${archiveId}`), {
+            method: 'POST',
+            headers: { 'X-Admin-Key': getAdminKey() }
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            alert(data.message);
+            await loadTrashList();
+            await loadStaffList();
+        } else {
+            alert('Lỗi: ' + (data.error || 'Không thể khôi phục'));
+        }
+    } catch (e) {
+        alert('Lỗi kết nối máy chủ.');
+    }
+}
+
+function downloadDatabaseBackup() {
+    const key = encodeURIComponent(getAdminKey());
+    window.open(apiUrl(`/api/admin/backup-download?key=${key}`), '_blank');
 }
 
 async function loadAdminSettings() {

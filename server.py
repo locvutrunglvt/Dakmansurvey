@@ -14,6 +14,7 @@ import sys
 import json
 import base64
 import sqlite3
+import tempfile
 import datetime
 import urllib.parse
 import unicodedata
@@ -24,7 +25,22 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "survey_database.sqlite")
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads", "photos")
+AUDIT_DIR = os.path.join(BASE_DIR, "backups")
 os.makedirs(UPLOADS_DIR, exist_ok=True)
+os.makedirs(AUDIT_DIR, exist_ok=True)
+AUDIT_LOG_PATH = os.path.join(AUDIT_DIR, "audit_events.jsonl")
+
+def append_audit_event(event_type, payload):
+    try:
+        record = {
+            "timestamp": datetime.datetime.now().isoformat(),
+            "event": event_type,
+            "data": payload
+        }
+        with open(AUDIT_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"Audit log error: {e}")
 QUESTIONS_FILE = os.path.join(BASE_DIR, "questions_data.json")
 SCHEDULE_FILE = os.path.join(BASE_DIR, "schedule_data.json")
 
@@ -102,6 +118,41 @@ def init_db():
         CREATE TABLE IF NOT EXISTS system_settings (
             key TEXT PRIMARY KEY,
             val TEXT
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS deleted_surveys_archive (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            original_id INTEGER,
+            survey_code TEXT,
+            tool_code TEXT,
+            surveyor_id TEXT,
+            respondent_name TEXT,
+            deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            deleted_by TEXT,
+            row_json TEXT
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS deleted_users_archive (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            original_id INTEGER,
+            surveyor_id TEXT,
+            full_name TEXT,
+            commune_assigned TEXT,
+            deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            deleted_by TEXT,
+            row_json TEXT
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS surveys_revision_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            survey_id INTEGER,
+            survey_code TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_by TEXT,
+            row_json TEXT
         )
     ''')
     cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('pass_admin', 'AAdmin123'))
@@ -257,6 +308,70 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             conn.close()
             self._send_json(users)
             return
+
+        elif path == '/api/admin/trash':
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xem thùng rác & khôi phục!'}, 403)
+                return
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute('''
+                SELECT id, original_id, survey_code, tool_code, surveyor_id, respondent_name, deleted_at, deleted_by
+                FROM deleted_surveys_archive ORDER BY id DESC LIMIT 100
+            ''')
+            s_cols = ['archive_id', 'original_id', 'survey_code', 'tool_code', 'surveyor_id', 'respondent_name', 'deleted_at', 'deleted_by']
+            deleted_surveys = [dict(zip(s_cols, r)) for r in cur.fetchall()]
+
+            cur.execute('''
+                SELECT id, original_id, surveyor_id, full_name, commune_assigned, deleted_at, deleted_by
+                FROM deleted_users_archive ORDER BY id DESC LIMIT 100
+            ''')
+            u_cols = ['archive_id', 'original_id', 'surveyor_id', 'full_name', 'commune_assigned', 'deleted_at', 'deleted_by']
+            deleted_users = [dict(zip(u_cols, r)) for r in cur.fetchall()]
+            conn.close()
+            self._send_json({
+                'deleted_surveys': deleted_surveys,
+                'deleted_users': deleted_users
+            })
+            return
+
+        elif path == '/api/admin/backup-download':
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '') or query.get('key', [''])[0]
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền tải bản sao lưu CSDL!'}, 403)
+                return
+            tmp_path = None
+            try:
+                fd, tmp_path = tempfile.mkstemp(suffix='.sqlite')
+                os.close(fd)
+                src = sqlite3.connect(DB_PATH)
+                dst = sqlite3.connect(tmp_path)
+                src.backup(dst)
+                dst.close()
+                src.close()
+                with open(tmp_path, 'rb') as f:
+                    data = f.read()
+                ts_name = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/octet-stream')
+                self.send_header('Content-Disposition', f'attachment; filename="dakman_backup_{ts_name}.sqlite"')
+                self.send_header('Content-Length', str(len(data)))
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            except Exception as e:
+                self._send_json({'error': f'Lỗi tạo bản sao lưu: {str(e)}'}, 500)
+                return
+            finally:
+                if tmp_path and os.path.exists(tmp_path):
+                    try:
+                        os.remove(tmp_path)
+                    except Exception:
+                        pass
 
         elif path == '/api/users':
             conn = sqlite3.connect(DB_PATH)
@@ -715,6 +830,94 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': str(e)}, 400)
                 return
 
+        elif path.startswith('/api/admin/restore/survey/'):
+            archive_id = path.split('/')[-1]
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền khôi phục phiếu!'}, 403)
+                return
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute('SELECT * FROM deleted_surveys_archive WHERE id = ?', (archive_id,))
+            arch = cur.fetchone()
+            if not arch:
+                conn.close()
+                self._send_json({'error': 'Không tìm thấy bản lưu phiếu cần khôi phục!'}, 404)
+                return
+            row = json.loads(arch['row_json'])
+            cur.execute('SELECT id FROM surveys WHERE id = ?', (row.get('id'),))
+            exists_id = cur.fetchone()
+            if exists_id:
+                cur.execute('''
+                    INSERT INTO surveys (
+                        survey_code, tool_code, tool_name, surveyor_id, surveyor_name,
+                        survey_date, commune, hamlet, target_group, respondent_name,
+                        respondent_phone, gps_lat, gps_lng, start_time, end_time, answers_json, photo_path, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    row.get('survey_code'), row.get('tool_code'), row.get('tool_name'),
+                    row.get('surveyor_id'), row.get('surveyor_name'), row.get('survey_date'),
+                    row.get('commune'), row.get('hamlet'), row.get('target_group'),
+                    row.get('respondent_name'), row.get('respondent_phone'),
+                    row.get('gps_lat'), row.get('gps_lng'), row.get('start_time'),
+                    row.get('end_time'), row.get('answers_json'), row.get('photo_path'), row.get('created_at')
+                ))
+            else:
+                cur.execute('''
+                    INSERT INTO surveys (
+                        id, survey_code, tool_code, tool_name, surveyor_id, surveyor_name,
+                        survey_date, commune, hamlet, target_group, respondent_name,
+                        respondent_phone, gps_lat, gps_lng, start_time, end_time, answers_json, photo_path, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    row.get('id'), row.get('survey_code'), row.get('tool_code'), row.get('tool_name'),
+                    row.get('surveyor_id'), row.get('surveyor_name'), row.get('survey_date'),
+                    row.get('commune'), row.get('hamlet'), row.get('target_group'),
+                    row.get('respondent_name'), row.get('respondent_phone'),
+                    row.get('gps_lat'), row.get('gps_lng'), row.get('start_time'),
+                    row.get('end_time'), row.get('answers_json'), row.get('photo_path'), row.get('created_at')
+                ))
+            cur.execute('DELETE FROM deleted_surveys_archive WHERE id = ?', (archive_id,))
+            conn.commit()
+            conn.close()
+            append_audit_event('RESTORE_SURVEY', {'archive_id': archive_id, 'survey_code': row.get('survey_code')})
+            self._send_json({'success': True, 'message': f"Đã khôi phục phiếu [{row.get('survey_code')}] thành công!"})
+            return
+
+        elif path.startswith('/api/admin/restore/user/'):
+            archive_id = path.split('/')[-1]
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền khôi phục nhân sự!'}, 403)
+                return
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute('SELECT * FROM deleted_users_archive WHERE id = ?', (archive_id,))
+            arch = cur.fetchone()
+            if not arch:
+                conn.close()
+                self._send_json({'error': 'Không tìm thấy bản lưu nhân sự cần khôi phục!'}, 404)
+                return
+            row = json.loads(arch['row_json'])
+            cur.execute('''
+                INSERT OR REPLACE INTO users (surveyor_id, full_name, phone, role, commune_assigned, password, last_login)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                row.get('surveyor_id'), row.get('full_name'), row.get('phone'),
+                row.get('role') or 'Điều tra viên', row.get('commune_assigned'),
+                row.get('password') or PASS_EDITOR, row.get('last_login')
+            ))
+            cur.execute('DELETE FROM deleted_users_archive WHERE id = ?', (archive_id,))
+            conn.commit()
+            conn.close()
+            append_audit_event('RESTORE_USER', {'archive_id': archive_id, 'surveyor_id': row.get('surveyor_id')})
+            self._send_json({'success': True, 'message': f"Đã khôi phục tài khoản [{row.get('full_name')} - {row.get('surveyor_id')}] thành công!"})
+            return
+
         elif path == '/api/admin/users':
             cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
@@ -884,7 +1087,18 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             answers = data.get('answers')
             photo_data = data.get('photo_data')
             conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
             cur = conn.cursor()
+
+            cur.execute('SELECT * FROM surveys WHERE id = ?', (survey_id,))
+            old_row = cur.fetchone()
+            if old_row:
+                old_dict = dict(old_row)
+                cur.execute('''
+                    INSERT INTO surveys_revision_history (survey_id, survey_code, updated_by, row_json)
+                    VALUES (?, ?, ?, ?)
+                ''', (survey_id, old_dict.get('survey_code'), role, json.dumps(old_dict, ensure_ascii=False)))
+                append_audit_event('UPDATE_SURVEY', {'survey_id': survey_id, 'survey_code': old_dict.get('survey_code'), 'updated_by': role})
 
             photo_path = ''
             if photo_data:
@@ -969,11 +1183,23 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xóa tài khoản nhân sự!'}, 403)
                 return
             conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
             cur = conn.cursor()
+            cur.execute('SELECT * FROM users WHERE surveyor_id = ? OR id = ?', (user_id, user_id))
+            deleted_rows = [dict(r) for r in cur.fetchall()]
+            for u_row in deleted_rows:
+                cur.execute('''
+                    INSERT INTO deleted_users_archive (original_id, surveyor_id, full_name, commune_assigned, deleted_by, row_json)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (
+                    u_row.get('id'), u_row.get('surveyor_id'), u_row.get('full_name'),
+                    u_row.get('commune_assigned'), 'admin', json.dumps(u_row, ensure_ascii=False)
+                ))
+                append_audit_event('DELETE_USER', u_row)
             cur.execute('DELETE FROM users WHERE surveyor_id = ? OR id = ?', (user_id, user_id))
             conn.commit()
             conn.close()
-            self._send_json({'success': True, 'message': f'Đã xóa tài khoản nhân sự [{user_id}] thành công khỏi hệ thống'})
+            self._send_json({'success': True, 'message': f'Đã chuyển tài khoản nhân sự [{user_id}] vào Thùng rác lưu trữ (có thể khôi phục bất cứ lúc nào).'})
             return
 
         elif path.startswith('/api/surveys/'):
@@ -984,11 +1210,25 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xóa phiếu!'}, 403)
                 return
             conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
             cur = conn.cursor()
+            cur.execute('SELECT * FROM surveys WHERE id = ?', (survey_id,))
+            s_row = cur.fetchone()
+            if s_row:
+                s_dict = dict(s_row)
+                cur.execute('''
+                    INSERT INTO deleted_surveys_archive (original_id, survey_code, tool_code, surveyor_id, respondent_name, deleted_by, row_json)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    s_dict.get('id'), s_dict.get('survey_code'), s_dict.get('tool_code'),
+                    s_dict.get('surveyor_id'), s_dict.get('respondent_name'), 'admin',
+                    json.dumps(s_dict, ensure_ascii=False)
+                ))
+                append_audit_event('DELETE_SURVEY', s_dict)
             cur.execute('DELETE FROM surveys WHERE id = ?', (survey_id,))
             conn.commit()
             conn.close()
-            self._send_json({'success': True, 'message': f'Đã xóa an toàn phiếu #{survey_id} khỏi máy chủ VPS'})
+            self._send_json({'success': True, 'message': f'Đã chuyển phiếu #{survey_id} vào Thùng rác lưu trữ (có thể khôi phục bất cứ lúc nào).'})
             return
         self._send_json({'error': 'Not found'}, 404)
 

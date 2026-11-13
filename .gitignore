@@ -1,9 +1,11 @@
 survey_database.sqlite
 survey_database.sqlite-journal
 uploads/
+backups/
 __pycache__/
 *.pyc
 *.bak
 *.xlsx
 .DS_Store
 Thumbs.db
+

@@ -934,34 +934,82 @@
             text-decoration: underline;
         }
 
+        .question-card.answered {
+            border-left: 4px solid #15803d !important;
+        }
+        .question-card.unanswered-highlight {
+            border-left: 4px solid #d97706 !important;
+            background: #fffbeb !important;
+        }
+        .jump-btn.sec-complete {
+            background: #dcfce7 !important;
+            border-color: #86efac !important;
+            color: #166534 !important;
+        }
+        .jump-btn.active.sec-complete {
+            background: #15803d !important;
+            color: #ffffff !important;
+        }
+
         /* Mobile Optimization */
         @media (max-width: 768px) {
-            body { padding: 0; background-color: var(--bg-desktop); }
-            .container { border: none; border-radius: 0; box-shadow: none; }
+            html, body { max-width: 100%; overflow-x: hidden; padding: 0; background-color: var(--bg-desktop); }
+            .container { border: none; border-radius: 0; box-shadow: none; width: 100%; }
             .header-official, .view-switcher-bar, .main-content, .footer-official { margin: 0; }
             .top-navbar {
                 flex-direction: column;
                 gap: 6px;
                 text-align: center;
-                padding: 8px 12px;
+                padding: 8px 10px;
             }
-            .header-official { padding: 18px 12px 14px 12px; }
-            .header-official h1 { font-size: 1.25rem; }
+            .top-navbar > div { flex-wrap: wrap; justify-content: center; gap: 6px; }
+            .header-official { padding: 14px 10px 12px 10px; }
+            .header-official .org-title { font-size: 0.92rem; }
+            .header-official .group-title { font-size: 1.05rem; line-height: 1.3; }
+            .header-official .cert-code { font-size: 0.78rem; }
             .meta-table-box { grid-template-columns: 1fr; gap: 6px; padding: 10px 12px; }
             .meta-table-item { flex-direction: column; gap: 2px; border-bottom: 1px dashed var(--slate-200); padding-bottom: 4px; }
-            .view-switcher-bar { padding: 4px 6px 0 6px; overflow-x: auto; }
-            .view-tab-btn { padding: 8px 12px; font-size: 0.80rem; white-space: nowrap; }
-            .main-content { padding: 10px 6px 20px 6px; }
-            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; gap: 8px; padding: 10px 12px 0 12px; }
-            .question-card { margin: 0 10px 10px 10px; }
+            .view-switcher-bar { padding: 4px 6px 0 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+            .view-tab-btn { padding: 9px 12px; font-size: 0.80rem; white-space: nowrap; flex-shrink: 0; }
+            .main-content { padding: 8px 6px 20px 6px; }
+            .summary-box { padding: 10px; margin-bottom: 10px; }
+            .summary-header { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .tool-tabs-nav { flex-wrap: nowrap !important; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; gap: 6px; }
+            .tool-tab { white-space: nowrap; flex-shrink: 0; padding: 8px 12px; font-size: 0.82rem; }
+            .section-jump-nav {
+                position: sticky;
+                top: 0;
+                z-index: 50;
+                background: #ececec;
+                flex-wrap: nowrap !important;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 8px 6px !important;
+                gap: 6px !important;
+                border-bottom: 1px solid #cbd5e1;
+            }
+            .jump-btn { white-space: nowrap; flex-shrink: 0; padding: 7px 11px !important; font-size: 0.80rem !important; }
+            .form-section { margin: 0 0 10px 0; }
+            .section-header { flex-direction: column; align-items: flex-start; gap: 4px; font-size: 0.84rem; padding: 10px 12px; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; gap: 10px; padding: 10px 12px 0 12px; }
+            .question-card { margin: 0 4px 12px 4px; padding: 12px !important; }
+            .question-text { font-size: 0.96rem !important; line-height: 1.48 !important; }
+            .radio-grid, .checkbox-grid, .options-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
             .form-control, select.form-control {
                 font-size: 16px !important;
-                height: 44px;
+                min-height: 44px;
             }
-            textarea.form-control { font-size: 16px !important; min-height: 80px; }
-            .radio-label, .checkbox-label { min-height: 44px; font-size: 0.86rem; }
-            .submit-bar { flex-direction: column; padding: 0 10px; }
-            .btn-bottom-primary, .btn-bottom-secondary { width: 100%; min-height: 46px; }
+            textarea.form-control { font-size: 16px !important; min-height: 88px; }
+            .radio-label, .checkbox-label { min-height: 44px; font-size: 0.90rem; padding: 8px 10px !important; }
+            .submit-bar { flex-direction: column; padding: 0 6px; gap: 8px; }
+            .btn-bottom-primary, .btn-bottom-secondary { width: 100%; min-height: 48px; font-size: 0.92rem; }
+            .modal-card, .qgis-dialog-card {
+                width: 96vw !important;
+                max-width: 96vw !important;
+                max-height: 92vh !important;
+            }
+            .report-table { font-size: 0.78rem; }
+            .report-table th, .report-table td { padding: 6px 8px; }
         }
 
         /* Chế độ bảo mật nghiêm ngặt cho tài khoản Chỉ Xem (View-Only Lock) */
@@ -1180,6 +1228,22 @@
                     </div>
                 </div>
 
+                <!-- Progress & Missing Question Check Bar -->
+                <div id="surveyProgressBar" style="background: #ffffff; border: 1px solid #d0d0d0; border-radius: 3px; padding: 8px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <div style="flex: 1; min-width: 180px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.80rem; font-weight: 700; color: #1e293b; margin-bottom: 4px;">
+                            <span id="surveyProgressText">Tiến độ: 0 / 0 câu hỏi</span>
+                            <span id="surveyProgressPct" style="color: #15803d;">0%</span>
+                        </div>
+                        <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                            <div id="surveyProgressFill" style="height: 100%; width: 0%; background: #15803d; transition: width 0.2s;"></div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="jumpToFirstUnanswered()" style="background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; padding: 6px 10px; border-radius: 3px; font-size: 0.78rem; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                        <i class="fa-solid fa-magnifying-glass"></i> Tìm câu chưa điền
+                    </button>
+                </div>
+
                 <!-- Section Fast-Jump Navigation -->
                 <div class="section-jump-nav" id="sectionJumpNav">
                     <!-- Rendered by JS -->
@@ -1191,6 +1255,16 @@
                         <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
                         <p style="margin-top: 10px;">Đang tải danh mục câu hỏi...</p>
                     </div>
+                </div>
+
+                <!-- Section Prev/Next Bar -->
+                <div id="sectionStepNav" style="display: none; justify-content: space-between; gap: 10px; margin: 10px 0 14px 0;">
+                    <button type="button" id="btnPrevSection" onclick="stepSection(-1)" class="qgis-btn-secondary" style="flex: 1; min-height: 42px; font-weight: 700;">
+                        <i class="fa-solid fa-arrow-left"></i> Phần trước
+                    </button>
+                    <button type="button" id="btnNextSection" onclick="stepSection(1)" class="qgis-btn-primary" style="flex: 1; min-height: 42px; font-weight: 700;">
+                        Phần tiếp theo <i class="fa-solid fa-arrow-right"></i>
+                    </button>
                 </div>
 
                 <!-- Bottom Submit Bar -->
@@ -1525,12 +1599,15 @@
             <button type="button" class="qgis-close-btn" onclick="hideStaffModal()">✕</button>
         </div>
 
-        <div style="background: #dcdcdc; padding: 5px 12px 0 12px; display: flex; gap: 4px; border-bottom: 1px solid #b8b8b8;">
+        <div style="background: #dcdcdc; padding: 5px 12px 0 12px; display: flex; gap: 4px; border-bottom: 1px solid #b8b8b8; flex-wrap: wrap;">
             <button type="button" class="qgis-tab-btn active" id="btnAdminTabStaff" onclick="switchAdminSubTab('staff')">
                 <i class="fa-solid fa-users"></i> 1. Quản Lý Điều Tra Viên
             </button>
             <button type="button" class="qgis-tab-btn" id="btnAdminTabSecurity" onclick="switchAdminSubTab('security')">
                 <i class="fa-solid fa-shield-halved"></i> 2. Mật Khẩu Admin & Hệ Thống
+            </button>
+            <button type="button" class="qgis-tab-btn" id="btnAdminTabTrash" onclick="switchAdminSubTab('trash')">
+                <i class="fa-solid fa-clock-rotate-left"></i> 3. Khôi Phục & Sao Lưu
             </button>
         </div>
 
@@ -1638,6 +1715,58 @@
                         </button>
                     </div>
                 </form>
+            </div>
+
+            <!-- SUB-TAB 3: TRASH RECOVERY & BACKUP -->
+            <div id="adminTabPaneTrash" style="display: none;">
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 12px; border-radius: 3px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <div style="font-size: 0.80rem; color: #166534;">
+                        <strong><i class="fa-solid fa-shield-check"></i> Bảo vệ dữ liệu liên tục:</strong> Mọi phiếu và nhân sự bị Admin xóa đều được lưu vào Thùng rác lưu trữ trên máy chủ và sao lưu định kỳ mỗi 15 phút.
+                    </div>
+                    <button type="button" onclick="downloadDatabaseBackup()" class="qgis-btn-primary" style="background: #15803d; border-color: #166534;">
+                        <i class="fa-solid fa-database"></i> Tải Bản Sao Lưu SQLite
+                    </button>
+                </div>
+
+                <h4 style="font-size: 0.84rem; font-weight: 700; color: #002060; margin-bottom: 6px;">
+                    <i class="fa-solid fa-file-circle-xmark"></i> Phiếu Khảo Sát Đã Xóa (Có Thể Khôi Phục)
+                </h4>
+                <div style="overflow-x: auto; max-height: 180px; border: 1px solid #cbd5e1; margin-bottom: 14px;">
+                    <table class="report-table" style="margin-top: 0; font-size: 0.78rem;">
+                        <thead>
+                            <tr>
+                                <th>Mã Phiếu</th>
+                                <th>Công Cụ</th>
+                                <th>Chủ Hộ</th>
+                                <th>Thời Gian Xóa</th>
+                                <th style="text-align: center;">Khôi Phục</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trashSurveysTbody">
+                            <tr><td colspan="5" style="text-align: center; padding: 12px; color: #64748b;">Đang tải...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 style="font-size: 0.84rem; font-weight: 700; color: #002060; margin-bottom: 6px;">
+                    <i class="fa-solid fa-user-xmark"></i> Tài Khoản Nhân Sự Đã Xóa (Có Thể Khôi Phục)
+                </h4>
+                <div style="overflow-x: auto; max-height: 160px; border: 1px solid #cbd5e1;">
+                    <table class="report-table" style="margin-top: 0; font-size: 0.78rem;">
+                        <thead>
+                            <tr>
+                                <th>Mã NV</th>
+                                <th>Họ Tên</th>
+                                <th>Địa Bàn</th>
+                                <th>Thời Gian Xóa</th>
+                                <th style="text-align: center;">Khôi Phục</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trashUsersTbody">
+                            <tr><td colspan="5" style="text-align: center; padding: 12px; color: #64748b;">Đang tải...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
