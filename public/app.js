@@ -1026,6 +1026,35 @@ function evaluateQuestionConditions() {
         }
     });
 
+    let visibleCount = 0;
+    const hiddenConds = new Set();
+    cards.forEach(card => {
+        if (card.style.display !== 'none') visibleCount++;
+        else if (card.dataset.condition) hiddenConds.add(card.dataset.condition);
+    });
+
+    const box = document.getElementById('surveyQuestionsBox');
+    if (box) {
+        let notice = document.getElementById('emptySectionNotice');
+        if (cards.length > 0 && visibleCount === 0) {
+            if (!notice) {
+                notice = document.createElement('div');
+                notice.id = 'emptySectionNotice';
+                notice.style.cssText = 'padding: 18px 20px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; color: #92400e; font-size: 0.88rem; line-height: 1.5;';
+                box.appendChild(notice);
+            }
+            const condList = Array.from(hiddenConds).map(c => `<code>${escapeHtml(c)}</code>`).join(', ');
+            const firstSec = (getToolSections() || [])[0] || '';
+            notice.innerHTML = `
+                <div style="font-weight: 700; margin-bottom: 4px;"><i class="fa-solid fa-circle-info"></i> Phần này hiện có ${cards.length} câu hỏi nhưng đang ẩn theo điều kiện rẽ nhánh</div>
+                <div>Điều kiện mở phần này: ${condList || 'Chưa thỏa mãn điều kiện ở các câu trước.'}</div>
+                ${firstSec && currentSection !== firstSec ? `<button type="button" class="btn-outline" style="margin-top: 10px; font-size: 0.82rem;" onclick="selectSection('${escapeQuotes(firstSec)}', 0)"><i class="fa-solid fa-arrow-left"></i> Quay lại ${escapeHtml(firstSec)}</button>` : ''}
+            `;
+        } else if (notice) {
+            notice.remove();
+        }
+    }
+
     if (hasChanges) {
         saveDraftLocal(false);
     }
