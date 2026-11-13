@@ -1753,7 +1753,7 @@
             "label": "Bênh trên quả"
           }
         ],
-        "condition": "",
+        "condition": "SB01=1",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -1789,7 +1789,7 @@
             "label": "Trên 75%"
           }
         ],
-        "condition": "",
+        "condition": "SB01=1",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -1825,7 +1825,7 @@
             "label": "Trên 75%"
           }
         ],
-        "condition": "",
+        "condition": "SB01=1",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -1857,7 +1857,7 @@
             "label": "Khác"
           }
         ],
-        "condition": "",
+        "condition": "SB01=1",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -1872,7 +1872,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "SB01=1",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -1896,7 +1896,7 @@
             "label": "Có"
           }
         ],
-        "condition": "",
+        "condition": "SB01=1 and SB05=3",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -1911,7 +1911,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "SB07=0",
+        "condition": "SB01=1 and SB05=3 and SB07=0",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -1926,7 +1926,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "SB07=1",
+        "condition": "SB01=1 and SB05=3 and SB07=1",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -1941,7 +1941,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "SB01=1 and SB05=3",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -1973,7 +1973,7 @@
             "label": "Gói"
           }
         ],
-        "condition": "",
+        "condition": "SB01=1 and SB05=3",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -1988,7 +1988,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "SB01=1 and SB05=3",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -2020,7 +2020,7 @@
             "label": "Sử dụng theo thông tin tự tìm hiểu"
           }
         ],
-        "condition": "",
+        "condition": "SB01=1 and SB05=3",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -2060,7 +2060,7 @@
             "label": "Theo cảm tính"
           }
         ],
-        "condition": "",
+        "condition": "SB01=1 and SB05=3",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -2088,7 +2088,7 @@
             "label": "Chỉ cây bị nhiễm"
           }
         ],
-        "condition": "",
+        "condition": "SB01=1 and SB05=3",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -2116,7 +2116,7 @@
             "label": "Phun phòng ngừa theo giai đoạn"
           }
         ],
-        "condition": "",
+        "condition": "SB01=1 and SB05=3",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -2140,7 +2140,7 @@
             "label": "Có"
           }
         ],
-        "condition": "",
+        "condition": "SB01=1 and SB05=3",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động",
         "follow_up_on": "Có",
@@ -2166,7 +2166,7 @@
             "label": "Giá thành"
           }
         ],
-        "condition": "SB05=3",
+        "condition": "SB01=1 and SB05=3",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -2190,7 +2190,7 @@
             "label": "Có"
           }
         ],
-        "condition": "SB05=3",
+        "condition": "SB01=1 and SB05=3",
         "indicator": "Giảm thuốc BVTV (RA4 Outcome 4, 5)",
         "dac": "Tác động"
       },
@@ -2202,7 +2202,7 @@
         "orig_code": "weed_how",
         "section": "PPI - Quản lý cỏ dại",
         "text": "Quy cách làm cỏ trên vườn",
-        "type": "MC",
+        "type": "MO",
         "options_raw": "Phát cỏ; Cuốc cỏ; Phun thuốc cỏ",
         "options": [
           {
@@ -2270,7 +2270,7 @@
             "label": "Phát gốc chừa thảm thực bì (có CD05 bổ trợ)"
           }
         ],
-        "condition": "",
+        "condition": "CD01=1",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2298,7 +2298,7 @@
             "label": "Khắp vườn"
           }
         ],
-        "condition": "",
+        "condition": "CD01=1",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2322,7 +2322,7 @@
             "label": "Cuốc xới tận gốc"
           }
         ],
-        "condition": "",
+        "condition": "CD01=2",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2350,7 +2350,7 @@
             "label": "Khắp vườn"
           }
         ],
-        "condition": "",
+        "condition": "CD01=2",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2378,7 +2378,7 @@
             "label": "Khắp vườn"
           }
         ],
-        "condition": "",
+        "condition": "CD01=3",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2393,7 +2393,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CD01=3",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2408,7 +2408,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CD01=3",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2432,7 +2432,7 @@
             "label": "Có"
           }
         ],
-        "condition": "",
+        "condition": "CD01=3",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2460,7 +2460,7 @@
             "label": "Thuốc sinh học"
           }
         ],
-        "condition": "",
+        "condition": "CD01=3",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2475,7 +2475,7 @@
         "type": "TX",
         "options_raw": "",
         "options": [],
-        "condition": "CD10=1",
+        "condition": "CD01=3 and CD10=1",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2490,7 +2490,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CD01=3",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2522,7 +2522,7 @@
             "label": "Gói"
           }
         ],
-        "condition": "",
+        "condition": "CD01=3",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2537,7 +2537,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "CD01=3",
         "indicator": "Quản lý cỏ, thảm phủ (RA2 Outcome 5)",
         "dac": "Hiệu quả"
       },
@@ -2743,7 +2743,7 @@
             "label": "Sân đất"
           }
         ],
-        "condition": "",
+        "condition": "CB04=1",
         "indicator": "Thu hoạch, chế biến",
         "dac": "Hiệu quả"
       },
@@ -2758,7 +2758,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "CB05=1",
+        "condition": "CB04=1 and CB05=1",
         "indicator": "Thu hoạch, chế biến",
         "dac": "Hiệu quả"
       },
@@ -2810,7 +2810,7 @@
             "label": "Xay xát tách vỏ thịt trong máy xay dùng nước. Sau đó phơi khô ở lò sấy/trên bạt/nhà kính/trên lưới"
           }
         ],
-        "condition": "",
+        "condition": "CB07=1",
         "indicator": "Thu hoạch, chế biến",
         "dac": "Hiệu quả"
       },
@@ -3207,7 +3207,7 @@
             "label": "Bơ ..."
           }
         ],
-        "condition": "",
+        "condition": "TM01=1",
         "indicator": "Liên kết thu mua",
         "dac": "Bền vững"
       },
@@ -3235,7 +3235,7 @@
             "label": "Số lượng cố định"
           }
         ],
-        "condition": "",
+        "condition": "TM01=1",
         "indicator": "Liên kết thu mua",
         "dac": "Bền vững"
       },
@@ -3250,7 +3250,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "TM05=3",
+        "condition": "TM01=1 and TM05=3",
         "indicator": "Liên kết thu mua",
         "dac": "Bền vững"
       },
@@ -3274,7 +3274,7 @@
             "label": "Có"
           }
         ],
-        "condition": "",
+        "condition": "TM01=1",
         "indicator": "Liên kết thu mua",
         "dac": "Bền vững"
       },
@@ -3477,7 +3477,7 @@
             "label": "Ngân hàng tư nhân"
           }
         ],
-        "condition": "",
+        "condition": "VV07=1",
         "indicator": "Vay vốn",
         "dac": "Bền vững"
       },
@@ -3509,7 +3509,7 @@
             "label": "Các nguồn đầu tư khác"
           }
         ],
-        "condition": "",
+        "condition": "VV07=1",
         "indicator": "Vay vốn",
         "dac": "Bền vững"
       },
@@ -3524,7 +3524,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "VV07=1",
         "indicator": "Vay vốn",
         "dac": "Bền vững"
       },
@@ -3539,7 +3539,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "VV07=1",
         "indicator": "Vay vốn",
         "dac": "Bền vững"
       },
@@ -3563,7 +3563,7 @@
             "label": "Có"
           }
         ],
-        "condition": "",
+        "condition": "VV07=1",
         "indicator": "Vay vốn",
         "dac": "Bền vững"
       },
@@ -3587,7 +3587,7 @@
             "label": "Đầu tư không thành công"
           }
         ],
-        "condition": "VV12=0",
+        "condition": "VV07=1 and VV12=0",
         "indicator": "Vay vốn",
         "dac": "Bền vững"
       },
@@ -3611,7 +3611,7 @@
             "label": "Có"
           }
         ],
-        "condition": "",
+        "condition": "VV07=1",
         "indicator": "Vay vốn",
         "dac": "Bền vững"
       },
@@ -3702,7 +3702,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "NN01=1 or NN01=2  or NN01=3  or sele",
+        "condition": "NN01=1 or NN01=2 or NN01=3 or NN01=4",
         "indicator": "Tưới có kiểm soát (RA3 Outcome 1)",
         "dac": "Hiệu quả"
       },
@@ -3717,7 +3717,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "",
+        "condition": "NN01=1 or NN01=2 or NN01=3 or NN01=4",
         "indicator": "Tưới có kiểm soát (RA3 Outcome 1)",
         "dac": "Hiệu quả"
       },
@@ -3741,7 +3741,7 @@
             "label": "Có"
           }
         ],
-        "condition": "",
+        "condition": "NN01=1 or NN01=2 or NN01=3 or NN01=4",
         "indicator": "Tưới có kiểm soát (RA3 Outcome 1)",
         "dac": "Hiệu quả"
       },
@@ -4738,7 +4738,7 @@
             "label": "Có"
           }
         ],
-        "condition": "",
+        "condition": "CC08=1",
         "indicator": "Tập huấn, chứng nhận",
         "dac": "Hiệu quả",
         "follow_up_on": "Có",
@@ -5985,7 +5985,7 @@
             "label": "Không biết"
           }
         ],
-        "condition": "G01=1",
+        "condition": "",
         "indicator": "Không dùng thuốc cấm (RA4 Outcome 4)",
         "dac": "Tác động"
       },
@@ -6045,7 +6045,7 @@
             "label": "Để lại vườn, suối"
           }
         ],
-        "condition": "G01=1",
+        "condition": "",
         "indicator": "Bể chứa bao bì (IV.4)",
         "dac": "Tác động"
       },

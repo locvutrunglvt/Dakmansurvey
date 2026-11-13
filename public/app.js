@@ -1304,6 +1304,19 @@ function evaluateQuestionConditions() {
                     delete currentDraftAnswers[code];
                     hasChanges = true;
                 }
+                if (currentDraftAnswers[code + '_note'] !== undefined) {
+                    delete currentDraftAnswers[code + '_note'];
+                    hasChanges = true;
+                }
+                card.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(inp => {
+                    inp.checked = false;
+                    if (inp.parentElement) inp.parentElement.classList.remove('selected');
+                });
+                card.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"], textarea, select').forEach(inp => {
+                    inp.value = '';
+                });
+                const fuBox = document.getElementById(`followUp_${code}`);
+                if (fuBox) fuBox.style.display = 'none';
             }
         }
     });
