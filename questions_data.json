@@ -560,7 +560,7 @@
             "label": "Không"
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -584,7 +584,7 @@
             "label": "Theo chi phí cố định"
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -599,7 +599,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -614,7 +614,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -642,7 +642,7 @@
             "label": "Tôi không biết"
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -657,7 +657,7 @@
         "type": "SC",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -672,7 +672,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -687,7 +687,7 @@
         "type": "SC",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -702,7 +702,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -717,7 +717,7 @@
         "type": "SC",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -732,7 +732,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -747,7 +747,7 @@
         "type": "SC",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -762,7 +762,7 @@
         "type": "MC",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -790,7 +790,7 @@
             "label": "Tôi không biết"
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -830,7 +830,7 @@
             "label": "Diện tích trồng lúa"
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -845,7 +845,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -885,7 +885,7 @@
             "label": "Đất khác"
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -900,7 +900,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -940,7 +940,7 @@
             "label": "Đất khác"
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -955,7 +955,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -970,7 +970,7 @@
         "type": "SC",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1010,7 +1010,7 @@
             "label": "Địa hình uốn lượn"
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1025,7 +1025,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1065,7 +1065,7 @@
             "label": "Địa hình uốn lượn"
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1080,7 +1080,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1128,7 +1128,7 @@
             "label": "Không có nguồn nước"
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1143,7 +1143,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1183,7 +1183,7 @@
             "label": "Hàng rào bằng thép, trụ, tường"
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1231,7 +1231,7 @@
             "label": "Tiêu ..."
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1246,7 +1246,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1261,7 +1261,7 @@
         "type": "SO",
         "options_raw": "",
         "options": [],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
@@ -1285,7 +1285,7 @@
             "label": "Có"
           }
         ],
-        "condition": "Chỉ hỏi hộ không thuộc panel (A02 = 2, 3, 4)",
+        "condition": "Hộ mới / mô hình / thay thế (A02 = 2, 3, 4)",
         "indicator": "Đất, vườn; đối chiếu EUDR",
         "dac": "Hiệu quả"
       },
