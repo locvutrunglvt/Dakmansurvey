@@ -588,19 +588,47 @@ def build_multisheet_excel(export_file=None):
     ws1.views.sheetView[0].showGridLines = True
     headers_s1 = [
         "STT", "Mã Phiếu", "Mã Công Cụ", "Tên Công Cụ", "Địa Bàn Xã", "Thôn/Buôn",
-        "Người Được Phỏng Vấn", "Số Điện Thoại", "Người Dẫn Đường",
+        "Họ Tên Chủ Hộ", "Giới Tính Chủ Hộ", "Năm Sinh Chủ Hộ",
+        "Người Được Phỏng Vấn", "Giới Tính Người PV", "Năm Sinh Người PV", "Quan Hệ Với Chủ Hộ",
+        "Số Điện Thoại", "Người Dẫn Đường",
         "Mã ĐTV", "Tên Điều Tra Viên", "Ngày Khảo Sát",
         "Bắt Đầu", "Kết Thúc", "Vĩ Độ", "Kinh Độ", "Ảnh Watermark", "Thời Gian Gửi"
     ]
+    tool_col_letter = get_column_letter(headers_s1.index("Mã Công Cụ") + 1)
+    sv_col_letter = get_column_letter(headers_s1.index("Mã ĐTV") + 1)
+    center_cols_s1 = {
+        headers_s1.index("STT") + 1,
+        headers_s1.index("Mã Phiếu") + 1,
+        headers_s1.index("Mã Công Cụ") + 1,
+        headers_s1.index("Giới Tính Chủ Hộ") + 1,
+        headers_s1.index("Năm Sinh Chủ Hộ") + 1,
+        headers_s1.index("Giới Tính Người PV") + 1,
+        headers_s1.index("Năm Sinh Người PV") + 1,
+        headers_s1.index("Mã ĐTV") + 1,
+        headers_s1.index("Ngày Khảo Sát") + 1,
+    }
+    right_cols_s1 = {
+        headers_s1.index("Vĩ Độ") + 1,
+        headers_s1.index("Kinh Độ") + 1,
+    }
     ws1.append(headers_s1)
     style_header_row(ws1, 1, len(headers_s1))
 
     for idx, s in enumerate(surveys_list, 1):
         ans = s.get('answers') or {}
         p_name = s.get('photo_path') or ''
+        head_name = ans.get('_head_name') or s.get('respondent_name', '')
+        head_gender = ans.get('_head_gender', '')
+        head_birth = ans.get('_head_birth_year', '')
+        resp_name = s.get('respondent_name', '') or head_name
+        resp_gender = ans.get('_resp_gender', '')
+        resp_birth = ans.get('_resp_birth_year', '')
+        resp_rel = ans.get('_resp_relation', '')
         row_vals = [
             idx, s.get('survey_code', ''), s.get('tool_code', ''), s.get('tool_name', ''),
-            s.get('commune', ''), s.get('hamlet', ''), s.get('respondent_name', ''),
+            s.get('commune', ''), s.get('hamlet', ''),
+            head_name, head_gender, head_birth,
+            resp_name, resp_gender, resp_birth, resp_rel,
             s.get('respondent_phone') or ans.get('_phone', ''),
             ans.get('_guide', ''),
             s.get('surveyor_id', ''), s.get('surveyor_name', ''), s.get('survey_date', ''),
@@ -615,7 +643,7 @@ def build_multisheet_excel(export_file=None):
             cell.font = font_normal
             cell.border = thin_border
             cell.alignment = Alignment(
-                horizontal="center" if c_idx in (1, 2, 3, 10, 12) else ("right" if c_idx in (15, 16) else "left"),
+                horizontal="center" if c_idx in center_cols_s1 else ("right" if c_idx in right_cols_s1 else "left"),
                 vertical="center"
             )
 
@@ -646,7 +674,7 @@ def build_multisheet_excel(export_file=None):
         ws_sum.cell(r_idx, 1, t_code)
         ws_sum.cell(r_idx, 2, t_name)
         ws_sum.cell(r_idx, 3, t_target)
-        ws_sum.cell(r_idx, 4, f'=COUNTIF(Danh_Sach_Phieu!C:C, A{r_idx})')
+        ws_sum.cell(r_idx, 4, f'=COUNTIF(Danh_Sach_Phieu!{tool_col_letter}:{tool_col_letter}, A{r_idx})')
         ws_sum.cell(r_idx, 5, f'=IF(C{r_idx}>0, D{r_idx}/C{r_idx}, 0)')
         for c_i in range(1, 6):
             cell = ws_sum.cell(r_idx, c_i)
@@ -681,7 +709,7 @@ def build_multisheet_excel(export_file=None):
         ws_sum.cell(r_idx, 1, u_sid)
         ws_sum.cell(r_idx, 2, u_name)
         ws_sum.cell(r_idx, 3, u_comm)
-        ws_sum.cell(r_idx, 4, f'=COUNTIF(Danh_Sach_Phieu!J:J, A{r_idx})')
+        ws_sum.cell(r_idx, 4, f'=COUNTIF(Danh_Sach_Phieu!{sv_col_letter}:{sv_col_letter}, A{r_idx})')
         ws_sum.cell(r_idx, 5, f'=IF($D${u_start + len(users_rows)}>0, D{r_idx}/$D${u_start + len(users_rows)}, 0)')
         for c_i in range(1, 6):
             cell = ws_sum.cell(r_idx, c_i)
@@ -708,7 +736,12 @@ def build_multisheet_excel(export_file=None):
     def build_tool_sheet(sheet_title, target_tool_code, qs_subset):
         ws_t = wb.create_sheet(title=sheet_title[:31])
         ws_t.views.sheetView[0].showGridLines = True
-        fixed = ["Mã Phiếu", "Xã", "Thôn/Buôn", "Chủ Hộ / Đối Tượng", "Người Dẫn Đường", "Mã ĐTV", "Ngày Khảo Sát"]
+        fixed = [
+            "Mã Phiếu", "Xã", "Thôn/Buôn",
+            "Chủ Hộ", "GT Chủ Hộ", "NS Chủ Hộ",
+            "Người Được PV", "GT Người PV", "NS Người PV", "Quan Hệ Với Chủ Hộ",
+            "Người Dẫn Đường", "Mã ĐTV", "Ngày Khảo Sát"
+        ]
         q_cols = []
         for q in qs_subset:
             c_code = q.get('code', '')
@@ -723,9 +756,12 @@ def build_multisheet_excel(export_file=None):
         filtered = [s for s in surveys_list if s.get('tool_code') == target_tool_code]
         for r_i, s in enumerate(filtered, 2):
             ans = s.get('answers') or {}
+            head_name = ans.get('_head_name') or s.get('respondent_name', '')
             vals = [
                 s.get('survey_code', ''), s.get('commune', ''), s.get('hamlet', ''),
-                s.get('respondent_name', ''), ans.get('_guide', ''), s.get('surveyor_id', ''), s.get('survey_date', '')
+                head_name, ans.get('_head_gender', ''), ans.get('_head_birth_year', ''),
+                s.get('respondent_name', '') or head_name, ans.get('_resp_gender', ''), ans.get('_resp_birth_year', ''), ans.get('_resp_relation', ''),
+                ans.get('_guide', ''), s.get('surveyor_id', ''), s.get('survey_date', '')
             ]
             for qc in q_cols:
                 vals.append(_excel_safe_val(ans.get(qc['code'], ''), qc['type']))
@@ -1177,6 +1213,47 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             self._send_json(drafts)
             return
 
+        elif path == '/api/household-locks':
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute('''
+                SELECT survey_code, draft_key, tool_code, surveyor_id, surveyor_name,
+                       photo_path, gps_lat, gps_lng, answered_count, answers_json, updated_at
+                FROM survey_drafts
+                WHERE survey_code IS NOT NULL AND TRIM(survey_code) != ''
+                ORDER BY updated_at DESC, id DESC
+            ''')
+            locks = []
+            seen_codes = set()
+            for row in cur.fetchall():
+                sc = str(row[0] or '').strip().upper()
+                if not sc or sc in seen_codes:
+                    continue
+                photo_p = str(row[5] or '').strip()
+                has_gps = bool((row[6] or 0) != 0 or (row[7] or 0) != 0)
+                ans_cnt = int(row[8] or 0)
+                try:
+                    ans_obj = json.loads(row[9] or '{}')
+                except Exception:
+                    ans_obj = {}
+                is_checkin = (ans_obj.get('_field_checkin_mode') == 'paper_pending')
+                if photo_p or is_checkin or has_gps or ans_cnt > 0:
+                    seen_codes.add(sc)
+                    locks.append({
+                        'survey_code': sc,
+                        'draft_key': row[1] or '',
+                        'tool_code': row[2] or 'P1',
+                        'surveyor_id': str(row[3] or '').strip(),
+                        'surveyor_name': str(row[4] or '').strip(),
+                        'has_photo': bool(photo_p),
+                        'has_gps': has_gps,
+                        'answered_count': ans_cnt,
+                        'updated_at': row[10] or ''
+                    })
+            conn.close()
+            self._send_json(locks)
+            return
+
         elif path == '/api/surveys':
             tool_filter = query.get('tool', [None])[0]
             commune_filter = query.get('commune', [None])[0]
@@ -1445,6 +1522,27 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
             conn = sqlite3.connect(DB_PATH)
             cur = conn.cursor()
+            cur.execute('''
+                SELECT surveyor_id, surveyor_name, photo_path
+                FROM survey_drafts
+                WHERE (draft_key = ? OR UPPER(survey_code) = UPPER(?))
+                LIMIT 1
+            ''', (draft_key, survey_code))
+            existing_lock = cur.fetchone()
+            if (
+                existing_lock and role != 'admin' and surveyor_id
+                and str(existing_lock[0] or '').strip()
+                and str(existing_lock[0] or '').strip().upper() != surveyor_id.upper()
+                and str(existing_lock[2] or '').strip()
+            ):
+                other_sid = str(existing_lock[0] or '').strip()
+                other_name = str(existing_lock[1] or other_sid).strip()
+                conn.close()
+                self._send_json({
+                    'error': f'Hộ [{survey_code}] đã được ĐTV {other_name} ({other_sid}) chụp ảnh hiện trường và giữ phiếu!'
+                }, 409)
+                return
+
             cur.execute('SELECT photo_path, photo_meta FROM survey_drafts WHERE draft_key = ?', (draft_key,))
             existing_draft = cur.fetchone()
 
@@ -1804,39 +1902,6 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': str(e)}, 400)
                 return
 
-        elif path == '/api/drafts':
-            role_param = (query.get('role', [''])[0] or '').strip().lower()
-            surveyor_filter = (query.get('surveyor_id', [''])[0] or '').strip()
-            conn = sqlite3.connect(DB_PATH)
-            cur = conn.cursor()
-            sql = '''
-                SELECT id, draft_key, tool_code, survey_code, surveyor_id, surveyor_name,
-                       survey_date, commune, hamlet, respondent_name, respondent_phone,
-                       guide_name, gps_lat, gps_lng, current_section, photo_path, photo_meta,
-                       answers_json, answered_count, total_count, updated_at
-                FROM survey_drafts
-            '''
-            params = []
-            if role_param != 'admin' and surveyor_filter:
-                sql += ' WHERE UPPER(surveyor_id) = UPPER(?)'
-                params.append(surveyor_filter)
-            sql += ' ORDER BY updated_at DESC, id DESC'
-            cur.execute(sql, params)
-            cols = [c[0] for c in cur.description]
-            drafts = []
-            for r in cur.fetchall():
-                d = dict(zip(cols, r))
-                try:
-                    d['answers'] = json.loads(d.get('answers_json') or '{}')
-                except Exception:
-                    d['answers'] = {}
-                if d.get('photo_path'):
-                    d['photo_url'] = f"/api/photos/{d['photo_path']}"
-                drafts.append(d)
-            conn.close()
-            self._send_json(drafts)
-            return
-
         elif path == '/api/surveys':
             length = int(self.headers.get('Content-Length', 0))
             raw_body = read_request_body(self.rfile, length)
@@ -1894,7 +1959,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 respondent_phone, gps_lat, gps_lng, start_time, end_time, answers_json, photo_path
             ))
             survey_id = cur.lastrowid
-            cur.execute('DELETE FROM survey_drafts WHERE draft_key = ?', (draft_key,))
+            cur.execute('DELETE FROM survey_drafts WHERE draft_key = ? OR (UPPER(survey_code) = UPPER(?) AND tool_code = ?)', (draft_key, survey_code, tool_code))
             cur.execute('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE surveyor_id = ?', (surveyor_id,))
             conn.commit()
             conn.close()

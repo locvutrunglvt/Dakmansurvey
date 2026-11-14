@@ -216,16 +216,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadSchedule();
     await syncOfflineQueue(true);
     await syncPendingDrafts(true);
+    await loadHouseholdLocks();
     await refreshDraftBadgeCount();
     await refreshDashboardData();
     await loadSurveysList();
     selectTool('P1');
+    switchMainView('menu');
 
     // Kiểm tra kết nối mạng & tự động đẩy hàng đợi offline khi có mạng lại
     window.addEventListener('online', () => {
         updateNetworkStatus();
         syncOfflineQueue(true);
         syncPendingDrafts(true);
+        loadHouseholdLocks();
     });
     window.addEventListener('offline', updateNetworkStatus);
     updateNetworkStatus();
@@ -494,6 +497,10 @@ function updateUserDisplay() {
     if (communeSelect && currentUser.commune && currentUser.commune !== 'Toàn vùng') {
         communeSelect.value = currentUser.commune;
     }
+    const menuWelcome = document.getElementById('menuWelcomeUser');
+    if (menuWelcome) {
+        menuWelcome.textContent = `${currentUser.full_name || currentUser.surveyor_id} (${currentUser.surveyor_id || ''})`;
+    }
     autoSelectSampleFilterForUser();
 }
 
@@ -510,10 +517,12 @@ function updateNetworkStatus() {
 }
 
 // ========================================================
-// 2. CHUYỂN ĐỔI GIAO DIỆN CHÍNH (VIEW SWITCHER)
+// 2. CHUYỂN ĐỔI GIAO DIỆN CHÍNH (MENU & SUBVIEWS)
 // ========================================================
-function switchMainView(viewId) {
-    const views = ['survey', 'dashboard', 'schedule', 'history'];
+let currentMainView = 'menu';
+
+function switchMainView(viewId, subTab = '') {
+    const views = ['menu', 'survey', 'dashboard', 'schedule', 'history'];
     views.forEach(v => {
         const pane = document.getElementById(`view-${v}`);
         const btn = document.getElementById(`btnView${capitalize(v)}`);
@@ -521,14 +530,89 @@ function switchMainView(viewId) {
         if (btn) btn.classList.remove('active');
     });
 
+    currentMainView = viewId;
     const activePane = document.getElementById(`view-${viewId}`);
     const activeBtn = document.getElementById(`btnView${capitalize(viewId)}`);
     if (activePane) activePane.style.display = 'block';
     if (activeBtn) activeBtn.classList.add('active');
 
+    const officialHeader = document.getElementById('officialHeaderBlock');
+    if (officialHeader) {
+        officialHeader.style.display = (viewId === 'menu') ? 'block' : 'none';
+    }
+    const subTop = document.getElementById('subviewTopBar');
+    const subTitle = document.getElementById('subviewTitleText');
+    const btnChangeObj = document.getElementById('btnChangeObjectSub');
+    if (subTop) {
+        subTop.classList.toggle('active', viewId !== 'menu');
+    }
+    if (btnChangeObj) {
+        btnChangeObj.style.display = (viewId === 'survey') ? 'inline-flex' : 'none';
+    }
+    if (subTitle) {
+        if (viewId === 'survey') {
+            const toolObj = allQuestionsData[currentTool];
+            subTitle.textContent = toolObj
+                ? `Tạo phiếu: ${toolObj.tool_code} — ${toolObj.tool_name}`
+                : `Tạo phiếu: ${currentTool}`;
+        } else if (viewId === 'history') {
+            subTitle.textContent = 'Xem phiếu đã phỏng vấn';
+        } else if (viewId === 'dashboard') {
+            subTitle.textContent = 'Tiến độ nhóm khảo sát';
+        } else if (viewId === 'schedule') {
+            subTitle.textContent = 'Kế hoạch hoạt động 6 người (15 – 21/11/2026)';
+        } else {
+            subTitle.textContent = '';
+        }
+    }
+
+    if (viewId === 'menu') {
+        refreshDraftBadgeCount();
+        updateMenuSummaryBadges();
+    }
+    if (viewId === 'survey') {
+        loadHouseholdLocks().then(() => {
+            populateSampleGuideFilter();
+            filterSampleHouseholds(Boolean(document.getElementById('sampleFilterGuide')?.value || document.getElementById('sampleSearchInput')?.value));
+        });
+    }
     if (viewId === 'dashboard') refreshDashboardData();
-    if (viewId === 'schedule') renderScheduleTable();
+    if (viewId === 'schedule') {
+        renderScheduleTable();
+        renderTeamWeekSchedule();
+        switchScheduleTab(subTab || 'team6');
+    }
     if (viewId === 'history') loadSurveysList();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openNewSurveyTool(toolCode) {
+    switchMainView('survey');
+    selectTool(toolCode);
+    const subTitle = document.getElementById('subviewTitleText');
+    const toolObj = allQuestionsData[toolCode];
+    if (subTitle && toolObj) {
+        subTitle.textContent = `Tạo phiếu: ${toolObj.tool_code} — ${toolObj.tool_name}`;
+    }
+}
+
+function switchScheduleTab(tabId) {
+    const pTeam = document.getElementById('schedulePaneTeam6');
+    const pRoad = document.getElementById('schedulePaneRoadmap');
+    const bTeam = document.getElementById('btnSchTabTeam6');
+    const bRoad = document.getElementById('btnSchTabRoadmap');
+    const isTeam = (tabId !== 'roadmap');
+    if (pTeam) pTeam.style.display = isTeam ? 'block' : 'none';
+    if (pRoad) pRoad.style.display = isTeam ? 'none' : 'block';
+    if (bTeam) bTeam.classList.toggle('active', isTeam);
+    if (bRoad) bRoad.classList.toggle('active', !isTeam);
+}
+
+function updateMenuSummaryBadges() {
+    const hBadge = document.getElementById('menuHistoryBadge');
+    const dBadge = document.getElementById('menuDashBadge');
+    if (hBadge) hBadge.textContent = `${interviewedSurveyCodes.size} phiếu`;
+    if (dBadge) dBadge.textContent = `${interviewedSurveyCodes.size} / 238`;
 }
 
 function capitalize(s) {
@@ -542,6 +626,7 @@ let sampleHouseholds = [];
 let sampleHouseholdsLoadingPromise = null;
 let interviewedSurveyCodes = new Set();
 let checkinDraftCodes = new Set();
+let householdLocksMap = new Map();
 let lastAutoSelectedHouseholdLabel = '';
 
 const INTERVIEWER_ROSTER = {
@@ -579,6 +664,42 @@ function matchesInterviewer(h, nvKey) {
     return meta ? hNorm === normVn(meta.key) : false;
 }
 
+async function loadHouseholdLocks() {
+    if (!navigator.onLine) return;
+    try {
+        const res = await fetch(apiUrl('/api/household-locks'), { cache: 'no-store' });
+        if (!res.ok) return;
+        const rows = await res.json();
+        const nextMap = new Map();
+        if (Array.isArray(rows)) {
+            rows.forEach(r => {
+                const code = String(r.survey_code || '').trim().toUpperCase();
+                if (!code) return;
+                const existing = nextMap.get(code);
+                if (!existing || (!existing.has_photo && r.has_photo)) {
+                    nextMap.set(code, r);
+                }
+            });
+        }
+        householdLocksMap = nextMap;
+    } catch (e) {
+        console.warn('Không tải được trạng thái khóa hộ:', e);
+    }
+}
+
+function getHouseholdLockInfo(code) {
+    const key = String(code || '').trim().toUpperCase();
+    return key ? (householdLocksMap.get(key) || null) : null;
+}
+
+function isHouseholdLockedByOther(lock) {
+    if (!lock || !lock.has_photo) return false;
+    const lockUid = String(lock.surveyor_id || '').trim().toUpperCase();
+    const myUid = String(currentUser?.surveyor_id || '').trim().toUpperCase();
+    if (!lockUid) return false;
+    return lockUid !== myUid;
+}
+
 async function loadQuestions() {
     await loadSampleHouseholds();
     try {
@@ -592,34 +713,7 @@ async function loadQuestions() {
 }
 
 function updateInterviewerFilterOptions() {
-    const nvSelect = document.getElementById('sampleFilterNV');
-    if (!nvSelect) return;
-    const prevVal = nvSelect.value || '';
-    const assignedScope = getUserAssignedScope();
-    const totalPending = sampleHouseholds.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())).length;
-    Array.from(nvSelect.options).forEach(opt => {
-        if (!opt.value) {
-            opt.textContent = sampleHouseholds.length
-                ? `-- Tất cả Điều tra viên (6 ĐTV • Còn ${totalPending}/${sampleHouseholds.length} hộ chờ) --`
-                : '-- Tất cả Điều tra viên (6 ĐTV • 220 hộ) --';
-            return;
-        }
-        const meta = findInterviewerMeta(opt.value);
-        if (!meta) return;
-        const isMe = Boolean(assignedScope && normVn(assignedScope) === normVn(opt.value));
-        const prefix = isMe ? '★ [Của bạn] ' : '';
-        if (sampleHouseholds.length) {
-            const allRows = sampleHouseholds.filter(h => matchesInterviewer(h, opt.value));
-            const pendRows = allRows.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase()));
-            const guides = new Set(pendRows.map(h => h.guide).filter(Boolean)).size;
-            opt.textContent = `${prefix}${meta.fullName} (${meta.code}) — còn ${pendRows.length}/${allRows.length} hộ • ${guides} dẫn đường còn chờ (${meta.communes})`;
-        } else {
-            opt.textContent = `${prefix}${meta.fullName} (${meta.code}) — ${meta.communes}`;
-        }
-        opt.style.fontWeight = isMe ? '700' : '400';
-        opt.style.color = isMe ? '#002060' : '';
-    });
-    nvSelect.value = prevVal;
+    // Bộ lọc theo ĐTV đã được gỡ bỏ theo góp ý nhóm — không khóa hộ vào 1 ĐTV
 }
 
 async function loadSampleHouseholds(force = false) {
@@ -643,10 +737,10 @@ async function loadSampleHouseholds(force = false) {
                 console.warn('Thử tải danh sách hộ mẫu từ ' + url + ' thất bại:', e);
             }
         }
+        await loadHouseholdLocks();
         if (loaded) {
             sampleHouseholds = loaded;
-            updateInterviewerFilterOptions();
-            populateSampleGuideFilter(document.getElementById('sampleFilterNV')?.value || '');
+            populateSampleGuideFilter();
             autoSelectSampleFilterForUser();
             if (interviewedSurveyCodes.size === 0) {
                 loadSurveysList();
@@ -695,33 +789,29 @@ function getUserAssignedScope() {
 }
 
 function autoSelectSampleFilterForUser() {
-    const nvSelect = document.getElementById('sampleFilterNV');
     const scopeNote = document.getElementById('sampleScopeNote');
-    if (!nvSelect) return;
-
     if (sampleHouseholds.length === 0) {
         loadSampleHouseholds();
     }
-    updateInterviewerFilterOptions();
-
-    nvSelect.disabled = false;
-    nvSelect.style.background = '#ffffff';
-    nvSelect.title = 'Lọc tùy chọn theo ĐTV (mặc định hiển thị tất cả để tìm & phỏng vấn hỗ trợ chéo)';
 
     const assignedScope = getUserAssignedScope();
-    if (assignedScope && scopeNote) {
-        const assignedRows = sampleHouseholds.filter(h => matchesInterviewer(h, assignedScope));
-        const totalAssigned = assignedRows.length;
-        const pendingAssigned = assignedRows.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())).length;
-        const allPending = sampleHouseholds.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())).length;
+    const allPending = sampleHouseholds.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())).length;
+    if (scopeNote) {
         const fullName = String(currentUser?.full_name || '').trim();
-        scopeNote.style.display = 'block';
-        scopeNote.innerHTML = `<i class="fa-solid fa-star" style="color:#002060;"></i> Đang đăng nhập: <strong>${escapeHtml(fullName || currentUser.surveyor_id)} (${escapeHtml(currentUser.surveyor_id)})</strong> — Còn <strong>${pendingAssigned}/${totalAssigned} hộ</strong> trong phân công (được <strong style="color:#002060;">tô đậm &amp; xếp lên đầu</strong>). Có thể chọn/nhập qua lại cả <strong>${allPending} hộ</strong> đang chờ để hỗ trợ phỏng vấn chéo.`;
-    } else if (scopeNote) {
-        scopeNote.style.display = 'none';
+        if (assignedScope) {
+            const assignedRows = sampleHouseholds.filter(h => matchesInterviewer(h, assignedScope));
+            const pendingAssigned = assignedRows.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())).length;
+            scopeNote.style.display = 'block';
+            scopeNote.innerHTML = `<i class="fa-solid fa-unlock-keyhole" style="color:#002060;"></i> <strong>${escapeHtml(fullName || currentUser.surveyor_id)} (${escapeHtml(currentUser.surveyor_id)})</strong>: Mở toàn bộ <strong>${allPending} hộ</strong> đang chờ (nhóm của bạn còn <strong>${pendingAssigned}/${assignedRows.length}</strong> hộ được <strong style="color:#002060;">tô đậm</strong>). Chỉ khóa hộ khi đã có người chụp ảnh/phỏng vấn.`;
+        } else if (allPending > 0) {
+            scopeNote.style.display = 'block';
+            scopeNote.innerHTML = `<i class="fa-solid fa-unlock-keyhole" style="color:#002060;"></i> Đang mở tự do toàn bộ <strong>${allPending} hộ</strong> chưa phỏng vấn. Hộ chỉ bị khóa khi đã có ĐTV chụp ảnh / check-in.`;
+        } else {
+            scopeNote.style.display = 'none';
+        }
     }
 
-    populateSampleGuideFilter(nvSelect.value || '');
+    populateSampleGuideFilter();
     filterSampleHouseholds();
 }
 
@@ -735,13 +825,13 @@ function styleSampleGuideSelect(sel, assignedScope, pendingPool) {
     sel.style.borderColor = isMine ? '#1e40af' : '';
 }
 
-function populateSampleGuideFilter(nvVal) {
+function populateSampleGuideFilter() {
     const sel = document.getElementById('sampleFilterGuide');
     if (!sel) return;
     const prev = sel.value;
     const assignedScope = getUserAssignedScope();
-    const allInScope = sampleHouseholds.filter(h => matchesInterviewer(h, nvVal));
-    const pendingPool = allInScope.filter(h =>
+    // Chỉ hiển thị người dẫn đường còn tối thiểu 1 hộ chưa phỏng vấn
+    const pendingPool = sampleHouseholds.filter(h =>
         !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())
     );
 
@@ -762,14 +852,13 @@ function populateSampleGuideFilter(nvVal) {
         return a.guide.localeCompare(b.guide, 'vi');
     });
 
-    sel.innerHTML = `<option value="">-- 1. Chọn Người Dẫn Đường (${entries.length} người, ${pendingPool.length} hộ chờ) --</option>` +
+    sel.innerHTML = `<option value="">-- 2. Chọn Người Dẫn Đường (${entries.length} người, ${pendingPool.length} hộ chờ) --</option>` +
         entries.map(e => {
             const pendCnt = e.rows.length;
-            const ownerText = Array.from(e.owners).map(o => formatInterviewerDisplay(o)).join(', ');
             if (e.isMine) {
                 return `<option value="${escapeHtml(e.guide)}" style="font-weight:700; color:#002060; background:#dbeafe;">★ ${escapeHtml(e.guide)} (Của bạn • còn ${pendCnt} hộ chờ)</option>`;
             }
-            return `<option value="${escapeHtml(e.guide)}" style="font-weight:400; color:#475569;">${escapeHtml(e.guide)}${ownerText ? ` — ${escapeHtml(ownerText)}` : ''} (còn ${pendCnt} hộ chờ)</option>`;
+            return `<option value="${escapeHtml(e.guide)}" style="font-weight:400; color:#334155;">${escapeHtml(e.guide)} (còn ${pendCnt} hộ chờ)</option>`;
         }).join('');
 
     if (prev && guideMap.has(prev)) {
@@ -781,9 +870,8 @@ function populateSampleGuideFilter(nvVal) {
 }
 
 function onSampleNVFilterChange() {
-    const nv = document.getElementById('sampleFilterNV')?.value || '';
-    populateSampleGuideFilter(nv);
-    filterSampleHouseholds(Boolean(nv || document.getElementById('sampleFilterGuide')?.value));
+    populateSampleGuideFilter();
+    filterSampleHouseholds(Boolean(document.getElementById('sampleFilterGuide')?.value));
 }
 
 function onSampleGuideFilterChange() {
@@ -792,10 +880,9 @@ function onSampleGuideFilterChange() {
         searchEl.value = '';
         lastAutoSelectedHouseholdLabel = '';
     }
-    const nv = document.getElementById('sampleFilterNV')?.value || '';
     const assignedScope = getUserAssignedScope();
     const pendingPool = sampleHouseholds.filter(h =>
-        matchesInterviewer(h, nv) && !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())
+        !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())
     );
     styleSampleGuideSelect(document.getElementById('sampleFilterGuide'), assignedScope, pendingPool);
     filterSampleHouseholds(true);
@@ -807,8 +894,7 @@ function clearSampleFilter() {
     if (guideEl) guideEl.value = '';
     if (searchEl) searchEl.value = '';
     lastAutoSelectedHouseholdLabel = '';
-    const nv = document.getElementById('sampleFilterNV')?.value || '';
-    populateSampleGuideFilter(nv);
+    populateSampleGuideFilter();
     filterSampleHouseholds(false);
 }
 
@@ -847,7 +933,7 @@ function matchHouseholdScore(h, kwRaw) {
     const idNorm = normVn(h.id || '');
     const nameCompact = nameNorm.replace(/\s+/g, '');
     const kwCompact = kwNorm.replace(/\s+/g, '');
-    const hay = normVn(`${h.id} ${h.name} ${h.phone} ${h.hamlet} ${h.commune} ${h.guide} ${h.clb} ${h.ra || ''} ${formatInterviewerDisplay(h.interviewer)}`);
+    const hay = normVn(`${h.id} ${h.name} ${h.phone} ${h.hamlet} ${h.commune} ${h.guide} ${h.clb} ${h.ra || ''}`);
 
     if (idNorm === kwNorm || nameNorm === kwNorm) return { matched: true, score: 500 };
     if (nameNorm.startsWith(kwNorm) || idNorm.includes(kwNorm)) return { matched: true, score: 400 };
@@ -867,33 +953,141 @@ function matchHouseholdScore(h, kwRaw) {
 }
 
 function onRespondentTyping(val) {
-    const clean = normVn(val);
-    if (!clean || clean.length < 2) return;
-    const pendingPool = sampleHouseholds.filter(h =>
-        !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())
-    );
-    const exactMatch = pendingPool.find(h => normVn(h.name) === clean);
-    if (exactMatch) {
-        selectSampleHousehold(exactMatch.id);
-        return;
-    }
-    const searchEl = document.getElementById('sampleSearchInput');
-    if (searchEl && document.activeElement?.id === 'respondentNameInput') {
-        const assignedScope = getUserAssignedScope();
-        const matches = pendingPool
-            .map(h => ({ h, res: matchHouseholdScore(h, val) }))
-            .filter(x => x.res.matched)
-            .sort((a, b) => {
-                if (b.res.score !== a.res.score) return b.res.score - a.res.score;
-                const am = assignedScope && matchesInterviewer(a.h, assignedScope) ? 1 : 0;
-                const bm = assignedScope && matchesInterviewer(b.h, assignedScope) ? 1 : 0;
-                return bm - am;
-            })
-            .map(x => x.h);
-        if (matches.length > 0 && matches.length <= 15) {
-            renderSampleResultItems(matches);
+    currentDraftAnswers['_resp_name'] = val;
+    if (document.activeElement?.id === 'respondentNameInput' && !document.getElementById('headNameInput')?.value?.trim()) {
+        const clean = normVn(val);
+        if (clean && clean.length >= 2) {
+            const pendingPool = sampleHouseholds.filter(h =>
+                !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())
+            );
+            const exactMatch = pendingPool.find(h => normVn(h.name) === clean && !isHouseholdLockedByOther(getHouseholdLockInfo(h.id)));
+            if (exactMatch) {
+                selectSampleHousehold(exactMatch.id);
+                return;
+            }
         }
     }
+    saveDraftLocal(false);
+}
+
+function syncRespondentFromHead() {
+    const chk = document.getElementById('sameAsHeadCheckbox');
+    const headName = document.getElementById('headNameInput')?.value || '';
+    const headGender = document.getElementById('headGenderSelect')?.value || '';
+    const headBirth = document.getElementById('headBirthYearInput')?.value || '';
+
+    const respNameEl = document.getElementById('respondentNameInput');
+    const respGenderEl = document.getElementById('respondentGenderSelect');
+    const respBirthEl = document.getElementById('respondentBirthYearInput');
+    const respRelEl = document.getElementById('respondentRelationSelect');
+    const respRelOtherEl = document.getElementById('respondentRelationOther');
+
+    const isSame = chk ? chk.checked : true;
+    currentDraftAnswers['_same_as_head'] = isSame;
+
+    if (isSame && currentTool === 'P1') {
+        if (respNameEl) {
+            respNameEl.value = headName;
+            respNameEl.readOnly = true;
+            respNameEl.style.background = '#e2e8f0';
+        }
+        if (respGenderEl) {
+            respGenderEl.value = headGender;
+            respGenderEl.disabled = true;
+            respGenderEl.style.background = '#e2e8f0';
+        }
+        if (respBirthEl) {
+            respBirthEl.value = headBirth;
+            respBirthEl.readOnly = true;
+            respBirthEl.style.background = '#e2e8f0';
+        }
+        if (respRelEl) {
+            respRelEl.value = 'Chủ hộ';
+            respRelEl.disabled = true;
+            respRelEl.style.background = '#e2e8f0';
+        }
+        if (respRelOtherEl) {
+            respRelOtherEl.style.display = 'none';
+            respRelOtherEl.value = '';
+        }
+        currentDraftAnswers['_resp_name'] = headName.trim();
+        currentDraftAnswers['_resp_gender'] = headGender;
+        currentDraftAnswers['_resp_birth_year'] = headBirth;
+        currentDraftAnswers['_resp_relation'] = 'Chủ hộ';
+    } else {
+        if (respNameEl) {
+            respNameEl.readOnly = false;
+            respNameEl.style.background = '#ffffff';
+        }
+        if (respGenderEl) {
+            respGenderEl.disabled = false;
+            respGenderEl.style.background = '#ffffff';
+        }
+        if (respBirthEl) {
+            respBirthEl.readOnly = false;
+            respBirthEl.style.background = '#ffffff';
+        }
+        if (respRelEl) {
+            respRelEl.disabled = false;
+            respRelEl.style.background = '#ffffff';
+        }
+    }
+}
+
+function onSameAsHeadToggle() {
+    const chk = document.getElementById('sameAsHeadCheckbox');
+    const isSame = chk ? chk.checked : true;
+    const respNameEl = document.getElementById('respondentNameInput');
+    const respGenderEl = document.getElementById('respondentGenderSelect');
+    const respBirthEl = document.getElementById('respondentBirthYearInput');
+    const respRelEl = document.getElementById('respondentRelationSelect');
+
+    if (!isSame) {
+        const headName = (document.getElementById('headNameInput')?.value || '').trim();
+        if (respNameEl && respNameEl.value.trim() === headName) respNameEl.value = '';
+        if (respGenderEl && respGenderEl.value === (document.getElementById('headGenderSelect')?.value || '')) respGenderEl.value = '';
+        if (respBirthEl && respBirthEl.value === (document.getElementById('headBirthYearInput')?.value || '')) respBirthEl.value = '';
+        if (respRelEl && respRelEl.value === 'Chủ hộ') respRelEl.value = 'Vợ / Chồng';
+    }
+    syncRespondentFromHead();
+    onRespondentMetaChange();
+    if (!isSame && respNameEl) respNameEl.focus();
+}
+
+function onHeadFieldChange() {
+    const headName = (document.getElementById('headNameInput')?.value || '').trim();
+    const headGender = document.getElementById('headGenderSelect')?.value || '';
+    const headBirth = (document.getElementById('headBirthYearInput')?.value || '').trim();
+    currentDraftAnswers['_head_name'] = headName;
+    currentDraftAnswers['_head_gender'] = headGender;
+    currentDraftAnswers['_head_birth_year'] = headBirth;
+    syncRespondentFromHead();
+    saveDraftLocal(false);
+}
+
+function onRespondentRelationChange() {
+    const relSel = document.getElementById('respondentRelationSelect');
+    const relOther = document.getElementById('respondentRelationOther');
+    if (relSel && relOther) {
+        const showOther = (relSel.value === 'Khác');
+        relOther.style.display = showOther ? 'block' : 'none';
+        if (!showOther) relOther.value = '';
+    }
+    onRespondentMetaChange();
+}
+
+function onRespondentMetaChange() {
+    const respName = (document.getElementById('respondentNameInput')?.value || '').trim();
+    const respGender = document.getElementById('respondentGenderSelect')?.value || '';
+    const respBirth = (document.getElementById('respondentBirthYearInput')?.value || '').trim();
+    const relSel = document.getElementById('respondentRelationSelect')?.value || '';
+    const relOther = (document.getElementById('respondentRelationOther')?.value || '').trim();
+    currentDraftAnswers['_resp_name'] = respName;
+    currentDraftAnswers['_resp_gender'] = respGender;
+    currentDraftAnswers['_resp_birth_year'] = respBirth;
+    currentDraftAnswers['_resp_relation_other'] = relOther;
+    currentDraftAnswers['_resp_relation'] = (relSel === 'Khác' && relOther) ? relOther : relSel;
+    saveDraftLocal(false);
 }
 
 function renderSampleResultItems(matched) {
@@ -901,39 +1095,44 @@ function renderSampleResultItems(matched) {
     if (!box) return;
     box.style.display = 'block';
     if (matched.length === 0) {
-        box.innerHTML = '<div style="padding: 8px 10px; font-size: 0.80rem; color: #64748b;">Không tìm thấy nông hộ nào đang chờ khớp bộ lọc.</div>';
+        box.innerHTML = '<div style="padding: 8px 10px; font-size: 0.80rem; color: #64748b;">Không tìm thấy chủ hộ nào đang chờ khớp bộ lọc.</div>';
         return;
     }
     const assignedScope = getUserAssignedScope();
     box.innerHTML = matched.slice(0, 80).map(h => {
         const isExtra = Boolean(h.status && h.status.includes('Hộ mới'));
         const isMine = Boolean(assignedScope && matchesInterviewer(h, assignedScope));
-        const isCheckin = checkinDraftCodes.has(String(h.id || '').toUpperCase());
-        const bgNormal = isExtra ? '#fef2f2' : (isCheckin ? '#f0fdfa' : (isMine ? '#eff6ff' : '#ffffff'));
-        const bgHover = isExtra ? '#fee2e2' : (isCheckin ? '#ccfbf1' : '#f0fdf4');
-        const borderLeft = isExtra
+        const lockInfo = getHouseholdLockInfo(h.id);
+        const lockedByOther = isHouseholdLockedByOther(lockInfo);
+        const lockedByMe = Boolean(lockInfo && lockInfo.has_photo && !lockedByOther);
+        const isCheckin = lockedByMe || checkinDraftCodes.has(String(h.id || '').toUpperCase());
+
+        const bgNormal = lockedByOther ? '#f1f5f9' : (isExtra ? '#fef2f2' : (isCheckin ? '#f0fdfa' : (isMine ? '#eff6ff' : '#ffffff')));
+        const bgHover = lockedByOther ? '#f1f5f9' : (isExtra ? '#fee2e2' : (isCheckin ? '#ccfbf1' : '#f0fdf4'));
+        const borderLeft = lockedByOther
             ? 'border-left: 4px solid #dc2626;'
-            : (isCheckin ? 'border-left: 4px solid #0f766e;' : (isMine ? 'border-left: 4px solid #002060;' : 'border-left: 4px solid #e2e8f0;'));
-        const titleColor = isExtra ? '#b91c1c' : (isMine ? '#002060' : '#334155');
+            : (isExtra ? 'border-left: 4px solid #dc2626;' : (isCheckin ? 'border-left: 4px solid #0f766e;' : (isMine ? 'border-left: 4px solid #002060;' : 'border-left: 4px solid #e2e8f0;')));
+        const titleColor = lockedByOther ? '#64748b' : (isExtra ? '#b91c1c' : (isMine ? '#002060' : '#334155'));
         const extraBadge = isExtra ? '<span style="background:#dc2626; color:#ffffff; padding:1px 6px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:5px;">BỔ SUNG (+1)</span>' : '';
-        const checkinBadge = isCheckin ? '<span style="background:#0f766e; color:#ffffff; padding:1px 6px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:4px;">📸 Đã Check-in • Chờ nhập giấy</span>' : '';
-        const nvDisplay = formatInterviewerDisplay(h.interviewer);
-        const nvBadgeStyle = isMine
-            ? 'background:#002060; color:#ffffff; padding:2px 7px; border-radius:3px; font-weight:700; font-size:0.72rem; white-space:nowrap;'
-            : 'background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:2px 7px; border-radius:3px; font-weight:600; font-size:0.72rem; white-space:nowrap;';
+        const lockBadge = lockedByOther
+            ? `<span style="background:#fee2e2; color:#991b1b; border:1px solid #fecaca; padding:1px 6px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:5px;">🔒 Đã khóa (${escapeHtml(lockInfo.surveyor_name || lockInfo.surveyor_id)})</span>`
+            : (isCheckin ? '<span style="background:#0f766e; color:#ffffff; padding:1px 6px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:4px;">📸 Bạn đã Check-in • Bấm mở tiếp</span>' : '');
+        const guideBadge = `<span style="background:${isMine ? '#dbeafe' : '#f1f5f9'}; color:${isMine ? '#002060' : '#475569'}; border:1px solid ${isMine ? '#93c5fd' : '#cbd5e1'}; padding:2px 7px; border-radius:3px; font-weight:${isMine ? '700' : '600'}; font-size:0.72rem; white-space:nowrap;">${isMine ? '★ ' : ''}${escapeHtml(h.guide || 'Chưa rõ dẫn đường')}</span>`;
+        const rowOpacity = lockedByOther ? 'opacity: 0.72; cursor: not-allowed;' : 'cursor: pointer;';
         return `
         <div onclick="selectSampleHousehold('${escapeQuotes(h.id)}')"
-             style="padding: 7px 10px; border-bottom: 1px solid #f1f5f9; ${borderLeft} background: ${bgNormal}; cursor: pointer; font-size: 0.80rem; display: flex; justify-content: space-between; align-items: center; gap: 8px;"
+             style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; ${borderLeft} background: ${bgNormal}; ${rowOpacity} font-size: 0.80rem; display: flex; justify-content: space-between; align-items: center; gap: 8px;"
              onmouseover="this.style.background='${bgHover}'" onmouseout="this.style.background='${bgNormal}'">
             <div>
                 <strong style="color:${titleColor};">[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong>
+                <span style="font-size:0.70rem; color:#475569; margin-left:3px;">(Chủ hộ)</span>
                 ${extraBadge}
                 ${h.ra ? '<span style="background:#dcfce7; color:#166534; border:1px solid #86efac; padding:1px 5px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:4px;">RA</span>' : ''}
-                ${checkinBadge}
+                ${lockBadge}
                 <span style="color:#475569;"> — ${escapeHtml(h.address)}</span>
                 <div style="font-size:0.74rem; color:#64748b;">SĐT: ${escapeHtml(h.phone || '—')} • CLB: ${escapeHtml(h.clb || '—')} • Dẫn đường: <b style="color:${isMine ? '#002060' : '#0f172a'};">${escapeHtml(h.guide)}</b></div>
             </div>
-            <span style="${nvBadgeStyle}">${isMine ? '★ ' : ''}${escapeHtml(nvDisplay)}</span>
+            ${guideBadge}
         </div>
     `;
     }).join('');
@@ -941,12 +1140,10 @@ function renderSampleResultItems(matched) {
 
 function filterSampleHouseholds(forceShow = false) {
     const assignedScope = getUserAssignedScope();
-    const nv = document.getElementById('sampleFilterNV')?.value || '';
     const guide = document.getElementById('sampleFilterGuide')?.value || '';
     const kwRaw = (document.getElementById('sampleSearchInput')?.value || '').trim();
 
-    const scopePool = sampleHouseholds.filter(h => matchesInterviewer(h, nv));
-    const pendingPool = scopePool.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase()));
+    const pendingPool = sampleHouseholds.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase()));
 
     const scoreAgainstPool = (pool, useGuide) => {
         const out = [];
@@ -955,9 +1152,11 @@ function filterSampleHouseholds(forceShow = false) {
             const res = matchHouseholdScore(h, kwRaw);
             if (!res.matched) continue;
             const isMine = assignedScope && matchesInterviewer(h, assignedScope) ? 1 : 0;
-            out.push({ h, score: res.score, isMine });
+            const lockedOther = isHouseholdLockedByOther(getHouseholdLockInfo(h.id)) ? 1 : 0;
+            out.push({ h, score: res.score, isMine, lockedOther });
         }
         out.sort((a, b) => {
+            if (a.lockedOther !== b.lockedOther) return a.lockedOther - b.lockedOther;
             if (kwRaw && b.score !== a.score) return b.score - a.score;
             if (b.isMine !== a.isMine) return b.isMine - a.isMine;
             return String(a.h.id || '').localeCompare(String(b.h.id || ''));
@@ -976,17 +1175,17 @@ function filterSampleHouseholds(forceShow = false) {
     }
 
     const cnt = document.getElementById('sampleFilterCount');
-    const doneCnt = scopePool.length - pendingPool.length;
+    const doneCnt = sampleHouseholds.length - pendingPool.length;
     if (cnt) {
         cnt.textContent = (!guide && !kwRaw)
-            ? `Còn ${pendingPool.length} / ${scopePool.length} hộ chưa phỏng vấn` + (doneCnt ? ` (đã xong ${doneCnt})` : '')
+            ? `Còn ${pendingPool.length} / ${sampleHouseholds.length} hộ chưa phỏng vấn` + (doneCnt ? ` (đã xong ${doneCnt})` : '')
             : `Tìm thấy ${matched.length} hộ chờ` + (expandedAllGuides ? ' (mở rộng tất cả dẫn đường)' : '') + (doneCnt ? ` (đã xong ${doneCnt})` : '');
     }
 
     const box = document.getElementById('sampleResultList');
     if (!box) return;
     const isSearchFocused = (document.activeElement && document.activeElement.id === 'sampleSearchInput');
-    if (!forceShow && !isSearchFocused && !nv && !guide && !kwRaw) {
+    if (!forceShow && !isSearchFocused && !guide && !kwRaw) {
         box.style.display = 'none';
         box.innerHTML = '';
         return;
@@ -1014,39 +1213,58 @@ function prefetchHouseholdGpsSilent() {
     } catch (_) {}
 }
 
-function selectSampleHousehold(id) {
+async function selectSampleHousehold(id) {
     const h = sampleHouseholds.find(item => item.id.toUpperCase() === String(id || '').trim().toUpperCase());
     if (!h) return;
+
+    const lockInfo = getHouseholdLockInfo(h.id);
+    if (isHouseholdLockedByOther(lockInfo)) {
+        alert(
+            `HỘ ĐÃ ĐƯỢC KHÓA BỞI ĐIỀU TRA VIÊN KHÁC!\n` +
+            `- Hộ: [${h.id}] ${h.name}\n` +
+            `- Đang giữ / đã chụp ảnh bởi: ${lockInfo.surveyor_name || lockInfo.surveyor_id} (${lockInfo.surveyor_id})\n\n` +
+            `Vui lòng chọn chủ hộ khác còn đang chờ.`
+        );
+        return;
+    }
+
+    // Nếu chính ĐTV hiện tại đã chụp ảnh / check-in hộ này trước đó, nạp lại bản nháp đã lưu
+    if (lockInfo && lockInfo.has_photo && !isHouseholdLockedByOther(lockInfo)) {
+        const drafts = await fetchMergedDraftsList();
+        const existingDraft = drafts.find(d => String(d.survey_code || '').trim().toUpperCase() === String(h.id).toUpperCase());
+        if (existingDraft) {
+            await loadDraftIntoForm(existingDraft.draft_key);
+            return;
+        }
+    }
 
     const codeEl = document.getElementById('surveyCodeInput');
     const commEl = document.getElementById('communeSelect');
     const hamEl = document.getElementById('hamletInput');
-    const respEl = document.getElementById('respondentNameInput');
+    const headNameEl = document.getElementById('headNameInput');
+    const headGenderEl = document.getElementById('headGenderSelect');
+    const headBirthEl = document.getElementById('headBirthYearInput');
     const phoneEl = document.getElementById('phoneInput');
     const guideEl = document.getElementById('guideNameInput');
-    const nvEl = document.getElementById('sampleFilterNV');
     const guideFilterEl = document.getElementById('sampleFilterGuide');
     const searchEl = document.getElementById('sampleSearchInput');
+    const sameChk = document.getElementById('sameAsHeadCheckbox');
     const isNew = Boolean(h.status && h.status.includes('Hộ mới'));
 
     if (codeEl) codeEl.value = h.id;
     if (commEl && h.commune) commEl.value = h.commune;
     if (hamEl) hamEl.value = h.hamlet || '';
-    if (respEl) respEl.value = isNew ? '' : (h.name || '');
+    if (headNameEl) headNameEl.value = isNew ? '' : (h.name || '');
+    if (headGenderEl) headGenderEl.value = h.gender || '';
+    if (headBirthEl) headBirthEl.value = h.birth_year || '';
     if (phoneEl) phoneEl.value = isNew ? '' : (h.phone || '');
     if (guideEl) guideEl.value = h.guide || '';
+    if (sameChk) sameChk.checked = true;
 
     if (guideFilterEl && h.guide) {
-        let hasOpt = Array.from(guideFilterEl.options).some(o => o.value === h.guide);
-        if (!hasOpt && nvEl && nvEl.value) {
-            nvEl.value = '';
-            populateSampleGuideFilter('');
-            hasOpt = Array.from(guideFilterEl.options).some(o => o.value === h.guide);
-        }
+        const hasOpt = Array.from(guideFilterEl.options).some(o => o.value === h.guide);
         if (hasOpt) guideFilterEl.value = h.guide;
-        const pendingPool = sampleHouseholds.filter(x =>
-            matchesInterviewer(x, nvEl?.value || '') && !interviewedSurveyCodes.has(String(x.id || '').toUpperCase())
-        );
+        const pendingPool = sampleHouseholds.filter(x => !interviewedSurveyCodes.has(String(x.id || '').toUpperCase()));
         styleSampleGuideSelect(guideFilterEl, getUserAssignedScope(), pendingPool);
     }
 
@@ -1056,7 +1274,7 @@ function selectSampleHousehold(id) {
         lastAutoSelectedHouseholdLabel = label;
     }
 
-    // Tự động điền các câu hỏi thông tin phiếu A01, A03, A04
+    // Tự động điền các câu hỏi thông tin phiếu A01, A03, A04 + thông tin Chủ hộ mặc định
     currentDraftAnswers['A01'] = h.id;
     currentDraftAnswers['A04'] = h.hamlet || '';
     const a03Q = (allQuestionsData[currentTool]?.questions || []).find(q => q.code === 'A03');
@@ -1070,6 +1288,10 @@ function selectSampleHousehold(id) {
     currentDraftAnswers['_phone'] = isNew ? '' : (h.phone || '');
     currentDraftAnswers['_clb'] = h.clb || '';
     currentDraftAnswers['_ra'] = h.ra || '';
+    currentDraftAnswers['_head_name'] = isNew ? '' : (h.name || '');
+    currentDraftAnswers['_head_gender'] = h.gender || '';
+    currentDraftAnswers['_head_birth_year'] = h.birth_year || '';
+    syncRespondentFromHead();
 
     const box = document.getElementById('sampleResultList');
     if (box) box.style.display = 'none';
@@ -1077,18 +1299,15 @@ function selectSampleHousehold(id) {
     if (banner) {
         banner.style.display = 'block';
         const raTag = h.ra ? ' • <span style="background:#166534;color:#fff;padding:1px 6px;border-radius:3px;font-weight:700;">Chứng nhận RA</span>' : '';
-        const assignedScope = getUserAssignedScope();
-        const isCrossHelp = Boolean(assignedScope && h.interviewer && !matchesInterviewer(h, assignedScope));
-        const crossTag = isCrossHelp ? ' • <span style="background:#d97706;color:#fff;padding:1px 6px;border-radius:3px;font-weight:700;">Hỗ trợ phỏng vấn chéo</span>' : '';
         banner.innerHTML = isNew
-            ? `<i class="fa-solid fa-user-plus"></i> Đã cấp mã hộ mới: <strong>[${escapeHtml(h.id)}]</strong> (${escapeHtml(h.address)})${crossTag} • Dẫn đường: <strong>${escapeHtml(h.guide)}</strong> • ĐTV: <strong>${escapeHtml(formatInterviewerDisplay(h.interviewer))}</strong> — <em>Vui lòng nhập Họ tên &amp; SĐT hộ mới bên dưới.</em>`
-            : `<i class="fa-solid fa-circle-check"></i> Đã điền tự động: <strong>[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong> (${escapeHtml(h.address)})${raTag}${crossTag} • SĐT: ${escapeHtml(h.phone || '—')} • Dẫn đường: <strong>${escapeHtml(h.guide)}</strong> • ĐTV: <strong>${escapeHtml(formatInterviewerDisplay(h.interviewer))}</strong>`;
+            ? `<i class="fa-solid fa-user-plus"></i> Đã cấp mã hộ mới: <strong>[${escapeHtml(h.id)}]</strong> (${escapeHtml(h.address)}) • Dẫn đường: <strong>${escapeHtml(h.guide)}</strong> — <em>Vui lòng nhập Tên Chủ hộ, Giới tính, Năm sinh &amp; SĐT bên dưới.</em>`
+            : `<i class="fa-solid fa-circle-check"></i> Đã chọn Chủ hộ mặc định: <strong>[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong> (${escapeHtml(h.address)})${raTag} • SĐT: ${escapeHtml(h.phone || '—')} • Dẫn đường: <strong>${escapeHtml(h.guide)}</strong>`;
     }
 
     prefetchHouseholdGpsSilent();
     if (currentSection) renderQuestionsForSection(currentSection);
     saveDraftLocal(false);
-    if (isNew && respEl) respEl.focus();
+    if (isNew && headNameEl) headNameEl.focus();
 }
 
 function generateNextNewHouseholdId() {
@@ -1127,11 +1346,18 @@ function generateNextNewHouseholdId() {
 
     const newId = `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
     const codeEl = document.getElementById('surveyCodeInput');
-    const respEl = document.getElementById('respondentNameInput');
+    const headNameEl = document.getElementById('headNameInput');
+    const headGenderEl = document.getElementById('headGenderSelect');
+    const headBirthEl = document.getElementById('headBirthYearInput');
     const phoneEl = document.getElementById('phoneInput');
+    const sameChk = document.getElementById('sameAsHeadCheckbox');
     if (codeEl) codeEl.value = newId;
-    if (respEl) respEl.value = '';
+    if (headNameEl) headNameEl.value = '';
+    if (headGenderEl) headGenderEl.value = '';
+    if (headBirthEl) headBirthEl.value = '';
     if (phoneEl) phoneEl.value = '';
+    if (sameChk) sameChk.checked = true;
+    syncRespondentFromHead();
 
     currentDraftAnswers['A01'] = newId;
     currentDraftAnswers['A04'] = hamVal;
@@ -1144,11 +1370,11 @@ function generateNextNewHouseholdId() {
     const banner = document.getElementById('sampleSelectedBanner');
     if (banner) {
         banner.style.display = 'block';
-        banner.innerHTML = `<i class="fa-solid fa-user-plus"></i> Đã cấp mã hộ mới (+1): <strong>[${escapeHtml(newId)}]</strong> (${escapeHtml(hamVal)}, ${escapeHtml(commVal)}) — <em>Mời nhập Họ tên &amp; SĐT chủ hộ mới.</em>`;
+        banner.innerHTML = `<i class="fa-solid fa-user-plus"></i> Đã cấp mã hộ mới (+1): <strong>[${escapeHtml(newId)}]</strong> (${escapeHtml(hamVal)}, ${escapeHtml(commVal)}) — <em>Mời nhập Tên Chủ hộ, Giới tính, Năm sinh &amp; SĐT.</em>`;
     }
     if (currentSection) renderQuestionsForSection(currentSection);
     saveDraftLocal(false);
-    if (respEl) respEl.focus();
+    if (headNameEl) headNameEl.focus();
 }
 
 function tryAutofillBySurveyCode(val) {
@@ -1168,6 +1394,140 @@ async function loadSchedule() {
     } catch (e) {
         console.warn('Không tải được lịch trình từ API:', e);
     }
+}
+
+function renderTeamWeekSchedule() {
+    const tbody = document.getElementById('teamWeekScheduleTbody');
+    if (!tbody) return;
+
+    const teamPlan = [
+        {
+            nvKey: 'Duy',
+            code: 'TCN07',
+            fullName: 'Lê Đình Duy',
+            communes: 'Xã Ea Kiết',
+            days: [
+                'Buôn Ja Vầm (5–6 hộ)',
+                'Buôn Ja Vầm (6 hộ)',
+                'Buôn Ayun (6 hộ)',
+                'Buôn Chơr (6 hộ)',
+                'Buôn Chơr / Hộ mới (6 hộ)',
+                'Thôn/Buôn + NT/CQ (4–6 hộ)',
+                'Bù sót & Nhập phiếu (2–4 hộ)'
+            ]
+        },
+        {
+            nvKey: 'Vọng',
+            code: 'TCN02',
+            fullName: 'Phan Doãn Vọng',
+            communes: 'Xã Ea Kiết',
+            days: [
+                'Cụm Ea Kiết A (5–6 hộ)',
+                'Cụm Ea Kiết A (6 hộ)',
+                'Cụm Ea Kiết B (6 hộ)',
+                'Cụm Ea Kiết B (6 hộ)',
+                'Hộ bổ sung (+1) (6 hộ)',
+                'Hỗ trợ chéo + HTX/NT (4–6 hộ)',
+                'Rà soát ảnh & Đồng bộ VPS'
+            ]
+        },
+        {
+            nvKey: 'Thao',
+            code: 'TCN03',
+            fullName: 'Phạm Văn Thao',
+            communes: "Ea Tul & Cư Dliê M'nông",
+            days: [
+                "Cư Dliê M'nông (5 hộ)",
+                "Cư Dliê M'nông + NT (4–6 hộ)",
+                'Ea Tul — Cụm 1 (6 hộ)',
+                'Ea Tul — Cụm 1 (6 hộ)',
+                'Ea Tul — Cụm 2 (6 hộ)',
+                'Hỗ trợ chéo + HTX/CQ (5 hộ)',
+                'Rà soát ảnh & Đồng bộ VPS'
+            ]
+        },
+        {
+            nvKey: 'Trụ',
+            code: 'TCN04',
+            fullName: 'Nguyễn Viết Trụ',
+            communes: 'Xã Ea Tul',
+            days: [
+                'Ea Tul — Dẫn đường 1 (6 hộ)',
+                'Ea Tul — Dẫn đường 1 (6 hộ)',
+                'Ea Tul — Dẫn đường 2 (6 hộ)',
+                'Ea Tul — Dẫn đường 3 (6 hộ)',
+                'Ea Tul — Dẫn đường 4 (6 hộ)',
+                'Hộ bổ sung / CQ-NT (5 hộ)',
+                'Kiểm tra chéo & Hoàn thiện'
+            ]
+        },
+        {
+            nvKey: 'Phuc',
+            code: 'TCN05',
+            fullName: 'Cao Thị Phúc',
+            communes: 'Xã Ea Tul',
+            days: [
+                'Ea Tul — Cụm Phúc 1 (6 hộ)',
+                'Ea Tul — Cụm Phúc 2 (6 hộ)',
+                'Ea Tul — Cụm Phúc 3 (6 hộ)',
+                'Ea Tul — Cụm Phúc 4 (6 hộ)',
+                'Ea Tul — Cụm Phúc 5 (6 hộ)',
+                'Hỗ trợ chéo + MH/NT (5 hộ)',
+                'Kiểm tra chéo & Hoàn thiện'
+            ]
+        },
+        {
+            nvKey: 'Sinh',
+            code: 'TCN06',
+            fullName: 'Hoàng Trường Sinh',
+            communes: 'Xã Ea Tul',
+            days: [
+                'Ea Tul — Cụm Sinh 1 (6 hộ)',
+                'Ea Tul — Cụm Sinh 2 (6 hộ)',
+                'Ea Tul — Cụm Sinh 3 (6 hộ)',
+                'Ea Tul — Cụm Sinh 4 (6 hộ)',
+                'Ea Tul — Cụm Sinh 5 (6 hộ)',
+                'Hộ bổ sung (+1) & HTX (5 hộ)',
+                'Kiểm tra chéo & Hoàn thiện'
+            ]
+        }
+    ];
+
+    tbody.innerHTML = teamPlan.map(m => {
+        const assignedRows = sampleHouseholds.filter(h => matchesInterviewer(h, m.nvKey));
+        const guides = Array.from(new Set(assignedRows.map(h => h.guide).filter(Boolean)));
+        const doneCnt = assignedRows.filter(h => interviewedSurveyCodes.has(String(h.id || '').toUpperCase())).length;
+        const lockCnt = assignedRows.filter(h => {
+            const code = String(h.id || '').toUpperCase();
+            if (interviewedSurveyCodes.has(code)) return false;
+            const lk = getHouseholdLockInfo(code);
+            return Boolean(lk && lk.has_photo);
+        }).length;
+        const total = assignedRows.length || 36;
+        const remain = Math.max(0, total - doneCnt);
+        const guideHtml = guides.length
+            ? guides.slice(0, 4).map(g => escapeHtml(g)).join(', ') + (guides.length > 4 ? ` (+${guides.length - 4})` : '')
+            : 'Theo phân công thực địa';
+
+        return `
+            <tr>
+                <td style="white-space: nowrap;">
+                    <strong style="color: var(--navy);">${escapeHtml(m.fullName)}</strong><br>
+                    <span style="font-family: monospace; font-size: 0.76rem; background: #e0e7ff; color: #3730a3; padding: 1px 6px; border-radius: 3px; font-weight: 700;">${m.code}</span>
+                </td>
+                <td style="font-size: 0.78rem; min-width: 170px;">
+                    <strong style="color: #15803d;">${escapeHtml(m.communes)}</strong> (${guides.length} dẫn đường)<br>
+                    <span style="color: #64748b;">${guideHtml}</span>
+                </td>
+                ${m.days.map(d => `<td style="font-size: 0.74rem; text-align: center; color: #334155;">${escapeHtml(d)}</td>`).join('')}
+                <td style="text-align: center; white-space: nowrap; font-size: 0.78rem;">
+                    <div><strong style="color: #15803d;">${doneCnt}/${total}</strong> đã nộp</div>
+                    ${lockCnt ? `<div style="color: #0f766e; font-weight: 600;">📸 ${lockCnt} giữ ảnh</div>` : ''}
+                    <div style="color: #64748b;">Còn ${remain} hộ</div>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function renderScheduleTable() {
@@ -1233,6 +1593,73 @@ function selectTool(toolCode) {
     if (heading) {
         heading.textContent = `CÔNG CỤ: ${toolObj.tool_code} — ${toolObj.tool_name.toUpperCase()} (${toolObj.target_count || ''})`;
     }
+    const subTitle = document.getElementById('subviewTitleText');
+    if (subTitle && currentMainView === 'survey') {
+        subTitle.textContent = `Tạo phiếu: ${toolObj.tool_code} — ${toolObj.tool_name}`;
+    }
+
+    const isP1 = (toolCode === 'P1');
+    const pickerBox = document.getElementById('samplePickerContainer');
+    const headRow = document.getElementById('headDemographicsRow');
+    const sameChkRow = document.getElementById('sameAsHeadCheckbox')?.closest('div');
+    if (pickerBox) pickerBox.style.display = isP1 ? 'block' : 'none';
+    if (headRow) headRow.style.display = isP1 ? 'grid' : 'none';
+    if (sameChkRow) sameChkRow.style.display = isP1 ? 'flex' : 'none';
+
+    const applyDemographicFields = (ans = {}, respName = '') => {
+        const sameChk = document.getElementById('sameAsHeadCheckbox');
+        const headNameEl = document.getElementById('headNameInput');
+        const headGenderEl = document.getElementById('headGenderSelect');
+        const headBirthEl = document.getElementById('headBirthYearInput');
+        const respNameEl = document.getElementById('respondentNameInput');
+        const respGenderEl = document.getElementById('respondentGenderSelect');
+        const respBirthEl = document.getElementById('respondentBirthYearInput');
+        const respRelEl = document.getElementById('respondentRelationSelect');
+        const respRelOtherEl = document.getElementById('respondentRelationOther');
+
+        if (isP1) {
+            const headName = ans._head_name !== undefined ? ans._head_name : (respName || '');
+            if (headNameEl) headNameEl.value = headName;
+            if (headGenderEl) headGenderEl.value = ans._head_gender || '';
+            if (headBirthEl) headBirthEl.value = ans._head_birth_year || '';
+            const sameVal = (ans._same_as_head !== undefined) ? Boolean(ans._same_as_head) : true;
+            if (sameChk) sameChk.checked = sameVal;
+            if (sameVal) {
+                syncRespondentFromHead();
+            } else {
+                syncRespondentFromHead();
+                if (respNameEl) respNameEl.value = respName || ans._resp_name || '';
+                if (respGenderEl) respGenderEl.value = ans._resp_gender || '';
+                if (respBirthEl) respBirthEl.value = ans._resp_birth_year || '';
+                const relVal = ans._resp_relation || 'Vợ / Chồng';
+                if (respRelEl) {
+                    const hasOpt = Array.from(respRelEl.options).some(o => o.value === relVal);
+                    respRelEl.value = hasOpt ? relVal : 'Khác';
+                    if (!hasOpt && respRelOtherEl) {
+                        respRelOtherEl.style.display = 'block';
+                        respRelOtherEl.value = relVal;
+                    } else if (respRelOtherEl) {
+                        respRelOtherEl.style.display = 'none';
+                        respRelOtherEl.value = '';
+                    }
+                }
+            }
+        } else {
+            if (headNameEl) headNameEl.value = '';
+            if (headGenderEl) headGenderEl.value = '';
+            if (headBirthEl) headBirthEl.value = '';
+            if (sameChk) sameChk.checked = false;
+            syncRespondentFromHead();
+            if (respNameEl) respNameEl.value = respName || ans._resp_name || '';
+            if (respGenderEl) respGenderEl.value = ans._resp_gender || '';
+            if (respBirthEl) respBirthEl.value = ans._resp_birth_year || '';
+            if (respRelEl) respRelEl.value = ans._resp_relation || 'Đại diện đơn vị / Khác';
+            if (respRelOtherEl) {
+                respRelOtherEl.style.display = 'none';
+                respRelOtherEl.value = ans._resp_relation_other || '';
+            }
+        }
+    };
 
     // Khôi phục bản nháp gần nhất của công cụ nếu có
     const draftKey = `dakman_draft_${toolCode}`;
@@ -1245,10 +1672,10 @@ function selectTool(toolCode) {
             if (parsed.survey_code) document.getElementById('surveyCodeInput').value = parsed.survey_code;
             if (parsed.commune) document.getElementById('communeSelect').value = parsed.commune;
             if (parsed.hamlet) document.getElementById('hamletInput').value = parsed.hamlet;
-            if (parsed.respondent_name) document.getElementById('respondentNameInput').value = parsed.respondent_name;
             if (parsed.phone && document.getElementById('phoneInput')) document.getElementById('phoneInput').value = parsed.phone;
             if (parsed.guide && document.getElementById('guideNameInput')) document.getElementById('guideNameInput').value = parsed.guide;
             if (parsed.gps) document.getElementById('gpsInput').value = parsed.gps;
+            applyDemographicFields(currentDraftAnswers, parsed.respondent_name || '');
             if (parsed.photo_data) {
                 setHouseholdPhotoPreview(parsed.photo_data, parsed.photo_meta || 'Đã khôi phục ảnh nháp có watermark');
             } else if (parsed.photo_path) {
@@ -1262,18 +1689,19 @@ function selectTool(toolCode) {
             currentDraftAnswers = {};
             currentDraftPhotoPath = '';
             clearHouseholdPhoto(true);
+            applyDemographicFields({}, '');
         }
     } else {
         currentDraftAnswers = {};
         currentDraftPhotoPath = '';
         const todayNum = new Date().toISOString().slice(2, 10).replace(/-/g, '');
         document.getElementById('surveyCodeInput').value = `${toolCode}_${currentUser?.surveyor_id || 'DTV'}_${todayNum}_01`;
-        document.getElementById('respondentNameInput').value = '';
         document.getElementById('hamletInput').value = '';
         if (document.getElementById('phoneInput')) document.getElementById('phoneInput').value = '';
         if (document.getElementById('guideNameInput')) document.getElementById('guideNameInput').value = '';
         document.getElementById('gpsInput').value = '';
         clearHouseholdPhoto(true);
+        applyDemographicFields({}, '');
         updateDraftTimeDisplay(null);
     }
 
@@ -2656,6 +3084,29 @@ function buildCurrentDraftRecord() {
     const ansCount = visible.filter(q => isQuestionAnswered(q.code)).length;
     const isDataUrl = Boolean(currentHouseholdPhotoData && currentHouseholdPhotoData.startsWith('data:'));
 
+    const headName = (document.getElementById('headNameInput')?.value || '').trim();
+    const headGender = document.getElementById('headGenderSelect')?.value || '';
+    const headBirth = (document.getElementById('headBirthYearInput')?.value || '').trim();
+    const sameChk = document.getElementById('sameAsHeadCheckbox');
+    const sameAsHead = sameChk ? sameChk.checked : (currentTool === 'P1');
+    const respName = (document.getElementById('respondentNameInput')?.value || '').trim();
+    const respGender = document.getElementById('respondentGenderSelect')?.value || '';
+    const respBirth = (document.getElementById('respondentBirthYearInput')?.value || '').trim();
+    const relSel = document.getElementById('respondentRelationSelect')?.value || '';
+    const relOther = (document.getElementById('respondentRelationOther')?.value || '').trim();
+
+    const answersCopy = Object.assign({}, currentDraftAnswers, {
+        _head_name: headName,
+        _head_gender: headGender,
+        _head_birth_year: headBirth,
+        _same_as_head: sameAsHead,
+        _resp_name: respName,
+        _resp_gender: respGender,
+        _resp_birth_year: respBirth,
+        _resp_relation: (relSel === 'Khác' && relOther) ? relOther : relSel,
+        _resp_relation_other: relOther
+    });
+
     return {
         draft_key: `${currentTool}::${surveyCode}`,
         tool_code: currentTool,
@@ -2665,7 +3116,7 @@ function buildCurrentDraftRecord() {
         survey_date: document.getElementById('surveyDateInput')?.value || new Date().toISOString().split('T')[0],
         commune: document.getElementById('communeSelect')?.value || 'Ea Kiết',
         hamlet: (document.getElementById('hamletInput')?.value || '').trim(),
-        respondent_name: (document.getElementById('respondentNameInput')?.value || '').trim(),
+        respondent_name: respName || headName,
         respondent_phone: (document.getElementById('phoneInput')?.value || '').trim(),
         guide_name: (document.getElementById('guideNameInput')?.value || currentDraftAnswers['_guide'] || '').trim(),
         gps: gpsStr,
@@ -2675,7 +3126,7 @@ function buildCurrentDraftRecord() {
         photo_data: isDataUrl ? currentHouseholdPhotoData : '',
         photo_path: currentDraftPhotoPath || '',
         photo_meta: currentHouseholdPhotoMeta || '',
-        answers: Object.assign({}, currentDraftAnswers),
+        answers: answersCopy,
         answered_count: ansCount,
         total_count: visible.length,
         saved_at: new Date().toLocaleTimeString('vi-VN'),
@@ -2757,7 +3208,14 @@ async function syncCurrentDraftToVps(rec) {
             }
             rec.sync_pending = false;
             await putIdbDraft(rec);
+            await loadHouseholdLocks();
             return true;
+        }
+        if (res.status === 409) {
+            const err = await res.json().catch(() => ({}));
+            if (err.error) alert(err.error);
+            await loadHouseholdLocks();
+            return false;
         }
     } catch (_) {}
     return false;
@@ -2812,9 +3270,15 @@ async function refreshDraftBadgeCount() {
     const b1 = document.getElementById('draftListCountBadge');
     const b2 = document.getElementById('draftStripCountBadge');
     const b3 = document.getElementById('checkinQuickCountBadge');
+    const b4 = document.getElementById('subviewDraftBadge');
+    const b5 = document.getElementById('menuDraftBadge');
+    const b6 = document.getElementById('menuDraftCardBadge');
     if (b1) b1.textContent = drafts.length;
     if (b2) b2.textContent = drafts.length;
     if (b3) b3.textContent = drafts.length;
+    if (b4) b4.textContent = drafts.length;
+    if (b5) b5.textContent = drafts.length;
+    if (b6) b6.textContent = `${drafts.length} chờ`;
 }
 
 function manualSaveDraft() {
@@ -2824,9 +3288,10 @@ function manualSaveDraft() {
 async function quickSaveFieldCheckin() {
     if (currentUser?.role === 'viewer') return;
     const codeVal = (document.getElementById('surveyCodeInput')?.value || '').trim();
+    const headVal = (document.getElementById('headNameInput')?.value || '').trim();
     const nameVal = (document.getElementById('respondentNameInput')?.value || '').trim();
-    if (!codeVal && !nameVal) {
-        alert('Vui lòng chọn Nông hộ (hoặc nhập Mã phiếu / Tên chủ hộ) trước khi lưu check-in hiện trường!');
+    if (!codeVal && !headVal && !nameVal) {
+        alert('Vui lòng chọn Chủ hộ (hoặc nhập Mã phiếu / Tên chủ hộ) trước khi lưu check-in hiện trường!');
         document.getElementById('sampleSearchInput')?.focus();
         return;
     }
@@ -2852,10 +3317,16 @@ async function saveDraftAndNextHousehold(isCheckinMode = false) {
     clearHouseholdPhoto(true);
     localStorage.removeItem(`dakman_draft_${currentTool}`);
 
-    ['surveyCodeInput', 'hamletInput', 'respondentNameInput', 'phoneInput', 'guideNameInput', 'gpsInput', 'sampleSearchInput'].forEach(fid => {
+    ['surveyCodeInput', 'hamletInput', 'headNameInput', 'headGenderSelect', 'headBirthYearInput', 'respondentNameInput', 'respondentGenderSelect', 'respondentBirthYearInput', 'respondentRelationOther', 'phoneInput', 'guideNameInput', 'gpsInput', 'sampleSearchInput'].forEach(fid => {
         const el = document.getElementById(fid);
         if (el) el.value = '';
     });
+    const sameChk = document.getElementById('sameAsHeadCheckbox');
+    if (sameChk) sameChk.checked = (currentTool === 'P1');
+    const relSel = document.getElementById('respondentRelationSelect');
+    if (relSel) relSel.value = (currentTool === 'P1') ? 'Chủ hộ' : 'Đại diện đơn vị / Khác';
+    const relOther = document.getElementById('respondentRelationOther');
+    if (relOther) relOther.style.display = 'none';
     const banner = document.getElementById('sampleSelectedBanner');
     if (banner) banner.style.display = 'none';
 
@@ -2964,10 +3435,47 @@ async function loadDraftIntoForm(draftKey) {
     document.getElementById('surveyCodeInput').value = d.survey_code || '';
     if (d.commune) document.getElementById('communeSelect').value = d.commune;
     document.getElementById('hamletInput').value = d.hamlet || '';
-    document.getElementById('respondentNameInput').value = d.respondent_name || '';
     if (document.getElementById('phoneInput')) document.getElementById('phoneInput').value = d.respondent_phone || d.phone || '';
     if (document.getElementById('guideNameInput')) document.getElementById('guideNameInput').value = d.guide_name || d.guide || '';
     document.getElementById('gpsInput').value = d.gps || ((d.gps_lat && d.gps_lng) ? `${d.gps_lat}, ${d.gps_lng}` : '');
+
+    const ans = currentDraftAnswers;
+    const isP1Draft = ((d.tool_code || 'P1') === 'P1');
+    const headNameEl = document.getElementById('headNameInput');
+    const headGenderEl = document.getElementById('headGenderSelect');
+    const headBirthEl = document.getElementById('headBirthYearInput');
+    const sameChk = document.getElementById('sameAsHeadCheckbox');
+    const respNameEl = document.getElementById('respondentNameInput');
+    const respGenderEl = document.getElementById('respondentGenderSelect');
+    const respBirthEl = document.getElementById('respondentBirthYearInput');
+    const respRelEl = document.getElementById('respondentRelationSelect');
+    const respRelOtherEl = document.getElementById('respondentRelationOther');
+
+    if (headNameEl) headNameEl.value = ans._head_name !== undefined ? ans._head_name : (d.respondent_name || '');
+    if (headGenderEl) headGenderEl.value = ans._head_gender || '';
+    if (headBirthEl) headBirthEl.value = ans._head_birth_year || '';
+    const sameVal = (ans._same_as_head !== undefined) ? Boolean(ans._same_as_head) : isP1Draft;
+    if (sameChk) sameChk.checked = sameVal;
+    if (sameVal && isP1Draft) {
+        syncRespondentFromHead();
+    } else {
+        syncRespondentFromHead();
+        if (respNameEl) respNameEl.value = d.respondent_name || ans._resp_name || '';
+        if (respGenderEl) respGenderEl.value = ans._resp_gender || '';
+        if (respBirthEl) respBirthEl.value = ans._resp_birth_year || '';
+        const relVal = ans._resp_relation || (isP1Draft ? 'Vợ / Chồng' : 'Đại diện đơn vị / Khác');
+        if (respRelEl) {
+            const hasOpt = Array.from(respRelEl.options).some(o => o.value === relVal);
+            respRelEl.value = hasOpt ? relVal : 'Khác';
+            if (!hasOpt && respRelOtherEl) {
+                respRelOtherEl.style.display = 'block';
+                respRelOtherEl.value = relVal;
+            } else if (respRelOtherEl) {
+                respRelOtherEl.style.display = 'none';
+                respRelOtherEl.value = '';
+            }
+        }
+    }
 
     if (d.photo_data) {
         setHouseholdPhotoPreview(d.photo_data, d.photo_meta || 'Ảnh nháp đã lưu trên thiết bị');
@@ -3008,6 +3516,7 @@ async function deleteDraftItem(draftKey) {
     try {
         await fetch(apiUrl(`/api/drafts/${encodeURIComponent(draftKey)}`), { method: 'DELETE' });
     } catch (_) {}
+    await loadHouseholdLocks();
     await refreshAllDraftsList();
 }
 
@@ -3389,6 +3898,9 @@ async function handlePhotoSelected(event) {
             startRealtimeInterviewClock();
             startBackgroundGpsTracker();
             saveDraftLocal(false);
+            if (navigator.onLine && currentUser?.role !== 'viewer') {
+                syncCurrentDraftToVps(buildCurrentDraftRecord()).then(() => refreshDraftBadgeCount());
+            }
         } catch (err) {
             alert('Không thể xử lý ảnh watermark: ' + err.message);
             clearHouseholdPhoto(true);
@@ -3416,6 +3928,61 @@ async function handleSurveySubmit(e) {
         return;
     }
 
+    const surveyCode = document.getElementById('surveyCodeInput').value.trim();
+    const commune = document.getElementById('communeSelect').value;
+    const hamlet = document.getElementById('hamletInput').value.trim();
+    const headName = (document.getElementById('headNameInput')?.value || '').trim();
+    const headGender = document.getElementById('headGenderSelect')?.value || '';
+    const headBirthYear = (document.getElementById('headBirthYearInput')?.value || '').trim();
+    const sameChk = document.getElementById('sameAsHeadCheckbox');
+    const sameAsHead = sameChk ? sameChk.checked : (currentTool === 'P1');
+    const respondentName = document.getElementById('respondentNameInput').value.trim();
+    const respGender = document.getElementById('respondentGenderSelect')?.value || '';
+    const respBirthYear = (document.getElementById('respondentBirthYearInput')?.value || '').trim();
+    const relSel = document.getElementById('respondentRelationSelect')?.value || '';
+    const relOther = (document.getElementById('respondentRelationOther')?.value || '').trim();
+    const respRelation = (relSel === 'Khác') ? (relOther || 'Khác') : relSel;
+
+    if (currentTool === 'P1') {
+        if (!headName) {
+            alert('Vui lòng nhập Họ tên Chủ hộ (Mặc định)!');
+            document.getElementById('headNameInput')?.focus();
+            return;
+        }
+        if (!headGender) {
+            alert('Vui lòng chọn Giới tính Chủ hộ (Nam / Nữ)!');
+            document.getElementById('headGenderSelect')?.focus();
+            return;
+        }
+        const hByNum = parseInt(headBirthYear, 10);
+        if (!headBirthYear || isNaN(hByNum) || hByNum < 1920 || hByNum > 2012) {
+            alert('Vui lòng nhập Năm sinh Chủ hộ hợp lệ (1920 – 2012)!');
+            document.getElementById('headBirthYearInput')?.focus();
+            return;
+        }
+        if (!respondentName) {
+            alert('Vui lòng nhập Họ tên Người được phỏng vấn!');
+            document.getElementById('respondentNameInput')?.focus();
+            return;
+        }
+        if (!respGender) {
+            alert('Vui lòng chọn Giới tính Người được phỏng vấn (Nam / Nữ)!');
+            document.getElementById('respondentGenderSelect')?.focus();
+            return;
+        }
+        const rByNum = parseInt(respBirthYear, 10);
+        if (!respBirthYear || isNaN(rByNum) || rByNum < 1920 || rByNum > 2012) {
+            alert('Vui lòng nhập Năm sinh Người được phỏng vấn hợp lệ (1920 – 2012)!');
+            document.getElementById('respondentBirthYearInput')?.focus();
+            return;
+        }
+        if (!respRelation) {
+            alert('Vui lòng chọn Quan hệ của người được phỏng vấn với Chủ hộ!');
+            document.getElementById('respondentRelationSelect')?.focus();
+            return;
+        }
+    }
+
     const visible = getVisibleQuestions();
     const missing = visible.filter(q => !isQuestionAnswered(q.code));
     if (missing.length > 0) {
@@ -3441,14 +4008,19 @@ async function handleSurveySubmit(e) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG LƯU VÀ HOÀN THÀNH PHIẾU...';
 
-    const surveyCode = document.getElementById('surveyCodeInput').value.trim();
-    const commune = document.getElementById('communeSelect').value;
-    const hamlet = document.getElementById('hamletInput').value.trim();
-    const respondentName = document.getElementById('respondentNameInput').value.trim();
     const phoneInputVal = (document.getElementById('phoneInput')?.value || '').trim();
     const guideInputVal = (document.getElementById('guideNameInput')?.value || '').trim();
     if (phoneInputVal) currentDraftAnswers['_phone'] = phoneInputVal;
     if (guideInputVal) currentDraftAnswers['_guide'] = guideInputVal;
+    currentDraftAnswers['_head_name'] = headName || respondentName;
+    currentDraftAnswers['_head_gender'] = headGender;
+    currentDraftAnswers['_head_birth_year'] = headBirthYear;
+    currentDraftAnswers['_same_as_head'] = sameAsHead;
+    currentDraftAnswers['_resp_name'] = respondentName;
+    currentDraftAnswers['_resp_gender'] = respGender;
+    currentDraftAnswers['_resp_birth_year'] = respBirthYear;
+    currentDraftAnswers['_resp_relation'] = respRelation || (currentTool === 'P1' ? 'Chủ hộ' : '');
+    currentDraftAnswers['_resp_relation_other'] = relOther;
     const nowIso = new Date().toISOString();
     if (!currentDraftAnswers['_started_at']) currentDraftAnswers['_started_at'] = nowIso;
     currentDraftAnswers['_completed_at'] = nowIso;
@@ -3503,9 +4075,11 @@ async function handleSurveySubmit(e) {
 
             localStorage.removeItem(`dakman_draft_${currentTool}`);
             await deleteIdbDraft(`${currentTool}::${surveyCode}`);
+            await loadHouseholdLocks();
             await refreshDraftBadgeCount();
             await refreshDashboardData();
             await loadSurveysList();
+            updateMenuSummaryBadges();
 
             showCompletionModal({
                 id: savedId,
@@ -3581,10 +4155,16 @@ function finishAfterCompletion() {
     stopRealtimeInterviewClock();
     clearHouseholdPhoto(true);
 
-    ['surveyCodeInput', 'hamletInput', 'respondentNameInput', 'phoneInput', 'guideNameInput', 'gpsInput'].forEach(fid => {
+    ['surveyCodeInput', 'hamletInput', 'headNameInput', 'headGenderSelect', 'headBirthYearInput', 'respondentNameInput', 'respondentGenderSelect', 'respondentBirthYearInput', 'respondentRelationOther', 'phoneInput', 'guideNameInput', 'gpsInput'].forEach(fid => {
         const el = document.getElementById(fid);
         if (el) el.value = '';
     });
+    const sameChk = document.getElementById('sameAsHeadCheckbox');
+    if (sameChk) sameChk.checked = (currentTool === 'P1');
+    const relSel = document.getElementById('respondentRelationSelect');
+    if (relSel) relSel.value = (currentTool === 'P1') ? 'Chủ hộ' : 'Đại diện đơn vị / Khác';
+    const relOther = document.getElementById('respondentRelationOther');
+    if (relOther) relOther.style.display = 'none';
     const banner = document.getElementById('sampleSelectedBanner');
     if (banner) banner.style.display = 'none';
     const btn = document.getElementById('btnSubmitForm');
@@ -3852,8 +4432,8 @@ async function loadSurveysList() {
         interviewedSurveyCodes = new Set(
             list.map(s => String(s.survey_code || '').trim().toUpperCase()).filter(Boolean)
         );
+        updateMenuSummaryBadges();
         if (sampleHouseholds.length > 0) {
-            updateInterviewerFilterOptions();
             autoSelectSampleFilterForUser();
         }
 
@@ -3983,10 +4563,17 @@ async function viewSurveyDetail(id) {
 
         const canExportItem = (currentUser?.role === 'admin') || (currentUser?.role === 'editor' && (item.surveyor_id === currentUser?.surveyor_id || !item.surveyor_id));
 
+        const headSummary = answers._head_name
+            ? `${escapeHtml(answers._head_name)}${answers._head_gender ? ` (${escapeHtml(answers._head_gender)}${answers._head_birth_year ? ', ' + escapeHtml(answers._head_birth_year) : ''})` : (answers._head_birth_year ? ` (${escapeHtml(answers._head_birth_year)})` : '')}`
+            : '—';
+        const respSummary = `${escapeHtml(item.respondent_name || '—')}${answers._resp_gender ? ` (${escapeHtml(answers._resp_gender)}${answers._resp_birth_year ? ', ' + escapeHtml(answers._resp_birth_year) : ''})` : (answers._resp_birth_year ? ` (${escapeHtml(answers._resp_birth_year)})` : '')}`;
+
         body.innerHTML = `
             <div style="background: var(--slate-50); padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; font-size: 0.84rem;">
-                    <div><strong>Đối tượng phỏng vấn:</strong> ${escapeHtml(item.respondent_name || '—')}</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; font-size: 0.84rem;">
+                    <div><strong>Chủ hộ (mặc định):</strong> ${headSummary}</div>
+                    <div><strong>Người được phỏng vấn:</strong> ${respSummary}</div>
+                    <div><strong>Quan hệ với Chủ hộ:</strong> ${escapeHtml(answers._resp_relation || 'Chủ hộ')}</div>
                     <div><strong>Người dẫn đường:</strong> ${escapeHtml(answers._guide || '—')}</div>
                     <div><strong>Địa bàn:</strong> ${escapeHtml(item.commune || '')} ${item.hamlet ? `(${escapeHtml(item.hamlet)})` : ''}</div>
                     <div><strong>Điều tra viên:</strong> ${escapeHtml(item.surveyor_name || '')} (${escapeHtml(item.surveyor_id || '')})</div>
@@ -4031,7 +4618,6 @@ async function reloadSurveyIntoForm(id) {
         document.getElementById('surveyCodeInput').value = item.survey_code || '';
         if (item.commune) document.getElementById('communeSelect').value = item.commune;
         document.getElementById('hamletInput').value = item.hamlet || '';
-        document.getElementById('respondentNameInput').value = item.respondent_name || '';
         const pEl = document.getElementById('phoneInput');
         if (pEl) pEl.value = item.respondent_phone || (item.answers && item.answers._phone) || '';
         const gEl = document.getElementById('guideNameInput');
@@ -4042,6 +4628,43 @@ async function reloadSurveyIntoForm(id) {
             : ((item.gps_lat && item.gps_lng) ? `${item.gps_lat}, ${item.gps_lng}` : '');
 
         currentDraftAnswers = Object.assign({}, item.answers || {});
+        const ans = currentDraftAnswers;
+        const isP1Item = ((item.tool_code || 'P1') === 'P1');
+        const headNameEl = document.getElementById('headNameInput');
+        const headGenderEl = document.getElementById('headGenderSelect');
+        const headBirthEl = document.getElementById('headBirthYearInput');
+        const sameChk = document.getElementById('sameAsHeadCheckbox');
+        const respNameEl = document.getElementById('respondentNameInput');
+        const respGenderEl = document.getElementById('respondentGenderSelect');
+        const respBirthEl = document.getElementById('respondentBirthYearInput');
+        const respRelEl = document.getElementById('respondentRelationSelect');
+        const respRelOtherEl = document.getElementById('respondentRelationOther');
+
+        if (headNameEl) headNameEl.value = ans._head_name !== undefined ? ans._head_name : (item.respondent_name || '');
+        if (headGenderEl) headGenderEl.value = ans._head_gender || '';
+        if (headBirthEl) headBirthEl.value = ans._head_birth_year || '';
+        const sameVal = (ans._same_as_head !== undefined) ? Boolean(ans._same_as_head) : isP1Item;
+        if (sameChk) sameChk.checked = sameVal;
+        if (sameVal && isP1Item) {
+            syncRespondentFromHead();
+        } else {
+            syncRespondentFromHead();
+            if (respNameEl) respNameEl.value = item.respondent_name || ans._resp_name || '';
+            if (respGenderEl) respGenderEl.value = ans._resp_gender || '';
+            if (respBirthEl) respBirthEl.value = ans._resp_birth_year || '';
+            const relVal = ans._resp_relation || (isP1Item ? 'Vợ / Chồng' : 'Đại diện đơn vị / Khác');
+            if (respRelEl) {
+                const hasOpt = Array.from(respRelEl.options).some(o => o.value === relVal);
+                respRelEl.value = hasOpt ? relVal : 'Khác';
+                if (!hasOpt && respRelOtherEl) {
+                    respRelOtherEl.style.display = 'block';
+                    respRelOtherEl.value = relVal;
+                } else if (respRelOtherEl) {
+                    respRelOtherEl.style.display = 'none';
+                    respRelOtherEl.value = '';
+                }
+            }
+        }
         if (item.photo_url) {
             setHouseholdPhotoPreview(apiUrl(item.photo_url), `Ảnh đã lưu trên máy chủ (${item.survey_code})`);
             // Không gửi lại URL thành base64 nếu không chụp ảnh mới

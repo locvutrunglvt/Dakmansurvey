@@ -1415,6 +1415,198 @@
                 display: none !important;
             }
         }
+
+        /* ======================================================== */
+        /* HOME MENU & SUBVIEW TOP BAR (MOBILE-FIRST / CLEAN UI)    */
+        /* ======================================================== */
+        .subview-topbar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: #f8fafc;
+            border-bottom: 2px solid #cbd5e1;
+            padding: 8px 14px;
+        }
+
+        .subview-topbar.active {
+            display: flex;
+        }
+
+        .btn-back-menu {
+            background: var(--navy);
+            color: #ffffff;
+            border: none;
+            padding: 7px 12px;
+            border-radius: 4px;
+            font-size: 0.84rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-back-menu:hover {
+            background: #001542;
+        }
+
+        .menu-section-card {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+        }
+
+        .menu-section-title {
+            font-size: 0.96rem;
+            font-weight: 800;
+            color: var(--navy);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .menu-tool-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .menu-tool-card {
+            background: #ffffff;
+            border: 1.5px solid #cbd5e1;
+            border-top: 4px solid #15803d;
+            border-radius: 5px;
+            padding: 12px 12px;
+            text-align: left;
+            cursor: pointer;
+            transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .menu-tool-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 32, 96, 0.12);
+            border-color: var(--navy);
+        }
+
+        .menu-tool-card .tool-code-tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 0.80rem;
+            font-weight: 800;
+            color: var(--navy);
+        }
+
+        .menu-tool-card .tool-quota-pill {
+            background: #dcfce7;
+            color: #166534;
+            padding: 1px 7px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 700;
+        }
+
+        .menu-tool-card .tool-card-name {
+            font-size: 0.90rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.35;
+        }
+
+        .menu-tool-card .tool-card-desc {
+            font-size: 0.76rem;
+            color: #64748b;
+            line-height: 1.35;
+        }
+
+        .menu-nav-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .menu-nav-card {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-left: 5px solid var(--navy);
+            border-radius: 5px;
+            padding: 13px 14px;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            transition: background 0.12s, box-shadow 0.12s;
+        }
+
+        .menu-nav-card:hover {
+            background: #f8fafc;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+        }
+
+        .menu-nav-badge {
+            background: #eff6ff;
+            color: var(--navy);
+            border: 1px solid #bfdbfe;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .schedule-subtabs {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .schedule-subtab-btn {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            padding: 7px 14px;
+            border-radius: 4px;
+            font-size: 0.84rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .schedule-subtab-btn.active {
+            background: var(--navy);
+            color: #ffffff;
+            border-color: var(--navy);
+        }
+
+        @media (max-width: 768px) {
+            .menu-tool-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .menu-nav-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .menu-tool-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 
@@ -1477,8 +1669,8 @@
             </div>
         </div>
 
-        <!-- Official Header -->
-        <div class="header-official">
+        <!-- Official Header (Hiển thị ở Menu chính) -->
+        <div class="header-official" id="officialHeaderBlock">
             <div class="org-title">CÔNG TY TNHH DAKMAN VIỆT NAM — BAN QUẢN LÝ DỰ ÁN</div>
             <div class="group-title">DỰ ÁN CẢNH QUAN CÀ PHÊ BỀN VỮNG HUYỆN CƯ M'GAR</div>
             <div class="cert-code">Đợt Đánh Giá Cuối Kỳ (Final Evaluation: 2021 – 2026) | Tài Trợ: IDH & JDE Peet's
@@ -1508,19 +1700,22 @@
             </div>
         </div>
 
-        <!-- View Switcher Bar (Tabs chính) -->
-        <div class="view-switcher-bar">
-            <button type="button" class="view-tab-btn active" id="btnViewSurvey" onclick="switchMainView('survey')">
-                <i class="fa-solid fa-clipboard-list"></i> 1. Phiếu Khảo Sát Hiện Trường
+        <!-- View Switcher Bar (Ẩn mặc định khi có Menu Chính & Subview Top Bar) -->
+        <div class="view-switcher-bar" id="mainViewSwitcherBar" style="display: none;">
+            <button type="button" class="view-tab-btn" id="btnViewMenu" onclick="switchMainView('menu')">
+                <i class="fa-solid fa-house"></i> Menu Chính
+            </button>
+            <button type="button" class="view-tab-btn" id="btnViewSurvey" onclick="switchMainView('survey')">
+                <i class="fa-solid fa-clipboard-list"></i> 1. Phiếu Khảo Sát
             </button>
             <button type="button" class="view-tab-btn" id="btnViewDashboard" onclick="switchMainView('dashboard')">
-                <i class="fa-solid fa-chart-pie"></i> 2. Báo Cáo Tiến Độ (Dashboard)
+                <i class="fa-solid fa-chart-pie"></i> 2. Tiến Độ Nhóm
             </button>
             <button type="button" class="view-tab-btn" id="btnViewSchedule" onclick="switchMainView('schedule')">
-                <i class="fa-solid fa-calendar-days"></i> 3. Kế Hoạch 22 Hoạt Động
+                <i class="fa-solid fa-calendar-days"></i> 3. Kế Hoạch 6 Người
             </button>
             <button type="button" class="view-tab-btn" id="btnViewHistory" onclick="switchMainView('history')">
-                <i class="fa-solid fa-database"></i> 4. Dữ Liệu Đã Nộp
+                <i class="fa-solid fa-database"></i> 4. Phiếu Đã Phỏng Vấn
             </button>
             <button type="button" class="view-tab-btn" id="btnOpenDraftsBar" onclick="openDraftsModal()"
                 style="margin-left: auto; color: #b45309; background: #fffbeb; border-color: #fcd34d;"
@@ -1529,13 +1724,124 @@
             </button>
         </div>
 
+        <!-- Thanh Điều Hướng Gọn Cho Màn Hình Con (Quay lại Menu Chính) -->
+        <div class="subview-topbar" id="subviewTopBar">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn-back-menu" onclick="switchMainView('menu')">
+                    <i class="fa-solid fa-arrow-left"></i> Menu Chính
+                </button>
+                <span id="subviewTitleText" style="font-size: 0.90rem; font-weight: 800; color: var(--navy);"></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <button type="button" id="btnChangeObjectSub" onclick="switchMainView('menu')"
+                    style="display: none; background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; padding: 6px 10px; border-radius: 4px; font-size: 0.78rem; font-weight: 700; cursor: pointer;">
+                    <i class="fa-solid fa-repeat"></i> Đổi đối tượng
+                </button>
+                <button type="button" onclick="openDraftsModal()"
+                    style="background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; padding: 6px 10px; border-radius: 4px; font-size: 0.78rem; font-weight: 700; cursor: pointer;">
+                    <i class="fa-solid fa-folder-open"></i> Lưu Tạm (<span id="subviewDraftBadge">0</span>)
+                </button>
+            </div>
+        </div>
+
         <!-- MAIN VIEW CONTENT -->
         <div class="main-content">
 
             <!-- ======================================================== -->
+            <!-- VIEW 0: MENU CHÍNH (MÀN HÌNH KHỞI ĐỘNG GỌN GÀNG)         -->
+            <!-- ======================================================== -->
+            <div id="view-menu" class="view-pane">
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 5px solid var(--navy); border-radius: 5px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <div style="font-size: 0.86rem; color: #1e293b;">
+                        <i class="fa-solid fa-user-check" style="color: var(--navy);"></i>
+                        Xin chào <strong id="menuWelcomeUser" style="color: var(--navy);">Điều tra viên</strong> — Chọn tác vụ bên dưới để bắt đầu phỏng vấn hiện trường.
+                    </div>
+                    <button type="button" onclick="openDraftsModal()"
+                        style="background: #fffbeb; color: #b45309; border: 1px solid #f59e0b; padding: 6px 12px; border-radius: 4px; font-size: 0.80rem; font-weight: 700; cursor: pointer;">
+                        <i class="fa-solid fa-file-pen"></i> Phiếu Lưu Tạm / Nhập Giấy (<span id="menuDraftBadge">0</span>)
+                    </button>
+                </div>
+
+                <!-- Mục 1: Tạo phiếu mới (06 đối tượng) -->
+                <div class="menu-section-card">
+                    <div class="menu-section-title">
+                        <span><i class="fa-solid fa-file-circle-plus" style="color: #15803d;"></i> 1. Tạo Phiếu Mới — Chọn 1 trong 06 Đối Tượng</span>
+                        <span style="font-size: 0.76rem; font-weight: 600; color: #64748b; text-transform: none;">Mở đúng 1 mẫu phiếu, không rối màn hình</span>
+                    </div>
+                    <div class="menu-tool-grid">
+                        <button type="button" class="menu-tool-card" style="border-top-color: #15803d;" onclick="openNewSurveyTool('P1')">
+                            <div class="tool-code-tag"><span>P1 — ĐỐI TƯỢNG 1</span><span class="tool-quota-pill">220 hộ</span></div>
+                            <div class="tool-card-name">Hộ nông dân</div>
+                            <div class="tool-card-desc">Phỏng vấn trực tiếp nông hộ trồng cà phê (gồm check-in ảnh, GPS &amp; nhập phiếu giấy).</div>
+                        </button>
+                        <button type="button" class="menu-tool-card" style="border-top-color: #0284c7;" onclick="openNewSurveyTool('NT')">
+                            <div class="tool-code-tag"><span>NT — ĐỐI TƯỢNG 2</span><span class="tool-quota-pill" style="background:#e0f2fe;color:#0369a1;">10 phiếu</span></div>
+                            <div class="tool-card-name">Nhóm trưởng &amp; Trưởng thôn</div>
+                            <div class="tool-card-desc">Phỏng vấn sâu nhóm trưởng, đại diện nhóm hộ và trưởng thôn/buôn.</div>
+                        </button>
+                        <button type="button" class="menu-tool-card" style="border-top-color: #dc2626;" onclick="openNewSurveyTool('CQ')">
+                            <div class="tool-code-tag"><span>CQ — ĐỐI TƯỢNG 3</span><span class="tool-quota-pill" style="background:#fee2e2;color:#b91c1c;">3 xã</span></div>
+                            <div class="tool-card-name">Chính quyền 3 xã</div>
+                            <div class="tool-card-desc">Tham vấn UBND xã Ea Kiết, Ea Tul và Cư Dliê M'nông.</div>
+                        </button>
+                        <button type="button" class="menu-tool-card" style="border-top-color: #7c3aed;" onclick="openNewSurveyTool('HTX')">
+                            <div class="tool-code-tag"><span>HTX — ĐỐI TƯỢNG 4</span><span class="tool-quota-pill" style="background:#f3e8ff;color:#6d28d9;">3 HTX</span></div>
+                            <div class="tool-card-name">Ban quản lý 3 HTX</div>
+                            <div class="tool-card-desc">Phỏng vấn ban quản lý Hợp tác xã tham gia dự án.</div>
+                        </button>
+                        <button type="button" class="menu-tool-card" style="border-top-color: #002060;" onclick="openNewSurveyTool('TT')">
+                            <div class="tool-code-tag"><span>TT — ĐỐI TƯỢNG 5</span><span class="tool-quota-pill" style="background:#dbeafe;color:#1e40af;">2 đơn vị</span></div>
+                            <div class="tool-card-name">Nhà tài trợ — IDH &amp; JDE Peet's</div>
+                            <div class="tool-card-desc">Phỏng vấn chuyên sâu đại diện đối tác tài trợ dự án.</div>
+                        </button>
+                        <button type="button" class="menu-tool-card" style="border-top-color: #d97706;" onclick="openNewSurveyTool('MH')">
+                            <div class="tool-code-tag"><span>MH — ĐỐI TƯỢNG 6</span><span class="tool-quota-pill" style="background:#fef3c7;color:#b45309;">2 mô hình</span></div>
+                            <div class="tool-card-name">Chủ mô hình trình diễn</div>
+                            <div class="tool-card-desc">Phỏng vấn chuyên sâu chủ mô hình trình diễn cảnh quan.</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mục 2-4: Các phân hệ quản lý & theo dõi -->
+                <div class="menu-nav-grid">
+                    <button type="button" class="menu-nav-card" style="border-left-color: #15803d;" onclick="switchMainView('history')">
+                        <div>
+                            <div style="font-size: 0.94rem; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-list-check" style="color: #15803d;"></i> 2. Xem phiếu đã phỏng vấn</div>
+                            <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">Xem lại, sửa, xuất PDF hoặc tải Excel nhiều sheet</div>
+                        </div>
+                        <span class="menu-nav-badge" id="menuHistoryBadge">0 phiếu</span>
+                    </button>
+
+                    <button type="button" class="menu-nav-card" style="border-left-color: #0284c7;" onclick="switchMainView('dashboard')">
+                        <div>
+                            <div style="font-size: 0.94rem; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-chart-pie" style="color: #0284c7;"></i> 3. Tiến độ nhóm</div>
+                            <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">Theo dõi tỷ lệ hoàn thành theo đối tượng &amp; 3 xã</div>
+                        </div>
+                        <span class="menu-nav-badge" id="menuDashBadge">0 / 238</span>
+                    </button>
+
+                    <button type="button" class="menu-nav-card" style="border-left-color: #d97706;" onclick="switchMainView('schedule', 'team6')">
+                        <div>
+                            <div style="font-size: 0.94rem; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-calendar-week" style="color: #d97706;"></i> 4. Kế hoạch hoạt động 6 người (15 – 21/11/2026)</div>
+                            <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">Lịch tác nghiệp theo ngày của 6 ĐTV &amp; bảng 22 hoạt động V5</div>
+                        </div>
+                        <span class="menu-nav-badge" style="background:#fef3c7;color:#92400e;border-color:#fde68a;">6 ĐTV • 7 ngày</span>
+                    </button>
+
+                    <button type="button" class="menu-nav-card" style="border-left-color: #b45309;" onclick="openDraftsModal()">
+                        <div>
+                            <div style="font-size: 0.94rem; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-folder-open" style="color: #b45309;"></i> 5. Phiếu lưu tạm / Nhập phiếu giấy</div>
+                            <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">Mở lại các hộ đã chụp ảnh &amp; GPS hiện trường để nhập đáp án</div>
+                        </div>
+                        <span class="menu-nav-badge" id="menuDraftCardBadge" style="background:#fffbeb;color:#b45309;border-color:#fcd34d;">0 chờ</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ======================================================== -->
             <!-- VIEW 1: FORM PHỎNG VẤN TRỰC TUYẾN                         -->
             <!-- ======================================================== -->
-            <div id="view-survey" class="view-pane">
+            <div id="view-survey" class="view-pane" style="display: none;">
 
                 <!-- Cảnh Báo Chế Độ Chỉ Xem -->
                 <div id="viewerAlertBanner"
@@ -1545,34 +1851,18 @@
                     </div>
                     <div style="margin-top: 4px; font-size: 0.84rem;">
                         Bạn đang đăng nhập dưới quyền <strong>Khách Giám Sát (Chỉ Xem)</strong>. Bạn có toàn quyền theo
-                        dõi Dashboard, Lịch trình 22 hoạt động và Danh sách dữ liệu, nhưng không thể tạo mới hoặc chỉnh
+                        dõi Dashboard, Lịch trình hoạt động và Danh sách dữ liệu, nhưng không thể tạo mới hoặc chỉnh
                         sửa phiếu khảo sát.
                     </div>
                 </div>
 
-                <!-- Tool Selector Box -->
-                <div class="summary-box">
-                    <div class="summary-header">
-                        <div class="summary-title" id="currentToolHeading">CÔNG CỤ 1: P1 — PHIẾU PHỎNG VẤN HỘ NÔNG DÂN
-                        </div>
+                <!-- Thanh Thông Tin Công Cụ Gọn (Không hiện 6 tab gây rườm rà) -->
+                <div class="summary-box" style="padding: 10px 14px; margin-bottom: 12px;">
+                    <div class="summary-header" style="margin-bottom: 0;">
+                        <div class="summary-title" id="currentToolHeading">CÔNG CỤ 1: P1 — HỘ NÔNG DÂN (220 PHIẾU)</div>
                         <span id="draftIndicator" style="font-size: 0.8rem; color: #15803d; font-weight: 600;">
                             <i class="fa-solid fa-floppy-disk"></i> Tự động lưu nháp
                         </span>
-                    </div>
-
-                    <div class="tool-tabs-nav">
-                        <button type="button" class="tool-tab active" onclick="selectTool('P1')" id="toolBtn-P1">P1:
-                            Hộ nông dân (220)</button>
-                        <button type="button" class="tool-tab" onclick="selectTool('NT')" id="toolBtn-NT">NT: Nhóm
-                            trưởng &amp; Trưởng thôn (10)</button>
-                        <button type="button" class="tool-tab" onclick="selectTool('CQ')" id="toolBtn-CQ">CQ: Chính
-                            quyền 3 xã (3)</button>
-                        <button type="button" class="tool-tab" onclick="selectTool('HTX')" id="toolBtn-HTX">HTX: Ban
-                            quản lý 3 HTX (3)</button>
-                        <button type="button" class="tool-tab" onclick="selectTool('TT')" id="toolBtn-TT">TT: Nhà tài
-                            trợ - IDH &amp; JDE Peet’s (2)</button>
-                        <button type="button" class="tool-tab" onclick="selectTool('MH')" id="toolBtn-MH">MH: Chủ mô
-                            hình trình diễn (2)</button>
                     </div>
                 </div>
 
@@ -1585,14 +1875,14 @@
                             <span class="sub-note">(*) Bắt buộc ghi nhận chính xác</span>
                         </div>
 
-                        <!-- Tra Cứu & Lọc Nông Hộ Theo Danh Sách Mẫu -->
-                        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 12px;">
+                        <!-- Tra Cứu & Lọc Nông Hộ Theo Danh Sách Mẫu (Chỉ gồm 1: Tìm thông minh & 2: Người dẫn đường) -->
+                        <div id="samplePickerContainer" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
                                 <span style="font-size: 0.82rem; font-weight: 700; color: #166534;">
-                                    <i class="fa-solid fa-magnifying-glass"></i> LỌC &amp; CHỌN NÔNG HỘ MẪU (ĐIỀN ID TỰ ĐỘNG)
+                                    <i class="fa-solid fa-magnifying-glass"></i> LỌC &amp; CHỌN CHỦ HỘ MẶC ĐỊNH (ĐIỀN ID TỰ ĐỘNG)
                                 </span>
                                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                    <span id="sampleFilterCount" style="font-size: 0.76rem; color: #15803d; font-weight: 600;">220 hộ (197 mẫu + 23 mới)</span>
+                                    <span id="sampleFilterCount" style="font-size: 0.76rem; color: #15803d; font-weight: 600;">220 hộ chờ</span>
                                     <button type="button" onclick="generateNextNewHouseholdId()"
                                             style="background: #15803d; color: #fff; border: none; padding: 3px 9px; border-radius: 3px; font-size: 0.75rem; font-weight: 600; cursor: pointer;"
                                             title="Tạo mã hộ mới (+1) cho người chưa có trong danh sách theo Xã/Buôn đang chọn">
@@ -1600,35 +1890,24 @@
                                     </button>
                                 </div>
                             </div>
-                            <div class="grid-3" style="margin-bottom: 8px;">
-                                <div class="form-group">
-                                    <select id="sampleFilterNV" class="form-control" onchange="onSampleNVFilterChange()" style="font-size: 0.82rem;">
-                                        <option value="">-- Tất cả Điều tra viên (6 ĐTV • 220 hộ) --</option>
-                                        <option value="Duy">Lê Đình Duy (TCN07) — 36 hộ / 5 dẫn đường (Ea Kiết)</option>
-                                        <option value="Vọng">Phan Doãn Vọng (TCN02) — 36 hộ / 5 dẫn đường (Ea Kiết)</option>
-                                        <option value="Thao">Phạm Văn Thao (TCN03) — 37 hộ / 5 dẫn đường (Ea Tul, Cư Dliê M'nông)</option>
-                                        <option value="Trụ">Nguyễn Viết Trụ (TCN04) — 37 hộ / 4 dẫn đường (Ea Tul)</option>
-                                        <option value="Phuc">Cao Thị Phúc (TCN05) — 37 hộ / 5 dẫn đường (Ea Tul)</option>
-                                        <option value="Sinh">Hoàng Trường Sinh (TCN06) — 37 hộ / 5 dẫn đường (Ea Tul)</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <select id="sampleFilterGuide" class="form-control" onchange="onSampleGuideFilterChange()" style="font-size: 0.82rem;">
-                                        <option value="">-- 1. Chọn Người Dẫn Đường (Tất cả • Của bạn tô đậm) --</option>
-                                    </select>
-                                </div>
-                                <div class="form-group" style="display: flex; gap: 4px; align-items: center;">
+                            <div class="grid-2" style="padding: 0; gap: 8px; margin-bottom: 8px;">
+                                <div class="form-group" style="margin-bottom: 0; display: flex; gap: 4px; align-items: center;">
                                     <input type="text" id="sampleSearchInput" class="form-control"
-                                           placeholder="2. Gõ bất kỳ ký tự tên Chủ hộ, Mã hộ, SĐT..."
+                                           placeholder="1. Gõ bất kỳ ký tự tên Chủ hộ, Mã hộ, SĐT..."
                                            onfocus="this.select(); showPendingHouseholdsList();"
                                            oninput="filterSampleHouseholds(true)"
                                            style="font-size: 0.82rem; flex: 1;">
                                     <button type="button" onclick="clearSampleFilter()" title="Xóa lọc dẫn đường & từ khóa tìm kiếm"
                                             style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; border-radius: 3px; padding: 7px 9px; cursor: pointer; font-size: 0.78rem; font-weight: 700; flex-shrink: 0;">✕</button>
                                 </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <select id="sampleFilterGuide" class="form-control" onchange="onSampleGuideFilterChange()" style="font-size: 0.82rem;">
+                                        <option value="">-- 2. Chọn Người Dẫn Đường (Tất cả • Của bạn tô đậm) --</option>
+                                    </select>
+                                </div>
                             </div>
                             <div id="sampleScopeNote" style="display: none; font-size: 0.76rem; color: #0369a1; font-weight: 600; margin-bottom: 6px;"></div>
-                            <div id="sampleResultList" style="max-height: 190px; overflow-y: auto; background: #ffffff; border: 1px solid #d1d5db; border-radius: 3px; display: none;"></div>
+                            <div id="sampleResultList" style="max-height: 210px; overflow-y: auto; background: #ffffff; border: 1px solid #d1d5db; border-radius: 3px; display: none;"></div>
                             <div id="sampleSelectedBanner" style="display: none; margin-top: 6px; padding: 6px 10px; background: #dcfce7; border: 1px solid #86efac; border-radius: 3px; font-size: 0.80rem; color: #14532d;"></div>
                         </div>
 
@@ -1654,21 +1933,93 @@
                                     placeholder="Ví dụ: Buôn Thung">
                             </div>
                             <div class="form-group">
-                                <label>Họ Tên Người Được Phỏng Vấn <span class="req">*</span></label>
-                                <input type="text" class="form-control" id="respondentNameInput" required
-                                    oninput="onRespondentTyping(this.value)"
-                                    placeholder="Họ và tên chủ hộ/đại diện">
-                            </div>
-                            <div class="form-group">
                                 <label>Người Dẫn Đường</label>
                                 <input type="text" class="form-control" id="guideNameInput"
                                     oninput="currentDraftAnswers['_guide'] = this.value; saveDraftLocal(false);"
                                     placeholder="Tự hiện theo chủ hộ hoặc nhập...">
                             </div>
+                        </div>
+
+                        <!-- Chủ hộ (Mặc định từ danh sách chờ) -->
+                        <div class="grid-4" id="headDemographicsRow">
+                            <div class="form-group">
+                                <label>Họ Tên Chủ Hộ (Mặc Định) <span class="req">*</span></label>
+                                <input type="text" class="form-control" id="headNameInput"
+                                    oninput="onHeadFieldChange()"
+                                    placeholder="Họ và tên Chủ hộ trong danh sách">
+                            </div>
+                            <div class="form-group">
+                                <label>Giới Tính Chủ Hộ <span class="req" id="headGenderReq">*</span></label>
+                                <select class="form-control" id="headGenderSelect" onchange="onHeadFieldChange()">
+                                    <option value="">-- Chọn giới tính --</option>
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Năm Sinh Chủ Hộ <span class="req" id="headBirthReq">*</span></label>
+                                <input type="number" class="form-control" id="headBirthYearInput"
+                                    min="1920" max="2012" step="1"
+                                    oninput="onHeadFieldChange()"
+                                    placeholder="VD: 1978">
+                            </div>
                             <div class="form-group">
                                 <label>Số Điện Thoại</label>
                                 <input type="tel" class="form-control" id="phoneInput"
+                                    oninput="currentDraftAnswers['_phone'] = this.value; saveDraftLocal(false);"
                                     placeholder="SĐT liên hệ (tự điền hoặc nhập mới)">
+                            </div>
+                        </div>
+
+                        <!-- Người được phỏng vấn & Quan hệ với Chủ hộ -->
+                        <div id="respondentDemographicsBox" style="margin: 4px 16px 12px 16px; padding: 10px 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid var(--navy); border-radius: 4px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                                <label style="display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-size: 0.84rem; font-weight: 700; color: var(--navy); margin: 0;">
+                                    <input type="checkbox" id="sameAsHeadCheckbox" checked onchange="onSameAsHeadToggle()" style="width: 17px; height: 17px; accent-color: var(--navy);">
+                                    <span>Người được phỏng vấn chính là Chủ hộ (tự điền thông tin &amp; Quan hệ = Chủ hộ)</span>
+                                </label>
+                                <span style="font-size: 0.74rem; color: #64748b;">Bỏ tích nếu người trả lời là Vợ/Chồng, Con hoặc người đại diện khác</span>
+                            </div>
+                            <div class="grid-4" style="padding: 0; gap: 10px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label>Họ Tên Người Được Phỏng Vấn <span class="req">*</span></label>
+                                    <input type="text" class="form-control" id="respondentNameInput" required
+                                        oninput="onRespondentTyping(this.value)"
+                                        placeholder="Họ và tên người trả lời PV">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label>Giới Tính Người PV <span class="req">*</span></label>
+                                    <select class="form-control" id="respondentGenderSelect" onchange="onRespondentMetaChange()">
+                                        <option value="">-- Chọn giới tính --</option>
+                                        <option value="Nam">Nam</option>
+                                        <option value="Nữ">Nữ</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label>Năm Sinh Người PV <span class="req">*</span></label>
+                                    <input type="number" class="form-control" id="respondentBirthYearInput"
+                                        min="1920" max="2012" step="1"
+                                        oninput="onRespondentMetaChange()"
+                                        placeholder="VD: 1982">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label>Quan Hệ Với Chủ Hộ <span class="req">*</span></label>
+                                    <select class="form-control" id="respondentRelationSelect" onchange="onRespondentRelationChange()">
+                                        <option value="Chủ hộ">Chủ hộ</option>
+                                        <option value="Vợ / Chồng">Vợ / Chồng</option>
+                                        <option value="Con">Con</option>
+                                        <option value="Bố / Mẹ">Bố / Mẹ</option>
+                                        <option value="Anh / Chị / Em">Anh / Chị / Em</option>
+                                        <option value="Con dâu / Con rể">Con dâu / Con rể</option>
+                                        <option value="Người thân khác trong hộ">Người thân khác trong hộ</option>
+                                        <option value="Người quản lý vườn / Làm thuê">Người quản lý vườn / Làm thuê</option>
+                                        <option value="Khác">Khác (ghi rõ)</option>
+                                    </select>
+                                    <input type="text" class="form-control" id="respondentRelationOther"
+                                        oninput="onRespondentMetaChange()"
+                                        placeholder="Ghi rõ quan hệ với chủ hộ..."
+                                        style="display: none; margin-top: 6px; font-size: 0.82rem;">
+                                </div>
                             </div>
                         </div>
 
@@ -1956,31 +2307,72 @@
             </div>
 
             <!-- ======================================================== -->
-            <!-- VIEW 3: KẾ HOẠCH TIẾN ĐỘ 22 HOẠT ĐỘNG (ROADMAP)           -->
+            <!-- VIEW 3: KẾ HOẠCH HOẠT ĐỘNG 6 NGƯỜI (15–21/11/2026) & V5  -->
             <!-- ======================================================== -->
             <div id="view-schedule" class="view-pane" style="display: none;">
                 <div class="form-section">
                     <div class="section-header">
-                        <span>KẾ HOẠCH BẮT ĐẦU VÀ KẾT THÚC (01/11/2026 – 30/11/2026)</span>
-                        <span class="sub-note">Căn cứ theo Bảng tiến độ F1 VN trong Kế hoạch V5</span>
+                        <span>KẾ HOẠCH TÁC NGHIỆP HIỆN TRƯỜNG &amp; TIẾN ĐỘ DỰ ÁN</span>
+                        <span class="sub-note">Đợt cao điểm 6 ĐTV: 15/11/2026 – 21/11/2026</span>
                     </div>
 
-                    <table class="report-table">
-                        <thead>
-                            <tr>
-                                <th style="text-align: center; width: 45px;">STT</th>
-                                <th>Tên Hoạt Động & Nội Dung Chi Tiết</th>
-                                <th>Người Phụ Trách</th>
-                                <th style="text-align: center; width: 95px;">Từ Ngày</th>
-                                <th style="text-align: center; width: 95px;">Đến Ngày</th>
-                                <th style="text-align: center; width: 65px;">Số Ngày</th>
-                                <th style="text-align: center; width: 110px;">Trạng Thái</th>
-                            </tr>
-                        </thead>
-                        <tbody id="scheduleListTbody">
-                            <!-- Rendered by JS -->
-                        </tbody>
-                    </table>
+                    <div style="padding: 12px 16px 0 16px;">
+                        <div class="schedule-subtabs">
+                            <button type="button" class="schedule-subtab-btn active" id="btnSchTabTeam6" onclick="switchScheduleTab('team6')">
+                                <i class="fa-solid fa-users-line"></i> Kế hoạch 6 người (15 – 21/11/2026)
+                            </button>
+                            <button type="button" class="schedule-subtab-btn" id="btnSchTabRoadmap" onclick="switchScheduleTab('roadmap')">
+                                <i class="fa-solid fa-list-ol"></i> Kế hoạch tổng thể 22 hoạt động (V5)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="schedulePaneTeam6" style="padding: 0 16px 16px 16px;">
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid var(--navy); border-radius: 4px; padding: 10px 12px; margin-bottom: 12px; font-size: 0.82rem; color: #1e293b;">
+                            <strong style="color: var(--navy);"><i class="fa-solid fa-calendar-check"></i> Đợt khảo sát đồng loạt 6 Điều tra viên (15/11 – 21/11/2026 • Mục tiêu 220 hộ P1 + 18 phiếu NT/CQ/HTX):</strong>
+                            <div style="margin-top: 4px; color: #475569;">Số liệu <em>Đã nộp / Đang check-in giữ phiếu / Còn lại</em> cập nhật trực tiếp từ máy chủ VPS. ĐTV có thể chọn chéo hộ hoặc người dẫn đường bất kỳ chưa bị khóa ảnh.</div>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Điều Tra Viên (Mã)</th>
+                                        <th>Địa Bàn &amp; Người Dẫn Đường</th>
+                                        <th style="text-align: center;">15/11 (CN)</th>
+                                        <th style="text-align: center;">16/11 (T2)</th>
+                                        <th style="text-align: center;">17/11 (T3)</th>
+                                        <th style="text-align: center;">18/11 (T4)</th>
+                                        <th style="text-align: center;">19/11 (T5)</th>
+                                        <th style="text-align: center;">20/11 (T6)</th>
+                                        <th style="text-align: center;">21/11 (T7)</th>
+                                        <th style="text-align: center;">Tiến Độ Thực Tế</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teamWeekScheduleTbody">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="schedulePaneRoadmap" style="display: none; padding: 0 16px 16px 16px;">
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: center; width: 45px;">STT</th>
+                                    <th>Tên Hoạt Động & Nội Dung Chi Tiết</th>
+                                    <th>Người Phụ Trách</th>
+                                    <th style="text-align: center; width: 95px;">Từ Ngày</th>
+                                    <th style="text-align: center; width: 95px;">Đến Ngày</th>
+                                    <th style="text-align: center; width: 65px;">Số Ngày</th>
+                                    <th style="text-align: center; width: 110px;">Trạng Thái</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleListTbody">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -2720,7 +3112,7 @@
     </div>
 
     <!-- Application Logic -->
-    <script src="app.js?v=2.32"></script>
+    <script src="app.js?v=2.33"></script>
 
 </body>
 
