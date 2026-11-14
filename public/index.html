@@ -1410,14 +1410,26 @@
             display: none !important;
         }
 
+        #officialHeaderBlock {
+            display: none !important;
+        }
+
         @media print {
             body.viewer-locked-mode {
+                display: none !important;
+            }
+            #officialHeaderBlock {
+                display: block !important;
+            }
+            .subview-topbar,
+            #view-menu,
+            #view-pick-tool {
                 display: none !important;
             }
         }
 
         /* ======================================================== */
-        /* HOME MENU & SUBVIEW TOP BAR (MOBILE-FIRST / CLEAN UI)    */
+        /* MOBILE-APP HOME MENU (4 CLEAN TILES) & SUBVIEW TOP BAR   */
         /* ======================================================== */
         .subview-topbar {
             display: none;
@@ -1426,8 +1438,8 @@
             gap: 8px;
             flex-wrap: wrap;
             background: #f8fafc;
-            border-bottom: 2px solid #cbd5e1;
-            padding: 8px 14px;
+            border-bottom: 1.5px solid #cbd5e1;
+            padding: 8px 12px;
         }
 
         .subview-topbar.active {
@@ -1439,7 +1451,7 @@
             color: #ffffff;
             border: none;
             padding: 7px 12px;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 0.84rem;
             font-weight: 700;
             cursor: pointer;
@@ -1452,120 +1464,129 @@
             background: #001542;
         }
 
-        .menu-section-card {
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 14px 16px;
-            margin-bottom: 14px;
-            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
-        }
-
-        .menu-section-title {
-            font-size: 0.96rem;
-            font-weight: 800;
-            color: var(--navy);
-            text-transform: uppercase;
-            margin-bottom: 10px;
+        .app-user-pill {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
             gap: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            font-size: 0.86rem;
+            color: #1e293b;
         }
 
-        .menu-tool-grid {
+        .app-launcher-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
         }
 
-        .menu-tool-card {
+        .app-tile-btn {
             background: #ffffff;
-            border: 1.5px solid #cbd5e1;
-            border-top: 4px solid #15803d;
-            border-radius: 5px;
-            padding: 12px 12px;
-            text-align: left;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 20px 14px;
             cursor: pointer;
-            transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 10px;
+            min-height: 146px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+            transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+            position: relative;
         }
 
-        .menu-tool-card:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 3px 8px rgba(0, 32, 96, 0.12);
+        .app-tile-btn:hover,
+        .app-tile-btn:active {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 32, 96, 0.12);
             border-color: var(--navy);
         }
 
-        .menu-tool-card .tool-code-tag {
-            display: inline-flex;
+        .app-tile-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            display: flex;
             align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            font-size: 0.80rem;
+            justify-content: center;
+            font-size: 1.55rem;
+            color: #ffffff;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.14);
+        }
+
+        .app-tile-label {
+            font-size: 0.96rem;
             font-weight: 800;
-            color: var(--navy);
-        }
-
-        .menu-tool-card .tool-quota-pill {
-            background: #dcfce7;
-            color: #166534;
-            padding: 1px 7px;
-            border-radius: 999px;
-            font-size: 0.74rem;
-            font-weight: 700;
-        }
-
-        .menu-tool-card .tool-card-name {
-            font-size: 0.90rem;
-            font-weight: 700;
             color: #0f172a;
-            line-height: 1.35;
+            line-height: 1.3;
         }
 
-        .menu-tool-card .tool-card-desc {
+        .app-tile-count {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            padding: 2px 10px;
+            border-radius: 999px;
             font-size: 0.76rem;
-            color: #64748b;
-            line-height: 1.35;
+            font-weight: 700;
         }
 
-        .menu-nav-grid {
+        .app-pick-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
         }
 
-        .menu-nav-card {
+        .app-pick-card {
             background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-left: 5px solid var(--navy);
-            border-radius: 5px;
-            padding: 13px 14px;
+            border: 1.5px solid #cbd5e1;
+            border-left: 5px solid #15803d;
+            border-radius: 10px;
+            padding: 14px 12px;
             text-align: left;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            transition: background 0.12s, box-shadow 0.12s;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+            transition: transform 0.12s, box-shadow 0.12s;
         }
 
-        .menu-nav-card:hover {
-            background: #f8fafc;
-            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+        .app-pick-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0, 32, 96, 0.10);
+            border-color: var(--navy);
         }
 
-        .menu-nav-badge {
-            background: #eff6ff;
+        .app-pick-code {
+            font-size: 0.76rem;
+            font-weight: 800;
             color: var(--navy);
-            border: 1px solid #bfdbfe;
-            padding: 3px 9px;
+            letter-spacing: 0.3px;
+        }
+
+        .app-pick-name {
+            font-size: 0.94rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-top: 2px;
+        }
+
+        .app-pick-pill {
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 10px;
             border-radius: 999px;
             font-size: 0.76rem;
-            font-weight: 700;
+            font-weight: 800;
             white-space: nowrap;
         }
 
@@ -1580,9 +1601,9 @@
             background: #f1f5f9;
             color: #334155;
             border: 1px solid #cbd5e1;
-            padding: 7px 14px;
-            border-radius: 4px;
-            font-size: 0.84rem;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 0.82rem;
             font-weight: 700;
             cursor: pointer;
         }
@@ -1593,17 +1614,15 @@
             border-color: var(--navy);
         }
 
-        @media (max-width: 768px) {
-            .menu-tool-grid {
-                grid-template-columns: 1fr 1fr;
+        @media (max-width: 640px) {
+            .app-launcher-grid {
+                gap: 10px;
             }
-            .menu-nav-grid {
-                grid-template-columns: 1fr;
+            .app-tile-btn {
+                min-height: 132px;
+                padding: 16px 10px;
             }
-        }
-
-        @media (max-width: 480px) {
-            .menu-tool-grid {
+            .app-pick-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -1733,7 +1752,7 @@
                 <span id="subviewTitleText" style="font-size: 0.90rem; font-weight: 800; color: var(--navy);"></span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                <button type="button" id="btnChangeObjectSub" onclick="switchMainView('menu')"
+                <button type="button" id="btnChangeObjectSub" onclick="switchMainView('pick-tool')"
                     style="display: none; background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; padding: 6px 10px; border-radius: 4px; font-size: 0.78rem; font-weight: 700; cursor: pointer;">
                     <i class="fa-solid fa-repeat"></i> Đổi đối tượng
                 </button>
@@ -1748,92 +1767,98 @@
         <div class="main-content">
 
             <!-- ======================================================== -->
-            <!-- VIEW 0: MENU CHÍNH (MÀN HÌNH KHỞI ĐỘNG GỌN GÀNG)         -->
+            <!-- VIEW 0: MENU CHÍNH KIỂU APP ĐIỆN THOẠI (4 NÚT GỌN GÀNG)   -->
             <!-- ======================================================== -->
             <div id="view-menu" class="view-pane">
-                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 5px solid var(--navy); border-radius: 5px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                    <div style="font-size: 0.86rem; color: #1e293b;">
-                        <i class="fa-solid fa-user-check" style="color: var(--navy);"></i>
-                        Xin chào <strong id="menuWelcomeUser" style="color: var(--navy);">Điều tra viên</strong> — Chọn tác vụ bên dưới để bắt đầu phỏng vấn hiện trường.
-                    </div>
-                    <button type="button" onclick="openDraftsModal()"
-                        style="background: #fffbeb; color: #b45309; border: 1px solid #f59e0b; padding: 6px 12px; border-radius: 4px; font-size: 0.80rem; font-weight: 700; cursor: pointer;">
-                        <i class="fa-solid fa-file-pen"></i> Phiếu Lưu Tạm / Nhập Giấy (<span id="menuDraftBadge">0</span>)
-                    </button>
+                <div class="app-user-pill">
+                    <span>
+                        <i class="fa-solid fa-user-check" style="color: #15803d;"></i>
+                        <strong id="menuWelcomeUser" style="color: var(--navy);">Điều tra viên</strong>
+                    </span>
+                    <span style="font-size: 0.76rem; color: #64748b; font-weight: 600;">Chọn chức năng</span>
                 </div>
 
-                <!-- Mục 1: Tạo phiếu mới (06 đối tượng) -->
-                <div class="menu-section-card">
-                    <div class="menu-section-title">
-                        <span><i class="fa-solid fa-file-circle-plus" style="color: #15803d;"></i> 1. Tạo Phiếu Mới — Chọn 1 trong 06 Đối Tượng</span>
-                        <span style="font-size: 0.76rem; font-weight: 600; color: #64748b; text-transform: none;">Mở đúng 1 mẫu phiếu, không rối màn hình</span>
-                    </div>
-                    <div class="menu-tool-grid">
-                        <button type="button" class="menu-tool-card" style="border-top-color: #15803d;" onclick="openNewSurveyTool('P1')">
-                            <div class="tool-code-tag"><span>P1 — ĐỐI TƯỢNG 1</span><span class="tool-quota-pill">220 hộ</span></div>
-                            <div class="tool-card-name">Hộ nông dân</div>
-                            <div class="tool-card-desc">Phỏng vấn trực tiếp nông hộ trồng cà phê (gồm check-in ảnh, GPS &amp; nhập phiếu giấy).</div>
-                        </button>
-                        <button type="button" class="menu-tool-card" style="border-top-color: #0284c7;" onclick="openNewSurveyTool('NT')">
-                            <div class="tool-code-tag"><span>NT — ĐỐI TƯỢNG 2</span><span class="tool-quota-pill" style="background:#e0f2fe;color:#0369a1;">10 phiếu</span></div>
-                            <div class="tool-card-name">Nhóm trưởng &amp; Trưởng thôn</div>
-                            <div class="tool-card-desc">Phỏng vấn sâu nhóm trưởng, đại diện nhóm hộ và trưởng thôn/buôn.</div>
-                        </button>
-                        <button type="button" class="menu-tool-card" style="border-top-color: #dc2626;" onclick="openNewSurveyTool('CQ')">
-                            <div class="tool-code-tag"><span>CQ — ĐỐI TƯỢNG 3</span><span class="tool-quota-pill" style="background:#fee2e2;color:#b91c1c;">3 xã</span></div>
-                            <div class="tool-card-name">Chính quyền 3 xã</div>
-                            <div class="tool-card-desc">Tham vấn UBND xã Ea Kiết, Ea Tul và Cư Dliê M'nông.</div>
-                        </button>
-                        <button type="button" class="menu-tool-card" style="border-top-color: #7c3aed;" onclick="openNewSurveyTool('HTX')">
-                            <div class="tool-code-tag"><span>HTX — ĐỐI TƯỢNG 4</span><span class="tool-quota-pill" style="background:#f3e8ff;color:#6d28d9;">3 HTX</span></div>
-                            <div class="tool-card-name">Ban quản lý 3 HTX</div>
-                            <div class="tool-card-desc">Phỏng vấn ban quản lý Hợp tác xã tham gia dự án.</div>
-                        </button>
-                        <button type="button" class="menu-tool-card" style="border-top-color: #002060;" onclick="openNewSurveyTool('TT')">
-                            <div class="tool-code-tag"><span>TT — ĐỐI TƯỢNG 5</span><span class="tool-quota-pill" style="background:#dbeafe;color:#1e40af;">2 đơn vị</span></div>
-                            <div class="tool-card-name">Nhà tài trợ — IDH &amp; JDE Peet's</div>
-                            <div class="tool-card-desc">Phỏng vấn chuyên sâu đại diện đối tác tài trợ dự án.</div>
-                        </button>
-                        <button type="button" class="menu-tool-card" style="border-top-color: #d97706;" onclick="openNewSurveyTool('MH')">
-                            <div class="tool-code-tag"><span>MH — ĐỐI TƯỢNG 6</span><span class="tool-quota-pill" style="background:#fef3c7;color:#b45309;">2 mô hình</span></div>
-                            <div class="tool-card-name">Chủ mô hình trình diễn</div>
-                            <div class="tool-card-desc">Phỏng vấn chuyên sâu chủ mô hình trình diễn cảnh quan.</div>
-                        </button>
-                    </div>
+                <div class="app-launcher-grid">
+                    <button type="button" class="app-tile-btn" onclick="switchMainView('pick-tool')" style="border-top: 4px solid #15803d;">
+                        <div class="app-tile-icon" style="background: linear-gradient(135deg, #16a34a, #15803d);">
+                            <i class="fa-solid fa-file-circle-plus"></i>
+                        </div>
+                        <div class="app-tile-label">1. Tạo phiếu</div>
+                        <span class="app-tile-count" style="background:#dcfce7;color:#166534;border-color:#bbf7d0;">6 đối tượng</span>
+                    </button>
+
+                    <button type="button" class="app-tile-btn" onclick="switchMainView('history')" style="border-top: 4px solid #002060;">
+                        <div class="app-tile-icon" style="background: linear-gradient(135deg, #1e3a8a, #002060);">
+                            <i class="fa-solid fa-clipboard-check"></i>
+                        </div>
+                        <div class="app-tile-label">2. Xem phiếu đã phỏng vấn</div>
+                        <span class="app-tile-count" id="menuHistoryBadge">0 phiếu</span>
+                    </button>
+
+                    <button type="button" class="app-tile-btn" onclick="switchMainView('dashboard')" style="border-top: 4px solid #0284c7;">
+                        <div class="app-tile-icon" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <div class="app-tile-label">3. Tiến độ - Kế hoạch</div>
+                        <span class="app-tile-count" id="menuDashBadge" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;">0 / 238</span>
+                    </button>
+
+                    <button type="button" class="app-tile-btn" onclick="openDraftsModal()" style="border-top: 4px solid #d97706;">
+                        <div class="app-tile-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </div>
+                        <div class="app-tile-label">4. Phiếu tạm (<span id="menuDraftParen">0</span>)</div>
+                        <span class="app-tile-count" id="menuDraftCardBadge" style="background:#fffbeb;color:#b45309;border-color:#fde68a;">0 chờ nhập</span>
+                    </button>
                 </div>
+            </div>
 
-                <!-- Mục 2-4: Các phân hệ quản lý & theo dõi -->
-                <div class="menu-nav-grid">
-                    <button type="button" class="menu-nav-card" style="border-left-color: #15803d;" onclick="switchMainView('history')">
+            <!-- ======================================================== -->
+            <!-- VIEW 0B: CHỌN 1 TRONG 06 ĐỐI TƯỢNG KHI BẤM "TẠO PHIẾU"   -->
+            <!-- ======================================================== -->
+            <div id="view-pick-tool" class="view-pane" style="display: none;">
+                <div class="app-pick-grid">
+                    <button type="button" class="app-pick-card" style="border-left-color: #15803d;" onclick="openNewSurveyTool('P1')">
                         <div>
-                            <div style="font-size: 0.94rem; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-list-check" style="color: #15803d;"></i> 2. Xem phiếu đã phỏng vấn</div>
-                            <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">Xem lại, sửa, xuất PDF hoặc tải Excel nhiều sheet</div>
+                            <div class="app-pick-code">P1 — ĐỐI TƯỢNG 1</div>
+                            <div class="app-pick-name">Hộ nông dân</div>
                         </div>
-                        <span class="menu-nav-badge" id="menuHistoryBadge">0 phiếu</span>
+                        <span class="app-pick-pill">220 hộ</span>
                     </button>
-
-                    <button type="button" class="menu-nav-card" style="border-left-color: #0284c7;" onclick="switchMainView('dashboard')">
+                    <button type="button" class="app-pick-card" style="border-left-color: #0284c7;" onclick="openNewSurveyTool('NT')">
                         <div>
-                            <div style="font-size: 0.94rem; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-chart-pie" style="color: #0284c7;"></i> 3. Tiến độ nhóm</div>
-                            <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">Theo dõi tỷ lệ hoàn thành theo đối tượng &amp; 3 xã</div>
+                            <div class="app-pick-code">NT — ĐỐI TƯỢNG 2</div>
+                            <div class="app-pick-name">Nhóm trưởng &amp; Trưởng thôn</div>
                         </div>
-                        <span class="menu-nav-badge" id="menuDashBadge">0 / 238</span>
+                        <span class="app-pick-pill" style="background:#e0f2fe;color:#0369a1;">10 phiếu</span>
                     </button>
-
-                    <button type="button" class="menu-nav-card" style="border-left-color: #d97706;" onclick="switchMainView('schedule', 'team6')">
+                    <button type="button" class="app-pick-card" style="border-left-color: #dc2626;" onclick="openNewSurveyTool('CQ')">
                         <div>
-                            <div style="font-size: 0.94rem; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-calendar-week" style="color: #d97706;"></i> 4. Kế hoạch hoạt động 6 người (15 – 21/11/2026)</div>
-                            <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">Lịch tác nghiệp theo ngày của 6 ĐTV &amp; bảng 22 hoạt động V5</div>
+                            <div class="app-pick-code">CQ — ĐỐI TƯỢNG 3</div>
+                            <div class="app-pick-name">Chính quyền 3 xã</div>
                         </div>
-                        <span class="menu-nav-badge" style="background:#fef3c7;color:#92400e;border-color:#fde68a;">6 ĐTV • 7 ngày</span>
+                        <span class="app-pick-pill" style="background:#fee2e2;color:#b91c1c;">3 xã</span>
                     </button>
-
-                    <button type="button" class="menu-nav-card" style="border-left-color: #b45309;" onclick="openDraftsModal()">
+                    <button type="button" class="app-pick-card" style="border-left-color: #7c3aed;" onclick="openNewSurveyTool('HTX')">
                         <div>
-                            <div style="font-size: 0.94rem; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-folder-open" style="color: #b45309;"></i> 5. Phiếu lưu tạm / Nhập phiếu giấy</div>
-                            <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">Mở lại các hộ đã chụp ảnh &amp; GPS hiện trường để nhập đáp án</div>
+                            <div class="app-pick-code">HTX — ĐỐI TƯỢNG 4</div>
+                            <div class="app-pick-name">Ban quản lý 3 HTX</div>
                         </div>
-                        <span class="menu-nav-badge" id="menuDraftCardBadge" style="background:#fffbeb;color:#b45309;border-color:#fcd34d;">0 chờ</span>
+                        <span class="app-pick-pill" style="background:#f3e8ff;color:#6d28d9;">3 HTX</span>
+                    </button>
+                    <button type="button" class="app-pick-card" style="border-left-color: #002060;" onclick="openNewSurveyTool('TT')">
+                        <div>
+                            <div class="app-pick-code">TT — ĐỐI TƯỢNG 5</div>
+                            <div class="app-pick-name">Nhà tài trợ (IDH &amp; JDE Peet's)</div>
+                        </div>
+                        <span class="app-pick-pill" style="background:#dbeafe;color:#1e40af;">2 đơn vị</span>
+                    </button>
+                    <button type="button" class="app-pick-card" style="border-left-color: #d97706;" onclick="openNewSurveyTool('MH')">
+                        <div>
+                            <div class="app-pick-code">MH — ĐỐI TƯỢNG 6</div>
+                            <div class="app-pick-name">Chủ mô hình trình diễn</div>
+                        </div>
+                        <span class="app-pick-pill" style="background:#fef3c7;color:#b45309;">2 mô hình</span>
                     </button>
                 </div>
             </div>
@@ -2216,6 +2241,20 @@
                         </div>
                     </div>
 
+                    <div style="padding: 12px 16px 0 16px;">
+                        <div class="schedule-subtabs">
+                            <button type="button" class="schedule-subtab-btn active" onclick="switchMainView('dashboard')">
+                                <i class="fa-solid fa-chart-pie"></i> Tiến độ nhóm
+                            </button>
+                            <button type="button" class="schedule-subtab-btn" onclick="switchMainView('schedule', 'team6')">
+                                <i class="fa-solid fa-users-line"></i> Kế hoạch 6 người (15 – 21/11)
+                            </button>
+                            <button type="button" class="schedule-subtab-btn" onclick="switchMainView('schedule', 'roadmap')">
+                                <i class="fa-solid fa-list-ol"></i> 22 Hoạt động (V5)
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- 4 KPI Summary Cards -->
                     <div class="grid-4" style="margin-bottom: 20px;">
                         <div
@@ -2318,11 +2357,14 @@
 
                     <div style="padding: 12px 16px 0 16px;">
                         <div class="schedule-subtabs">
+                            <button type="button" class="schedule-subtab-btn" onclick="switchMainView('dashboard')">
+                                <i class="fa-solid fa-chart-pie"></i> Tiến độ nhóm
+                            </button>
                             <button type="button" class="schedule-subtab-btn active" id="btnSchTabTeam6" onclick="switchScheduleTab('team6')">
                                 <i class="fa-solid fa-users-line"></i> Kế hoạch 6 người (15 – 21/11/2026)
                             </button>
                             <button type="button" class="schedule-subtab-btn" id="btnSchTabRoadmap" onclick="switchScheduleTab('roadmap')">
-                                <i class="fa-solid fa-list-ol"></i> Kế hoạch tổng thể 22 hoạt động (V5)
+                                <i class="fa-solid fa-list-ol"></i> 22 Hoạt động (V5)
                             </button>
                         </div>
                     </div>
@@ -2409,8 +2451,8 @@
 
         </div>
 
-        <!-- Official Footer -->
-        <div class="footer-official">
+        <!-- Official Footer (Giữ gọn cho màn hình & in ấn) -->
+        <div class="footer-official" id="officialFooterBlock">
             <div class="f-company">CÔNG TY TNHH DAKMAN VIỆT NAM — PHÒNG DỰ ÁN BỀN VỮNG</div>
             <div>Địa chỉ: Km 7, Quốc lộ 26, Phường Tân Hòa, TP. Buôn Ma Thuột, Tỉnh Đắk Lắk</div>
             <div class="f-links">
@@ -3112,7 +3154,7 @@
     </div>
 
     <!-- Application Logic -->
-    <script src="app.js?v=2.33"></script>
+    <script src="app.js?v=2.34"></script>
 
 </body>
 

@@ -522,7 +522,7 @@ function updateNetworkStatus() {
 let currentMainView = 'menu';
 
 function switchMainView(viewId, subTab = '') {
-    const views = ['menu', 'survey', 'dashboard', 'schedule', 'history'];
+    const views = ['menu', 'pick-tool', 'survey', 'dashboard', 'schedule', 'history'];
     views.forEach(v => {
         const pane = document.getElementById(`view-${v}`);
         const btn = document.getElementById(`btnView${capitalize(v)}`);
@@ -536,9 +536,9 @@ function switchMainView(viewId, subTab = '') {
     if (activePane) activePane.style.display = 'block';
     if (activeBtn) activeBtn.classList.add('active');
 
-    const officialHeader = document.getElementById('officialHeaderBlock');
-    if (officialHeader) {
-        officialHeader.style.display = (viewId === 'menu') ? 'block' : 'none';
+    const officialFooter = document.getElementById('officialFooterBlock');
+    if (officialFooter) {
+        officialFooter.style.display = (viewId === 'menu' || viewId === 'pick-tool') ? 'none' : 'block';
     }
     const subTop = document.getElementById('subviewTopBar');
     const subTitle = document.getElementById('subviewTitleText');
@@ -550,17 +550,17 @@ function switchMainView(viewId, subTab = '') {
         btnChangeObj.style.display = (viewId === 'survey') ? 'inline-flex' : 'none';
     }
     if (subTitle) {
-        if (viewId === 'survey') {
+        if (viewId === 'pick-tool') {
+            subTitle.textContent = '1. Tạo phiếu — Chọn đối tượng';
+        } else if (viewId === 'survey') {
             const toolObj = allQuestionsData[currentTool];
             subTitle.textContent = toolObj
                 ? `Tạo phiếu: ${toolObj.tool_code} — ${toolObj.tool_name}`
                 : `Tạo phiếu: ${currentTool}`;
         } else if (viewId === 'history') {
-            subTitle.textContent = 'Xem phiếu đã phỏng vấn';
-        } else if (viewId === 'dashboard') {
-            subTitle.textContent = 'Tiến độ nhóm khảo sát';
-        } else if (viewId === 'schedule') {
-            subTitle.textContent = 'Kế hoạch hoạt động 6 người (15 – 21/11/2026)';
+            subTitle.textContent = '2. Xem phiếu đã phỏng vấn';
+        } else if (viewId === 'dashboard' || viewId === 'schedule') {
+            subTitle.textContent = '3. Tiến độ - Kế hoạch';
         } else {
             subTitle.textContent = '';
         }
@@ -3273,12 +3273,14 @@ async function refreshDraftBadgeCount() {
     const b4 = document.getElementById('subviewDraftBadge');
     const b5 = document.getElementById('menuDraftBadge');
     const b6 = document.getElementById('menuDraftCardBadge');
+    const b7 = document.getElementById('menuDraftParen');
     if (b1) b1.textContent = drafts.length;
     if (b2) b2.textContent = drafts.length;
     if (b3) b3.textContent = drafts.length;
     if (b4) b4.textContent = drafts.length;
     if (b5) b5.textContent = drafts.length;
-    if (b6) b6.textContent = `${drafts.length} chờ`;
+    if (b6) b6.textContent = `${drafts.length} chờ nhập`;
+    if (b7) b7.textContent = drafts.length;
 }
 
 function manualSaveDraft() {
