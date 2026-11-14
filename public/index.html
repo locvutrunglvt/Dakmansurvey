@@ -1613,16 +1613,18 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <select id="sampleFilterGuide" class="form-control" onchange="filterSampleHouseholds()" style="font-size: 0.82rem;">
-                                        <option value="">-- Tất cả Người Dẫn Đường --</option>
+                                    <select id="sampleFilterGuide" class="form-control" onchange="onSampleGuideFilterChange()" style="font-size: 0.82rem;">
+                                        <option value="">-- 1. Chọn Người Dẫn Đường (Tất cả • Của bạn tô đậm) --</option>
                                     </select>
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group" style="display: flex; gap: 4px; align-items: center;">
                                     <input type="text" id="sampleSearchInput" class="form-control"
-                                           placeholder="Tìm thông minh tên Chủ hộ, Mã hộ (EK-JV-001), SĐT, Thôn..."
-                                           onfocus="showPendingHouseholdsList()"
-                                           oninput="filterSampleHouseholds()"
-                                           style="font-size: 0.82rem;">
+                                           placeholder="2. Gõ bất kỳ ký tự tên Chủ hộ, Mã hộ, SĐT..."
+                                           onfocus="this.select(); showPendingHouseholdsList();"
+                                           oninput="filterSampleHouseholds(true)"
+                                           style="font-size: 0.82rem; flex: 1;">
+                                    <button type="button" onclick="clearSampleFilter()" title="Xóa lọc dẫn đường & từ khóa tìm kiếm"
+                                            style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; border-radius: 3px; padding: 7px 9px; cursor: pointer; font-size: 0.78rem; font-weight: 700; flex-shrink: 0;">✕</button>
                                 </div>
                             </div>
                             <div id="sampleScopeNote" style="display: none; font-size: 0.76rem; color: #0369a1; font-weight: 600; margin-bottom: 6px;"></div>
@@ -1725,6 +1727,25 @@
                                 <div id="photoWatermarkMeta"
                                     style="margin-top: 6px; font-size: 0.78rem; color: #334155; font-family: monospace;">
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Lưu nhanh Check-in hiện trường (Ảnh + GPS + Thông tin hộ) -> Chờ nhập phiếu giấy về nhà -->
+                        <div id="fieldCheckinQuickBar"
+                            style="margin-top: 10px; padding: 10px 12px; background: #ecfdf5; border: 1px solid #6ee7b7; border-left: 4px solid #0f766e; border-radius: 3px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                            <div style="font-size: 0.80rem; color: #134e4a; line-height: 1.45;">
+                                <strong style="color: #0f766e;"><i class="fa-solid fa-clipboard-check"></i> Đi hiện trường trước — Nhập phiếu giấy sau:</strong><br>
+                                <span>Chọn Chủ hộ + Lấy GPS + Chụp ảnh xong, bấm lưu ngay để chuyển sang hộ kế tiếp; về nhà mở mục nhập lại từ phiếu giấy.</span>
+                            </div>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <button type="button" id="btnQuickCheckinNext" onclick="quickSaveFieldCheckin()"
+                                    style="background: #0f766e; color: #ffffff; border: none; padding: 8px 14px; border-radius: 3px; font-size: 0.82rem; font-weight: 700; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                                    <i class="fa-solid fa-camera-rotate"></i> LƯU CHECK-IN (ẢNH + GPS + HỘ) → HỘ TIẾP THEO
+                                </button>
+                                <button type="button" onclick="openDraftsModal()"
+                                    style="background: #ffffff; color: #b45309; border: 1px solid #f59e0b; padding: 8px 12px; border-radius: 3px; font-size: 0.80rem; font-weight: 700; cursor: pointer;">
+                                    <i class="fa-solid fa-file-pen"></i> Nhập Phiếu Giấy (<span id="checkinQuickCountBadge">0</span>)
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -2699,7 +2720,7 @@
     </div>
 
     <!-- Application Logic -->
-    <script src="app.js?v=2.31"></script>
+    <script src="app.js?v=2.32"></script>
 
 </body>
 

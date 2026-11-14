@@ -541,6 +541,8 @@ function capitalize(s) {
 let sampleHouseholds = [];
 let sampleHouseholdsLoadingPromise = null;
 let interviewedSurveyCodes = new Set();
+let checkinDraftCodes = new Set();
+let lastAutoSelectedHouseholdLabel = '';
 
 const INTERVIEWER_ROSTER = {
     'Duy':  { code: 'TCN07', fullName: 'Lê Đình Duy',       communes: 'Ea Kiết' },
@@ -593,26 +595,31 @@ function updateInterviewerFilterOptions() {
     const nvSelect = document.getElementById('sampleFilterNV');
     if (!nvSelect) return;
     const prevVal = nvSelect.value || '';
+    const assignedScope = getUserAssignedScope();
     const totalPending = sampleHouseholds.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())).length;
     Array.from(nvSelect.options).forEach(opt => {
         if (!opt.value) {
             opt.textContent = sampleHouseholds.length
-                ? `-- Tất cả Điều tra viên (6 ĐTV • Còn ${totalPending}/${sampleHouseholds.length} hộ) --`
+                ? `-- Tất cả Điều tra viên (6 ĐTV • Còn ${totalPending}/${sampleHouseholds.length} hộ chờ) --`
                 : '-- Tất cả Điều tra viên (6 ĐTV • 220 hộ) --';
             return;
         }
         const meta = findInterviewerMeta(opt.value);
         if (!meta) return;
+        const isMe = Boolean(assignedScope && normVn(assignedScope) === normVn(opt.value));
+        const prefix = isMe ? '★ [Của bạn] ' : '';
         if (sampleHouseholds.length) {
             const allRows = sampleHouseholds.filter(h => matchesInterviewer(h, opt.value));
             const pendRows = allRows.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase()));
-            const guides = new Set(allRows.map(h => h.guide).filter(Boolean)).size;
-            opt.textContent = `${meta.fullName} (${meta.code}) — còn ${pendRows.length}/${allRows.length} hộ • ${guides} dẫn đường (${meta.communes})`;
+            const guides = new Set(pendRows.map(h => h.guide).filter(Boolean)).size;
+            opt.textContent = `${prefix}${meta.fullName} (${meta.code}) — còn ${pendRows.length}/${allRows.length} hộ • ${guides} dẫn đường còn chờ (${meta.communes})`;
         } else {
-            opt.textContent = `${meta.fullName} (${meta.code}) — ${meta.communes}`;
+            opt.textContent = `${prefix}${meta.fullName} (${meta.code}) — ${meta.communes}`;
         }
+        opt.style.fontWeight = isMe ? '700' : '400';
+        opt.style.color = isMe ? '#002060' : '';
     });
-    if (prevVal) nvSelect.value = prevVal;
+    nvSelect.value = prevVal;
 }
 
 async function loadSampleHouseholds(force = false) {
@@ -697,68 +704,172 @@ function autoSelectSampleFilterForUser() {
     }
     updateInterviewerFilterOptions();
 
+    nvSelect.disabled = false;
+    nvSelect.style.background = '#ffffff';
+    nvSelect.title = 'Lọc tùy chọn theo ĐTV (mặc định hiển thị tất cả để tìm & phỏng vấn hỗ trợ chéo)';
+
     const assignedScope = getUserAssignedScope();
-    if (assignedScope) {
-        nvSelect.value = assignedScope;
-        nvSelect.disabled = true;
-        nvSelect.style.background = '#e2e8f0';
-        nvSelect.title = 'Phạm vi được khóa theo tài khoản Điều tra viên';
+    if (assignedScope && scopeNote) {
+        const assignedRows = sampleHouseholds.filter(h => matchesInterviewer(h, assignedScope));
+        const totalAssigned = assignedRows.length;
+        const pendingAssigned = assignedRows.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())).length;
+        const allPending = sampleHouseholds.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())).length;
         const fullName = String(currentUser?.full_name || '').trim();
-        if (scopeNote) {
-            const assignedRows = sampleHouseholds.filter(h => matchesInterviewer(h, assignedScope));
-            const totalAssigned = assignedRows.length;
-            const pendingAssigned = assignedRows.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())).length;
-            scopeNote.style.display = 'block';
-            scopeNote.innerHTML = `<i class="fa-solid fa-shield-halved"></i> Phạm vi nhiệm vụ của <strong>${escapeHtml(fullName || currentUser.surveyor_id)} (${escapeHtml(currentUser.surveyor_id)})</strong>: Còn <strong>${pendingAssigned} / ${totalAssigned} hộ</strong> chưa phỏng vấn trong phân công.`;
-        }
-        onSampleNVFilterChange();
-    } else {
-        nvSelect.disabled = false;
-        nvSelect.style.background = '#ffffff';
-        if (scopeNote) scopeNote.style.display = 'none';
-        populateSampleGuideFilter(nvSelect.value || '');
-        filterSampleHouseholds();
+        scopeNote.style.display = 'block';
+        scopeNote.innerHTML = `<i class="fa-solid fa-star" style="color:#002060;"></i> Đang đăng nhập: <strong>${escapeHtml(fullName || currentUser.surveyor_id)} (${escapeHtml(currentUser.surveyor_id)})</strong> — Còn <strong>${pendingAssigned}/${totalAssigned} hộ</strong> trong phân công (được <strong style="color:#002060;">tô đậm &amp; xếp lên đầu</strong>). Có thể chọn/nhập qua lại cả <strong>${allPending} hộ</strong> đang chờ để hỗ trợ phỏng vấn chéo.`;
+    } else if (scopeNote) {
+        scopeNote.style.display = 'none';
     }
+
+    populateSampleGuideFilter(nvSelect.value || '');
+    filterSampleHouseholds();
+}
+
+function styleSampleGuideSelect(sel, assignedScope, pendingPool) {
+    if (!sel) return;
+    const guide = sel.value || '';
+    const isMine = Boolean(guide && assignedScope && pendingPool.some(h => h.guide === guide && matchesInterviewer(h, assignedScope)));
+    sel.style.fontWeight = isMine ? '700' : '500';
+    sel.style.color = isMine ? '#002060' : '#334155';
+    sel.style.background = isMine ? '#eff6ff' : '#ffffff';
+    sel.style.borderColor = isMine ? '#1e40af' : '';
 }
 
 function populateSampleGuideFilter(nvVal) {
     const sel = document.getElementById('sampleFilterGuide');
     if (!sel) return;
     const prev = sel.value;
+    const assignedScope = getUserAssignedScope();
     const allInScope = sampleHouseholds.filter(h => matchesInterviewer(h, nvVal));
     const pendingPool = allInScope.filter(h =>
         !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())
     );
-    const guides = Array.from(new Set(allInScope.map(h => h.guide).filter(Boolean)));
-    sel.innerHTML = `<option value="">-- Chọn Người Dẫn Đường (${guides.length} người, ${pendingPool.length} hộ chờ) --</option>` +
-        guides.map(g => {
-            const pendCnt = pendingPool.filter(h => h.guide === g).length;
-            return `<option value="${escapeHtml(g)}">${escapeHtml(g)} (còn ${pendCnt} hộ chờ)</option>`;
+
+    const guideMap = new Map();
+    pendingPool.forEach(h => {
+        if (!h.guide) return;
+        if (!guideMap.has(h.guide)) {
+            guideMap.set(h.guide, { guide: h.guide, rows: [], owners: new Set(), isMine: false });
+        }
+        const entry = guideMap.get(h.guide);
+        entry.rows.push(h);
+        if (h.interviewer) entry.owners.add(h.interviewer);
+        if (assignedScope && matchesInterviewer(h, assignedScope)) entry.isMine = true;
+    });
+
+    const entries = Array.from(guideMap.values()).sort((a, b) => {
+        if (a.isMine !== b.isMine) return a.isMine ? -1 : 1;
+        return a.guide.localeCompare(b.guide, 'vi');
+    });
+
+    sel.innerHTML = `<option value="">-- 1. Chọn Người Dẫn Đường (${entries.length} người, ${pendingPool.length} hộ chờ) --</option>` +
+        entries.map(e => {
+            const pendCnt = e.rows.length;
+            const ownerText = Array.from(e.owners).map(o => formatInterviewerDisplay(o)).join(', ');
+            if (e.isMine) {
+                return `<option value="${escapeHtml(e.guide)}" style="font-weight:700; color:#002060; background:#dbeafe;">★ ${escapeHtml(e.guide)} (Của bạn • còn ${pendCnt} hộ chờ)</option>`;
+            }
+            return `<option value="${escapeHtml(e.guide)}" style="font-weight:400; color:#475569;">${escapeHtml(e.guide)}${ownerText ? ` — ${escapeHtml(ownerText)}` : ''} (còn ${pendCnt} hộ chờ)</option>`;
         }).join('');
-    if (guides.includes(prev)) sel.value = prev;
+
+    if (prev && guideMap.has(prev)) {
+        sel.value = prev;
+    } else {
+        sel.value = '';
+    }
+    styleSampleGuideSelect(sel, assignedScope, pendingPool);
 }
 
 function onSampleNVFilterChange() {
-    const assignedScope = getUserAssignedScope();
-    const nvEl = document.getElementById('sampleFilterNV');
-    if (assignedScope && nvEl && nvEl.value !== assignedScope) {
-        nvEl.value = assignedScope;
-    }
-    const nv = nvEl?.value || '';
+    const nv = document.getElementById('sampleFilterNV')?.value || '';
     populateSampleGuideFilter(nv);
-    filterSampleHouseholds(Boolean(nv && document.getElementById('sampleFilterGuide')?.value));
+    filterSampleHouseholds(Boolean(nv || document.getElementById('sampleFilterGuide')?.value));
+}
+
+function onSampleGuideFilterChange() {
+    const searchEl = document.getElementById('sampleSearchInput');
+    if (searchEl && lastAutoSelectedHouseholdLabel && searchEl.value.trim() === lastAutoSelectedHouseholdLabel) {
+        searchEl.value = '';
+        lastAutoSelectedHouseholdLabel = '';
+    }
+    const nv = document.getElementById('sampleFilterNV')?.value || '';
+    const assignedScope = getUserAssignedScope();
+    const pendingPool = sampleHouseholds.filter(h =>
+        matchesInterviewer(h, nv) && !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())
+    );
+    styleSampleGuideSelect(document.getElementById('sampleFilterGuide'), assignedScope, pendingPool);
+    filterSampleHouseholds(true);
+}
+
+function clearSampleFilter() {
+    const guideEl = document.getElementById('sampleFilterGuide');
+    const searchEl = document.getElementById('sampleSearchInput');
+    if (guideEl) guideEl.value = '';
+    if (searchEl) searchEl.value = '';
+    lastAutoSelectedHouseholdLabel = '';
+    const nv = document.getElementById('sampleFilterNV')?.value || '';
+    populateSampleGuideFilter(nv);
+    filterSampleHouseholds(false);
 }
 
 function showPendingHouseholdsList() {
     filterSampleHouseholds(true);
 }
 
+function isOrderedSubsequence(needle, haystack) {
+    if (!needle) return true;
+    let i = 0;
+    for (let j = 0; j < haystack.length && i < needle.length; j++) {
+        if (haystack[j] === needle[i]) i++;
+    }
+    return i === needle.length;
+}
+
+function hasAllCharsBag(needle, haystack) {
+    if (!needle || needle.length > haystack.length) return false;
+    const counts = Object.create(null);
+    for (let i = 0; i < haystack.length; i++) {
+        const ch = haystack[i];
+        counts[ch] = (counts[ch] || 0) + 1;
+    }
+    for (let i = 0; i < needle.length; i++) {
+        const ch = needle[i];
+        if (!counts[ch]) return false;
+        counts[ch]--;
+    }
+    return true;
+}
+
+function matchHouseholdScore(h, kwRaw) {
+    const kwNorm = normVn(kwRaw);
+    if (!kwNorm) return { matched: true, score: 0 };
+    const nameNorm = normVn(h.name || '');
+    const idNorm = normVn(h.id || '');
+    const nameCompact = nameNorm.replace(/\s+/g, '');
+    const kwCompact = kwNorm.replace(/\s+/g, '');
+    const hay = normVn(`${h.id} ${h.name} ${h.phone} ${h.hamlet} ${h.commune} ${h.guide} ${h.clb} ${h.ra || ''} ${formatInterviewerDisplay(h.interviewer)}`);
+
+    if (idNorm === kwNorm || nameNorm === kwNorm) return { matched: true, score: 500 };
+    if (nameNorm.startsWith(kwNorm) || idNorm.includes(kwNorm)) return { matched: true, score: 400 };
+    if (nameNorm.includes(kwNorm)) return { matched: true, score: 300 };
+
+    const kwTokens = kwNorm.split(/\s+/).filter(Boolean);
+    if (kwTokens.length > 0 && kwTokens.every(tok => hay.includes(tok))) {
+        return { matched: true, score: 200 };
+    }
+    if (kwCompact.length >= 2 && isOrderedSubsequence(kwCompact, nameCompact)) {
+        return { matched: true, score: 120 };
+    }
+    if (kwCompact.length >= 3 && hasAllCharsBag(kwCompact, nameCompact)) {
+        return { matched: true, score: 60 };
+    }
+    return { matched: false, score: 0 };
+}
+
 function onRespondentTyping(val) {
     const clean = normVn(val);
     if (!clean || clean.length < 2) return;
-    const assignedScope = getUserAssignedScope();
     const pendingPool = sampleHouseholds.filter(h =>
-        matchesInterviewer(h, assignedScope) &&
         !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())
     );
     const exactMatch = pendingPool.find(h => normVn(h.name) === clean);
@@ -768,7 +879,17 @@ function onRespondentTyping(val) {
     }
     const searchEl = document.getElementById('sampleSearchInput');
     if (searchEl && document.activeElement?.id === 'respondentNameInput') {
-        const matches = pendingPool.filter(h => normVn(h.name).includes(clean));
+        const assignedScope = getUserAssignedScope();
+        const matches = pendingPool
+            .map(h => ({ h, res: matchHouseholdScore(h, val) }))
+            .filter(x => x.res.matched)
+            .sort((a, b) => {
+                if (b.res.score !== a.res.score) return b.res.score - a.res.score;
+                const am = assignedScope && matchesInterviewer(a.h, assignedScope) ? 1 : 0;
+                const bm = assignedScope && matchesInterviewer(b.h, assignedScope) ? 1 : 0;
+                return bm - am;
+            })
+            .map(x => x.h);
         if (matches.length > 0 && matches.length <= 15) {
             renderSampleResultItems(matches);
         }
@@ -780,17 +901,26 @@ function renderSampleResultItems(matched) {
     if (!box) return;
     box.style.display = 'block';
     if (matched.length === 0) {
-        box.innerHTML = '<div style="padding: 8px 10px; font-size: 0.80rem; color: #64748b;">Không tìm thấy nông hộ nào đang chờ khớp bộ lọc trong phạm vi nhiệm vụ.</div>';
+        box.innerHTML = '<div style="padding: 8px 10px; font-size: 0.80rem; color: #64748b;">Không tìm thấy nông hộ nào đang chờ khớp bộ lọc.</div>';
         return;
     }
+    const assignedScope = getUserAssignedScope();
     box.innerHTML = matched.slice(0, 80).map(h => {
         const isExtra = Boolean(h.status && h.status.includes('Hộ mới'));
-        const bgNormal = isExtra ? '#fef2f2' : '#ffffff';
-        const bgHover = isExtra ? '#fee2e2' : '#f0fdf4';
-        const borderLeft = isExtra ? 'border-left: 4px solid #dc2626;' : '';
-        const titleColor = isExtra ? '#b91c1c' : '#002060';
+        const isMine = Boolean(assignedScope && matchesInterviewer(h, assignedScope));
+        const isCheckin = checkinDraftCodes.has(String(h.id || '').toUpperCase());
+        const bgNormal = isExtra ? '#fef2f2' : (isCheckin ? '#f0fdfa' : (isMine ? '#eff6ff' : '#ffffff'));
+        const bgHover = isExtra ? '#fee2e2' : (isCheckin ? '#ccfbf1' : '#f0fdf4');
+        const borderLeft = isExtra
+            ? 'border-left: 4px solid #dc2626;'
+            : (isCheckin ? 'border-left: 4px solid #0f766e;' : (isMine ? 'border-left: 4px solid #002060;' : 'border-left: 4px solid #e2e8f0;'));
+        const titleColor = isExtra ? '#b91c1c' : (isMine ? '#002060' : '#334155');
         const extraBadge = isExtra ? '<span style="background:#dc2626; color:#ffffff; padding:1px 6px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:5px;">BỔ SUNG (+1)</span>' : '';
+        const checkinBadge = isCheckin ? '<span style="background:#0f766e; color:#ffffff; padding:1px 6px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:4px;">📸 Đã Check-in • Chờ nhập giấy</span>' : '';
         const nvDisplay = formatInterviewerDisplay(h.interviewer);
+        const nvBadgeStyle = isMine
+            ? 'background:#002060; color:#ffffff; padding:2px 7px; border-radius:3px; font-weight:700; font-size:0.72rem; white-space:nowrap;'
+            : 'background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:2px 7px; border-radius:3px; font-weight:600; font-size:0.72rem; white-space:nowrap;';
         return `
         <div onclick="selectSampleHousehold('${escapeQuotes(h.id)}')"
              style="padding: 7px 10px; border-bottom: 1px solid #f1f5f9; ${borderLeft} background: ${bgNormal}; cursor: pointer; font-size: 0.80rem; display: flex; justify-content: space-between; align-items: center; gap: 8px;"
@@ -799,10 +929,11 @@ function renderSampleResultItems(matched) {
                 <strong style="color:${titleColor};">[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong>
                 ${extraBadge}
                 ${h.ra ? '<span style="background:#dcfce7; color:#166534; border:1px solid #86efac; padding:1px 5px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:4px;">RA</span>' : ''}
+                ${checkinBadge}
                 <span style="color:#475569;"> — ${escapeHtml(h.address)}</span>
-                <div style="font-size:0.74rem; color:#64748b;">SĐT: ${escapeHtml(h.phone || '—')} • CLB: ${escapeHtml(h.clb || '—')} • Dẫn đường: <b style="color:#0f172a;">${escapeHtml(h.guide)}</b></div>
+                <div style="font-size:0.74rem; color:#64748b;">SĐT: ${escapeHtml(h.phone || '—')} • CLB: ${escapeHtml(h.clb || '—')} • Dẫn đường: <b style="color:${isMine ? '#002060' : '#0f172a'};">${escapeHtml(h.guide)}</b></div>
             </div>
-            <span style="background:#dbeafe; color:#1e40af; padding:2px 7px; border-radius:3px; font-weight:700; font-size:0.72rem; white-space:nowrap;">${escapeHtml(nvDisplay)}</span>
+            <span style="${nvBadgeStyle}">${isMine ? '★ ' : ''}${escapeHtml(nvDisplay)}</span>
         </div>
     `;
     }).join('');
@@ -810,29 +941,46 @@ function renderSampleResultItems(matched) {
 
 function filterSampleHouseholds(forceShow = false) {
     const assignedScope = getUserAssignedScope();
-    const nv = assignedScope || (document.getElementById('sampleFilterNV')?.value || '');
+    const nv = document.getElementById('sampleFilterNV')?.value || '';
     const guide = document.getElementById('sampleFilterGuide')?.value || '';
     const kwRaw = (document.getElementById('sampleSearchInput')?.value || '').trim();
-    const kwNorm = normVn(kwRaw);
-    const kwTokens = kwNorm ? kwNorm.split(/\s+/).filter(Boolean) : [];
 
     const scopePool = sampleHouseholds.filter(h => matchesInterviewer(h, nv));
     const pendingPool = scopePool.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase()));
-    const matched = pendingPool.filter(h => {
-        if (guide && h.guide !== guide) return false;
-        if (kwTokens.length) {
-            const hay = normVn(`${h.id} ${h.name} ${h.phone} ${h.hamlet} ${h.commune} ${h.guide} ${h.clb} ${h.ra || ''} ${formatInterviewerDisplay(h.interviewer)}`);
-            if (!kwTokens.every(tok => hay.includes(tok))) return false;
+
+    const scoreAgainstPool = (pool, useGuide) => {
+        const out = [];
+        for (const h of pool) {
+            if (useGuide && guide && h.guide !== guide) continue;
+            const res = matchHouseholdScore(h, kwRaw);
+            if (!res.matched) continue;
+            const isMine = assignedScope && matchesInterviewer(h, assignedScope) ? 1 : 0;
+            out.push({ h, score: res.score, isMine });
         }
-        return true;
-    });
+        out.sort((a, b) => {
+            if (kwRaw && b.score !== a.score) return b.score - a.score;
+            if (b.isMine !== a.isMine) return b.isMine - a.isMine;
+            return String(a.h.id || '').localeCompare(String(b.h.id || ''));
+        });
+        return out.map(x => x.h);
+    };
+
+    let matched = scoreAgainstPool(pendingPool, true);
+    let expandedAllGuides = false;
+    if (matched.length === 0 && guide && kwRaw) {
+        const crossGuide = scoreAgainstPool(pendingPool, false);
+        if (crossGuide.length > 0) {
+            matched = crossGuide;
+            expandedAllGuides = true;
+        }
+    }
 
     const cnt = document.getElementById('sampleFilterCount');
     const doneCnt = scopePool.length - pendingPool.length;
     if (cnt) {
         cnt.textContent = (!guide && !kwRaw)
             ? `Còn ${pendingPool.length} / ${scopePool.length} hộ chưa phỏng vấn` + (doneCnt ? ` (đã xong ${doneCnt})` : '')
-            : `Tìm thấy ${matched.length} hộ chờ` + (doneCnt ? ` (đã xong ${doneCnt})` : '');
+            : `Tìm thấy ${matched.length} hộ chờ` + (expandedAllGuides ? ' (mở rộng tất cả dẫn đường)' : '') + (doneCnt ? ` (đã xong ${doneCnt})` : '');
     }
 
     const box = document.getElementById('sampleResultList');
@@ -846,15 +994,29 @@ function filterSampleHouseholds(forceShow = false) {
     renderSampleResultItems(matched);
 }
 
+function prefetchHouseholdGpsSilent() {
+    const gpsEl = document.getElementById('gpsInput');
+    if (!gpsEl || gpsEl.value.trim() || !navigator.geolocation) return;
+    try {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                if (gpsEl && !gpsEl.value.trim()) {
+                    const lat = pos.coords.latitude.toFixed(6);
+                    const lng = pos.coords.longitude.toFixed(6);
+                    gpsEl.value = `${lat}, ${lng}`;
+                    currentDraftAnswers['_gps_text'] = gpsEl.value;
+                    saveDraftLocal(false);
+                }
+            },
+            () => {},
+            { enableHighAccuracy: true, maximumAge: 10000, timeout: 6000 }
+        );
+    } catch (_) {}
+}
+
 function selectSampleHousehold(id) {
     const h = sampleHouseholds.find(item => item.id.toUpperCase() === String(id || '').trim().toUpperCase());
     if (!h) return;
-
-    const assignedScope = getUserAssignedScope();
-    if (assignedScope && h.interviewer && !matchesInterviewer(h, assignedScope)) {
-        alert(`Hộ [${h.id}] ${h.name} thuộc phạm vi nhiệm vụ của điều tra viên [${formatInterviewerDisplay(h.interviewer)}], không nằm trong danh sách được giao cho bạn.`);
-        return;
-    }
 
     const codeEl = document.getElementById('surveyCodeInput');
     const commEl = document.getElementById('communeSelect');
@@ -862,7 +1024,9 @@ function selectSampleHousehold(id) {
     const respEl = document.getElementById('respondentNameInput');
     const phoneEl = document.getElementById('phoneInput');
     const guideEl = document.getElementById('guideNameInput');
+    const nvEl = document.getElementById('sampleFilterNV');
     const guideFilterEl = document.getElementById('sampleFilterGuide');
+    const searchEl = document.getElementById('sampleSearchInput');
     const isNew = Boolean(h.status && h.status.includes('Hộ mới'));
 
     if (codeEl) codeEl.value = h.id;
@@ -871,9 +1035,25 @@ function selectSampleHousehold(id) {
     if (respEl) respEl.value = isNew ? '' : (h.name || '');
     if (phoneEl) phoneEl.value = isNew ? '' : (h.phone || '');
     if (guideEl) guideEl.value = h.guide || '';
+
     if (guideFilterEl && h.guide) {
-        const hasOpt = Array.from(guideFilterEl.options).some(o => o.value === h.guide);
+        let hasOpt = Array.from(guideFilterEl.options).some(o => o.value === h.guide);
+        if (!hasOpt && nvEl && nvEl.value) {
+            nvEl.value = '';
+            populateSampleGuideFilter('');
+            hasOpt = Array.from(guideFilterEl.options).some(o => o.value === h.guide);
+        }
         if (hasOpt) guideFilterEl.value = h.guide;
+        const pendingPool = sampleHouseholds.filter(x =>
+            matchesInterviewer(x, nvEl?.value || '') && !interviewedSurveyCodes.has(String(x.id || '').toUpperCase())
+        );
+        styleSampleGuideSelect(guideFilterEl, getUserAssignedScope(), pendingPool);
+    }
+
+    if (searchEl) {
+        const label = isNew ? h.id : (h.name || h.id);
+        searchEl.value = label;
+        lastAutoSelectedHouseholdLabel = label;
     }
 
     // Tự động điền các câu hỏi thông tin phiếu A01, A03, A04
@@ -897,11 +1077,15 @@ function selectSampleHousehold(id) {
     if (banner) {
         banner.style.display = 'block';
         const raTag = h.ra ? ' • <span style="background:#166534;color:#fff;padding:1px 6px;border-radius:3px;font-weight:700;">Chứng nhận RA</span>' : '';
+        const assignedScope = getUserAssignedScope();
+        const isCrossHelp = Boolean(assignedScope && h.interviewer && !matchesInterviewer(h, assignedScope));
+        const crossTag = isCrossHelp ? ' • <span style="background:#d97706;color:#fff;padding:1px 6px;border-radius:3px;font-weight:700;">Hỗ trợ phỏng vấn chéo</span>' : '';
         banner.innerHTML = isNew
-            ? `<i class="fa-solid fa-user-plus"></i> Đã cấp mã hộ mới: <strong>[${escapeHtml(h.id)}]</strong> (${escapeHtml(h.address)}) • Dẫn đường: <strong>${escapeHtml(h.guide)}</strong> • ĐTV: <strong>${escapeHtml(formatInterviewerDisplay(h.interviewer))}</strong> — <em>Vui lòng nhập Họ tên &amp; SĐT hộ mới bên dưới.</em>`
-            : `<i class="fa-solid fa-circle-check"></i> Đã điền tự động: <strong>[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong> (${escapeHtml(h.address)})${raTag} • SĐT: ${escapeHtml(h.phone || '—')} • Dẫn đường: <strong>${escapeHtml(h.guide)}</strong> • ĐTV: <strong>${escapeHtml(formatInterviewerDisplay(h.interviewer))}</strong>`;
+            ? `<i class="fa-solid fa-user-plus"></i> Đã cấp mã hộ mới: <strong>[${escapeHtml(h.id)}]</strong> (${escapeHtml(h.address)})${crossTag} • Dẫn đường: <strong>${escapeHtml(h.guide)}</strong> • ĐTV: <strong>${escapeHtml(formatInterviewerDisplay(h.interviewer))}</strong> — <em>Vui lòng nhập Họ tên &amp; SĐT hộ mới bên dưới.</em>`
+            : `<i class="fa-solid fa-circle-check"></i> Đã điền tự động: <strong>[${escapeHtml(h.id)}] ${escapeHtml(h.name)}</strong> (${escapeHtml(h.address)})${raTag}${crossTag} • SĐT: ${escapeHtml(h.phone || '—')} • Dẫn đường: <strong>${escapeHtml(h.guide)}</strong> • ĐTV: <strong>${escapeHtml(formatInterviewerDisplay(h.interviewer))}</strong>`;
     }
 
+    prefetchHouseholdGpsSilent();
     if (currentSection) renderQuestionsForSection(currentSection);
     saveDraftLocal(false);
     if (isNew && respEl) respEl.focus();
@@ -2622,17 +2806,37 @@ async function fetchMergedDraftsList() {
 
 async function refreshDraftBadgeCount() {
     const drafts = await fetchMergedDraftsList();
+    checkinDraftCodes = new Set(
+        drafts.map(d => String(d.survey_code || '').trim().toUpperCase()).filter(Boolean)
+    );
     const b1 = document.getElementById('draftListCountBadge');
     const b2 = document.getElementById('draftStripCountBadge');
+    const b3 = document.getElementById('checkinQuickCountBadge');
     if (b1) b1.textContent = drafts.length;
     if (b2) b2.textContent = drafts.length;
+    if (b3) b3.textContent = drafts.length;
 }
 
 function manualSaveDraft() {
     saveDraftLocal(true);
 }
 
-async function saveDraftAndNextHousehold() {
+async function quickSaveFieldCheckin() {
+    if (currentUser?.role === 'viewer') return;
+    const codeVal = (document.getElementById('surveyCodeInput')?.value || '').trim();
+    const nameVal = (document.getElementById('respondentNameInput')?.value || '').trim();
+    if (!codeVal && !nameVal) {
+        alert('Vui lòng chọn Nông hộ (hoặc nhập Mã phiếu / Tên chủ hộ) trước khi lưu check-in hiện trường!');
+        document.getElementById('sampleSearchInput')?.focus();
+        return;
+    }
+
+    currentDraftAnswers['_field_checkin_mode'] = 'paper_pending';
+    currentDraftAnswers['_field_checkin_at'] = new Date().toISOString();
+    await saveDraftAndNextHousehold(true);
+}
+
+async function saveDraftAndNextHousehold(isCheckinMode = false) {
     if (currentUser?.role === 'viewer') return;
     const rec = buildCurrentDraftRecord();
     await putIdbDraft(rec);
@@ -2642,12 +2846,13 @@ async function saveDraftAndNextHousehold() {
     currentDraftAnswers = {};
     editingSurveyId = null;
     currentDraftPhotoPath = '';
+    lastAutoSelectedHouseholdLabel = '';
     stopBackgroundGpsTracker();
     stopRealtimeInterviewClock();
     clearHouseholdPhoto(true);
     localStorage.removeItem(`dakman_draft_${currentTool}`);
 
-    ['surveyCodeInput', 'hamletInput', 'respondentNameInput', 'phoneInput', 'guideNameInput', 'gpsInput'].forEach(fid => {
+    ['surveyCodeInput', 'hamletInput', 'respondentNameInput', 'phoneInput', 'guideNameInput', 'gpsInput', 'sampleSearchInput'].forEach(fid => {
         const el = document.getElementById(fid);
         if (el) el.value = '';
     });
@@ -2655,12 +2860,26 @@ async function saveDraftAndNextHousehold() {
     if (banner) banner.style.display = 'none';
 
     selectTool(currentTool);
-    filterSampleHouseholds();
+    const activeGuide = document.getElementById('sampleFilterGuide')?.value || '';
+    filterSampleHouseholds(Boolean(activeGuide));
+    const statusText = document.getElementById('floatingDraftStatusText');
+    if (statusText) {
+        statusText.textContent = synced
+            ? `Đã lưu check-in [${rec.respondent_name || rec.survey_code}] lên VPS & thiết bị (chờ nhập giấy).`
+            : `Đã lưu check-in [${rec.respondent_name || rec.survey_code}] offline trên thiết bị (chờ nhập giấy).`;
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    const hasPhoto = Boolean(rec.photo_data || rec.photo_path);
+    const hasGps = Boolean(rec.gps);
     alert(
-        synced
-            ? `Đã lưu tạm hộ [${rec.respondent_name || rec.survey_code}] lên VPS & thiết bị!\nBây giờ có thể chọn hộ tiếp theo hoặc chụp ảnh/GPS tại vườn kế tiếp.`
-            : `Đã lưu tạm hộ [${rec.respondent_name || rec.survey_code}] trên thiết bị!\nBây giờ có thể chọn hộ tiếp theo.`
+        isCheckinMode
+            ? `ĐÃ LƯU CHECK-IN HIỆN TRƯỜNG ${synced ? '(THIẾT BỊ + VPS)' : '(OFFLINE TRÊN THIẾT BỊ)'}!\n` +
+              `- Hộ: [${rec.survey_code}] ${rec.respondent_name || '(Chưa nhập tên)'}\n` +
+              `- Ảnh hiện trường: ${hasPhoto ? 'Đã lưu' : 'Chưa chụp'} | GPS: ${hasGps ? rec.gps : 'Chưa có'}\n\n` +
+              `Sẵn sàng chọn hộ tiếp theo để chụp ảnh/GPS & phỏng vấn giấy. Về nhà mở nút "Nhập Phiếu Giấy" để nhập kết quả!`
+            : (synced
+                ? `Đã lưu tạm hộ [${rec.respondent_name || rec.survey_code}] lên VPS & thiết bị!\nBây giờ có thể chọn hộ tiếp theo hoặc chụp ảnh/GPS tại vườn kế tiếp.`
+                : `Đã lưu tạm hộ [${rec.respondent_name || rec.survey_code}] trên thiết bị!\nBây giờ có thể chọn hộ tiếp theo.`)
     );
 }
 
@@ -2689,7 +2908,7 @@ async function refreshAllDraftsList() {
     await refreshDraftBadgeCount();
 
     if (!drafts.length) {
-        box.innerHTML = '<div style="text-align: center; padding: 24px; color: #64748b;">Chưa có phiếu nào đang lưu tạm. Khi đi hiện trường, chỉ cần chọn Chủ hộ, chụp ảnh &amp; lấy GPS rồi bấm <strong>Lưu Tạm</strong>.</div>';
+        box.innerHTML = '<div style="text-align: center; padding: 24px; color: #64748b;">Chưa có phiếu nào đang lưu tạm. Khi đi hiện trường, chỉ cần chọn Chủ hộ, chụp ảnh &amp; lấy GPS rồi bấm <strong>Lưu Check-in</strong> để tối về nhập từ phiếu giấy.</div>';
         return;
     }
 
@@ -2697,18 +2916,26 @@ async function refreshAllDraftsList() {
         const hasPhoto = Boolean(d.photo_data || d.photo_url || d.photo_path);
         const gpsText = d.gps || ((d.gps_lat && d.gps_lng) ? `${d.gps_lat}, ${d.gps_lng}` : 'Chưa có GPS');
         const thumbSrc = d.photo_data || (d.photo_url ? apiUrl(d.photo_url) : (d.photo_path ? apiUrl(`/api/photos/${d.photo_path}`) : ''));
+        const isPaperPending = Boolean(d.answers && d.answers._field_checkin_mode === 'paper_pending') || (Number(d.answered_count || 0) === 0 && (hasPhoto || Boolean(d.gps)));
+        const badgeMode = isPaperPending
+            ? '<span style="background:#0f766e;color:#fff;padding:1px 6px;border-radius:2px;font-weight:700;font-size:0.70rem;margin-left:4px;">📸 CHECK-IN • CHỜ NHẬP GIẤY</span>'
+            : '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:2px;font-weight:700;font-size:0.70rem;margin-left:4px;">Đang nhập dở</span>';
+        const btnLabel = isPaperPending
+            ? '<i class="fa-solid fa-file-pen"></i> Nhập Phiếu Giấy Vào Máy'
+            : '<i class="fa-solid fa-pen-to-square"></i> Mở Nhập Tiếp';
+        const borderLeftColor = isPaperPending ? '#0f766e' : '#d97706';
         return `
-            <div style="border: 1px solid #cbd5e1; border-left: 4px solid #d97706; border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; background: #fff; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div style="border: 1px solid #cbd5e1; border-left: 4px solid ${borderLeftColor}; border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; background: #fff; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                 ${thumbSrc ? `<img src="${thumbSrc}" alt="Ảnh" style="width: 72px; height: 72px; object-fit: cover; border-radius: 3px; border: 1px solid #e2e8f0; flex-shrink: 0;">` : `<div style="width:72px; height:72px; background:#f1f5f9; border:1px dashed #cbd5e1; border-radius:3px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:0.72rem; text-align:center; flex-shrink:0;">Chưa ảnh</div>`}
                 <div style="flex: 1; min-width: 210px; font-size: 0.82rem; line-height: 1.5;">
-                    <div><strong style="color: #002060; font-family: monospace;">${escapeHtml(d.survey_code || '—')}</strong> <span style="background:#e0e7ff;color:#3730a3;padding:1px 5px;border-radius:2px;font-weight:700;font-size:0.72rem;">${escapeHtml(d.tool_code || 'P1')}</span> — <strong>${escapeHtml(d.respondent_name || '(Chưa nhập tên chủ hộ)')}</strong></div>
+                    <div><strong style="color: #002060; font-family: monospace;">${escapeHtml(d.survey_code || '—')}</strong> <span style="background:#e0e7ff;color:#3730a3;padding:1px 5px;border-radius:2px;font-weight:700;font-size:0.72rem;">${escapeHtml(d.tool_code || 'P1')}</span>${badgeMode} — <strong>${escapeHtml(d.respondent_name || '(Chưa nhập tên chủ hộ)')}</strong></div>
                     <div style="color: #475569;">Địa bàn: ${escapeHtml(d.commune || '')}${d.hamlet ? ` (${escapeHtml(d.hamlet)})` : ''} | Dẫn đường: ${escapeHtml(d.guide_name || d.guide || '—')}</div>
                     <div style="color: #475569;">GPS: <span style="font-family:monospace;">${escapeHtml(gpsText)}</span> | Ảnh: ${hasPhoto ? '<span style="color:#15803d;font-weight:700;">✓ Đã có</span>' : '<span style="color:#b45309;">Chưa chụp</span>'} | Đã nhập: <strong>${d.answered_count || 0}/${d.total_count || '?'}</strong> câu</div>
                     <div style="font-size: 0.74rem; color: #64748b;">Lưu lúc: ${escapeHtml(d.saved_at || d.updated_at || '')} • ${escapeHtml(d.source || '')}</div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;">
                     <button type="button" onclick="loadDraftIntoForm('${escapeQuotes(d.draft_key)}')" class="qgis-btn-primary" style="background: #15803d; border-color: #166534; padding: 6px 12px; font-size: 0.80rem;">
-                        <i class="fa-solid fa-pen-to-square"></i> Mở Nhập Tiếp
+                        ${btnLabel}
                     </button>
                     <button type="button" onclick="deleteDraftItem('${escapeQuotes(d.draft_key)}')" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 0.76rem; font-weight: 600;">
                         <i class="fa-solid fa-trash-can"></i> Xóa Nháp
@@ -2752,15 +2979,27 @@ async function loadDraftIntoForm(draftKey) {
         clearHouseholdPhoto(true);
     }
 
+    const banner = document.getElementById('sampleSelectedBanner');
+    if (banner) {
+        banner.style.display = 'block';
+        banner.innerHTML = `<i class="fa-solid fa-file-pen"></i> Đang nhập phiếu cho hộ <strong>[${escapeHtml(d.survey_code)}] ${escapeHtml(d.respondent_name || '')}</strong> (${escapeHtml(d.commune || '')}) — <em>Ảnh hiện trường &amp; GPS đã được nạp sẵn, mời nhập kết quả từ phiếu giấy!</em>`;
+    }
+
     const sections = getToolSections();
-    if (d.current_section && sections.includes(d.current_section)) {
+    if (Number(d.answered_count || 0) === 0 && sections.length > 0) {
+        selectSection(sections[0], 0);
+    } else if (d.current_section && sections.includes(d.current_section)) {
         selectSection(d.current_section, sections.indexOf(d.current_section));
     } else {
         renderQuestionsForSection(currentSection);
     }
     updateAnsweredSummaryBadge();
     saveDraftLocal(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (Number(d.answered_count || 0) === 0 && sections.length > 0) {
+        document.getElementById('surveyQuestionsBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 }
 
 async function deleteDraftItem(draftKey) {
