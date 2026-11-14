@@ -1498,21 +1498,17 @@
 
                     <div class="tool-tabs-nav">
                         <button type="button" class="tool-tab active" onclick="selectTool('P1')" id="toolBtn-P1">P1:
-                            Nông Dân (220 phiếu)</button>
-                        <button type="button" class="tool-tab" onclick="selectTool('KIP')" id="toolBtn-KIP">KIP: Nhóm
-                            Thôn (12 cuộc)</button>
-                        <button type="button" class="tool-tab" onclick="selectTool('MH')" id="toolBtn-MH">MH: 9 Mô
-                            Hình</button>
+                            Hộ nông dân (220)</button>
                         <button type="button" class="tool-tab" onclick="selectTool('NT')" id="toolBtn-NT">NT: Nhóm
-                            Trưởng ToT (3)</button>
-                        <button type="button" class="tool-tab" onclick="selectTool('SDM')" id="toolBtn-SDM">SDM: Tổ Dịch
-                            Vụ (1)</button>
-                        <button type="button" class="tool-tab" onclick="selectTool('HTX')" id="toolBtn-HTX">HTX: Ban
-                            Giám Đốc (3)</button>
+                            trưởng &amp; Trưởng thôn (10)</button>
                         <button type="button" class="tool-tab" onclick="selectTool('CQ')" id="toolBtn-CQ">CQ: Chính
-                            Quyền (6)</button>
-                        <button type="button" class="tool-tab" onclick="selectTool('TT')" id="toolBtn-TT">TT: Nhà Tài
-                            Trợ (2)</button>
+                            quyền 3 xã (3)</button>
+                        <button type="button" class="tool-tab" onclick="selectTool('HTX')" id="toolBtn-HTX">HTX: Ban
+                            quản lý 3 HTX (3)</button>
+                        <button type="button" class="tool-tab" onclick="selectTool('TT')" id="toolBtn-TT">TT: Nhà tài
+                            trợ - IDH &amp; JDE Peet’s (2)</button>
+                        <button type="button" class="tool-tab" onclick="selectTool('MH')" id="toolBtn-MH">MH: Chủ mô
+                            hình trình diễn (2)</button>
                     </div>
                 </div>
 
@@ -1616,19 +1612,9 @@
                                 <label>Ngày Thực Hiện <span class="req">*</span></label>
                                 <input type="date" class="form-control" id="surveyDateInput" required>
                             </div>
-                            <div class="form-group">
-                                <label>Tọa Độ GPS Vườn / Nhà</label>
-                                <div style="display: flex; gap: 6px;">
-                                    <input type="text" class="form-control" id="gpsInput" placeholder="VD: 12.89432, 108.12456 hoặc dán link Google Maps / ghi chú...">
-                                    <button type="button" onclick="autoCaptureGPS()"
-                                        style="background: #15803d; color: #fff; border: none; padding: 0 12px; border-radius: var(--radius-sm); cursor: pointer; white-space: nowrap; font-size: 0.82rem; font-weight: 600;"
-                                        title="Lấy GPS từ điện thoại">
-                                        <i class="fa-solid fa-location-crosshairs"></i> GPS
-                                    </button>
-                                </div>
-                                <div style="font-size: 0.74rem; color: var(--slate-500); margin-top: 4px; font-style: italic;">
-                                    Gợi ý: Bấm nút GPS để lấy tự động, hoặc nhập chữ / dán tọa độ, link chia sẻ từ Google Maps, phần mềm khác.
-                                </div>
+                            <div class="form-group" id="gpsFieldGroup" style="display: none;">
+                                <label>Tọa Độ GPS Vườn / Nhà (Chạy ngầm tự động)</label>
+                                <input type="text" class="form-control" id="gpsInput" readonly>
                             </div>
                         </div>
 
@@ -1668,13 +1654,29 @@
                         </div>
                     </div>
 
+                    <!-- Photo Required Lock Banner -->
+                    <div id="photoRequiredLock"
+                        style="display: none; background: #fffbeb; border: 2px dashed #f59e0b; border-radius: 6px; padding: 24px 16px; text-align: center; margin-bottom: 12px;">
+                        <div style="font-size: 1.05rem; font-weight: 700; color: #92400e; margin-bottom: 6px;">
+                            <i class="fa-solid fa-camera"></i> BẮT BUỘC CHỤP ẢNH CÙNG CHỦ HỘ ĐỂ MỞ BẢNG CÂU HỎI
+                        </div>
+                        <div style="font-size: 0.86rem; color: #78350f; margin-bottom: 14px;">
+                            Vui lòng chụp hoặc chọn <strong>Ảnh Chụp Đầu Tiên Cùng Chủ Hộ</strong> ở phía trên. Sau khi có ảnh, hệ thống sẽ tự động mở bảng câu hỏi, ghi nhận thời gian phỏng vấn thực tế và định vị ngầm.
+                        </div>
+                        <button type="button" onclick="triggerHouseholdPhotoCapture()"
+                            style="background: #15803d; color: #fff; border: none; padding: 9px 18px; border-radius: 4px; font-size: 0.9rem; font-weight: 700; cursor: pointer;">
+                            <i class="fa-solid fa-camera-retro"></i> Chụp / Chọn Ảnh Chủ Hộ Ngay
+                        </button>
+                    </div>
+
                     <!-- Progress & Missing Question Check Bar -->
                     <div id="surveyProgressBar"
                         style="background: #ffffff; border: 1px solid #d0d0d0; border-radius: 3px; padding: 8px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                         <div style="flex: 1; min-width: 180px;">
                             <div
-                                style="display: flex; justify-content: space-between; font-size: 0.80rem; font-weight: 700; color: #1e293b; margin-bottom: 4px;">
+                                style="display: flex; justify-content: space-between; font-size: 0.80rem; font-weight: 700; color: #1e293b; margin-bottom: 4px; gap: 8px; flex-wrap: wrap;">
                                 <span id="surveyProgressText">Tiến độ: 0 / 0 câu hỏi</span>
+                                <span id="liveInterviewClock" style="color: #0369a1; font-weight: 600;"></span>
                                 <span id="surveyProgressPct" style="color: #15803d;">0%</span>
                             </div>
                             <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
@@ -2509,7 +2511,7 @@
     </div>
 
     <!-- Application Logic -->
-    <script src="app.js?v=2.25"></script>
+    <script src="app.js?v=2.26"></script>
 
 </body>
 

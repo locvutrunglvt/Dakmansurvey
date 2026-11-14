@@ -824,6 +824,13 @@ function selectTool(toolCode) {
     renderQuestionsForSection(currentSection);
     updateSectionStepButtons(sections);
     updateAnsweredSummaryBadge();
+    updatePhotoLockState();
+    startBackgroundGpsTracker();
+    if (currentHouseholdPhotoData) {
+        startRealtimeInterviewClock();
+    } else {
+        stopRealtimeInterviewClock();
+    }
 }
 
 function getToolSections(toolCode = currentTool) {
@@ -1808,6 +1815,111 @@ function setHouseholdPhotoPreview(dataUrl, metaText) {
             status.textContent = 'Chưa chụp ảnh';
         }
     }
+    updatePhotoLockState();
+}
+
+let liveClockTimer = null;
+let bgGpsWatchId = null;
+let bgGpsStopTimeout = null;
+let bgBestGps = null;
+
+function updatePhotoLockState() {
+    const hasPhoto = Boolean(currentHouseholdPhotoData && currentHouseholdPhotoData.trim());
+    const isReadOnlyOrAdmin = (currentUser?.role === 'viewer' || Boolean(editingSurveyId));
+    const unlocked = hasPhoto || isReadOnlyOrAdmin;
+
+    const lockEl = document.getElementById('photoRequiredLock');
+    const progEl = document.getElementById('surveyProgressBar');
+    const navEl = document.getElementById('sectionJumpNav');
+    const stepEl = document.getElementById('sectionStepNav');
+    const qBoxEl = document.getElementById('surveyQuestionsBox');
+
+    if (lockEl) lockEl.style.display = unlocked ? 'none' : 'block';
+    if (progEl) progEl.style.display = unlocked ? 'flex' : 'none';
+    if (navEl && !unlocked) navEl.style.display = 'none';
+    else if (navEl && unlocked && getToolSections().length > 1) navEl.style.display = 'flex';
+    if (stepEl && !unlocked) stepEl.style.display = 'none';
+    else if (stepEl && unlocked && getToolSections().length > 1) stepEl.style.display = 'flex';
+    if (qBoxEl) qBoxEl.style.display = unlocked ? 'block' : 'none';
+}
+
+function startRealtimeInterviewClock() {
+    if (!currentDraftAnswers._started_at) {
+        currentDraftAnswers._started_at = new Date().toISOString();
+    }
+    if (liveClockTimer) clearInterval(liveClockTimer);
+
+    const tick = () => {
+        const el = document.getElementById('liveInterviewClock');
+        if (!el || !currentDraftAnswers._started_at) return;
+        const start = new Date(currentDraftAnswers._started_at);
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const startStr = `${pad(start.getHours())}:${pad(start.getMinutes())}:${pad(start.getSeconds())}`;
+        const diffSec = Math.max(0, Math.floor((now - start) / 1000));
+        const mm = pad(Math.floor(diffSec / 60));
+        const ss = pad(diffSec % 60);
+        el.textContent = `Bắt đầu: ${startStr} • Đang phỏng vấn: ${mm}:${ss}`;
+    };
+    tick();
+    liveClockTimer = setInterval(tick, 1000);
+}
+
+function stopRealtimeInterviewClock() {
+    if (liveClockTimer) {
+        clearInterval(liveClockTimer);
+        liveClockTimer = null;
+    }
+    const el = document.getElementById('liveInterviewClock');
+    if (el) el.textContent = '';
+}
+
+function startBackgroundGpsTracker() {
+    stopBackgroundGpsTracker();
+    bgBestGps = currentDraftAnswers._gps_bg || null;
+    if (!navigator.geolocation) return;
+
+    try {
+        bgGpsWatchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                const acc = pos.coords.accuracy || 9999;
+                if (!bgBestGps || acc <= bgBestGps.accuracy) {
+                    const lat = pos.coords.latitude.toFixed(6);
+                    const lng = pos.coords.longitude.toFixed(6);
+                    const str = `${lat}, ${lng}`;
+                    bgBestGps = {
+                        lat,
+                        lng,
+                        accuracy: Math.round(acc),
+                        timestamp: new Date().toISOString()
+                    };
+                    const gpsEl = document.getElementById('gpsInput');
+                    if (gpsEl) gpsEl.value = str;
+                    currentDraftAnswers._gps_bg = bgBestGps;
+                    saveDraftLocal(false);
+                }
+            },
+            () => { /* Chạy ngầm yên lặng, không làm phiền điều tra viên */ },
+            { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+        );
+        // Tự động chốt tọa độ chuẩn nhất sau tối đa 5 phút (300.000 ms)
+        bgGpsStopTimeout = setTimeout(() => {
+            stopBackgroundGpsTracker();
+        }, 5 * 60 * 1000);
+    } catch (_) {
+        // Silent fallback
+    }
+}
+
+function stopBackgroundGpsTracker() {
+    if (bgGpsWatchId !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(bgGpsWatchId);
+        bgGpsWatchId = null;
+    }
+    if (bgGpsStopTimeout) {
+        clearTimeout(bgGpsStopTimeout);
+        bgGpsStopTimeout = null;
+    }
 }
 
 function clearHouseholdPhoto(silent = false) {
@@ -1924,6 +2036,8 @@ async function handlePhotoSelected(event) {
             const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
             const metaText = `${timestampStr} | GPS: ${gpsStr} | ${surveyCode} — ${respondent}`;
             setHouseholdPhotoPreview(dataUrl, metaText);
+            startRealtimeInterviewClock();
+            startBackgroundGpsTracker();
             saveDraftLocal(false);
         } catch (err) {
             alert('Không thể xử lý ảnh watermark: ' + err.message);
