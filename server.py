@@ -511,7 +511,6 @@ def build_survey_pdf(survey_row):
 
 DAILY_REPORT_RECIPIENTS = ["dothanhduy21vn@gmail.com", "locvutrung@gmail.com"]
 DAILY_REPORT_SENDER = "coffeedatavn@gmail.com"
-DAILY_REPORT_FALLBACK_SENDER = "impact@slowforest.vn"
 
 def _excel_safe_val(val, q_type="TX"):
     if isinstance(val, list):
@@ -802,7 +801,6 @@ def build_multisheet_excel(export_file=None):
         return export_file, f.read(), len(surveys_list)
 
 def send_daily_excel_report(recipients=None):
-    import subprocess
     import smtplib
     from email.mime.multipart import MIMEMultipart
     from email.mime.base import MIMEBase
@@ -851,36 +849,55 @@ def send_daily_excel_report(recipients=None):
         m.attach(part)
         return m
 
-    smtp_err = ""
-    if smtp_sender and smtp_password:
-        try:
-            msg = _build_msg(smtp_sender)
-            s = smtplib.SMTP("smtp.gmail.com", 587, timeout=30)
-            s.ehlo()
-            s.starttls()
-            s.ehlo()
-            s.login(smtp_sender, smtp_password)
-            s.send_message(msg)
-            s.quit()
-            return True, total_count, target_list, f"smtp:{smtp_sender}"
-        except Exception as e:
-            smtp_err = str(e)
-            print(f"Primary SMTP ({smtp_sender}) failed, falling back to msmtp: {smtp_err}")
+    if not smtp_sender or not smtp_password:
+        raise RuntimeError(f"Chưa cấu hình đầy đủ Email gửi ({smtp_sender or 'trống'}) hoặc mật khẩu SMTP.")
 
-    msg_fb = _build_msg(DAILY_REPORT_FALLBACK_SENDER, reply_to=smtp_sender)
-    proc = subprocess.run(
-        ["msmtp", "--"] + target_list,
-        input=msg_fb.as_string().encode("utf-8"),
-        capture_output=True,
-        timeout=60,
+    msg = _build_msg(smtp_sender)
+    errors = []
+
+    def _smtp_login_strict(s):
+        s.user = smtp_sender
+        s.password = smtp_password
+        auth_feat = s.esmtp_features.get("auth", "").split()
+        if "PLAIN" in auth_feat:
+            code, resp = s.auth("PLAIN", s.auth_plain)
+            if code != 235:
+                raise smtplib.SMTPAuthenticationError(code, resp)
+        else:
+            s.login(smtp_sender, smtp_password)
+
+    try:
+        s = smtplib.SMTP("smtp.gmail.com", 587, timeout=30)
+        s.ehlo()
+        s.starttls()
+        s.ehlo()
+        _smtp_login_strict(s)
+        s.send_message(msg)
+        s.quit()
+        return True, total_count, target_list, f"smtp:587:{smtp_sender}"
+    except Exception as e587:
+        errors.append(f"Port 587 STARTTLS: {e587}")
+
+    try:
+        s = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30)
+        s.ehlo()
+        _smtp_login_strict(s)
+        s.send_message(msg)
+        s.quit()
+        return True, total_count, target_list, f"smtp:465:{smtp_sender}"
+    except Exception as e465:
+        errors.append(f"Port 465 SSL: {e465}")
+
+    combined_err = " | ".join(errors)
+    if "534" in combined_err or "Application-specific password required" in combined_err:
+        raise RuntimeError(
+            f"Gmail từ chối đăng nhập tài khoản {smtp_sender} vì Google yêu cầu Mật khẩu ứng dụng 16 ký tự (App Password) thay cho mật khẩu thường. "
+            f"Hệ thống đã khóa cứng chỉ gửi qua {smtp_sender} (không dùng email trung gian khác). "
+            f"Vui lòng tạo App Password trong Google Account của {smtp_sender} rồi dán vào Tab 2 Quản trị hệ thống. Chi tiết: {combined_err}"
+        )
+    raise RuntimeError(
+        f"Không thể gửi email từ {smtp_sender} qua Gmail SMTP (không dùng email dự phòng khác). Chi tiết: {combined_err}"
     )
-    if proc.returncode != 0:
-        err_msg = proc.stderr.decode("utf-8", errors="replace")
-        raise RuntimeError(f"SMTP ({smtp_sender}) error: {smtp_err} | msmtp failed: {err_msg}")
-    note = f"msmtp:{DAILY_REPORT_FALLBACK_SENDER}"
-    if smtp_err:
-        note += f" (Gmail {smtp_sender} can Mat khau ung dung / App Password 16 ky tu: {smtp_err})"
-    return True, total_count, target_list, note
 
 class SurveyRequestHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -942,6 +959,15 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                     self._send_json(json.load(f))
             else:
                 self._send_json({'error': 'Schedule data file not found'}, 404)
+            return
+
+        elif path == '/api/sample-households':
+            sample_file = os.path.join(PUBLIC_DIR, 'sample_households.json')
+            if os.path.exists(sample_file):
+                with open(sample_file, 'r', encoding='utf-8') as f:
+                    self._send_json(json.load(f))
+            else:
+                self._send_json({'error': 'Sample households data file not found'}, 404)
             return
 
         elif path == '/api/admin/settings':
