@@ -224,6 +224,66 @@ let currentSection = null;
 let currentDraftAnswers = {};
 let currentUser = null;
 
+const ACTIVE_SCREEN_KEY = 'dakman_active_screen_v1';
+
+function saveActiveScreenState(viewId) {
+    try {
+        if (viewId === 'survey') {
+            localStorage.setItem(ACTIVE_SCREEN_KEY, JSON.stringify({
+                view: 'survey',
+                tool: currentTool || 'P1',
+                uid: String(currentUser?.surveyor_id || '').trim().toUpperCase(),
+                ts: Date.now()
+            }));
+        } else {
+            localStorage.removeItem(ACTIVE_SCREEN_KEY);
+        }
+    } catch (_) {}
+}
+
+function clearActiveScreenState() {
+    try { localStorage.removeItem(ACTIVE_SCREEN_KEY); } catch (_) {}
+}
+
+function getResumableSurveyScreen() {
+    try {
+        const raw = localStorage.getItem(ACTIVE_SCREEN_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || parsed.view !== 'survey') return null;
+        const ageMs = Date.now() - Number(parsed.ts || 0);
+        if (ageMs < 0 || ageMs > 12 * 3600 * 1000) return null;
+        const myUid = String(currentUser?.surveyor_id || '').trim().toUpperCase();
+        if (parsed.uid && myUid && parsed.uid !== myUid) return null;
+        return parsed;
+    } catch (_) {
+        return null;
+    }
+}
+
+function hasActiveInterviewWork() {
+    if (currentMainView !== 'survey') return false;
+    const headName = (document.getElementById('headNameInput')?.value || '').trim();
+    const respName = (document.getElementById('respondentNameInput')?.value || '').trim();
+    const hasPhoto = Boolean((currentHouseholdPhotoData && currentHouseholdPhotoData.trim()) || currentDraftPhotoPath);
+    const hasAnswers = Object.keys(currentDraftAnswers || {}).some(k => !k.startsWith('_') && String(currentDraftAnswers[k] || '').trim() !== '');
+    return Boolean(hasPhoto || hasAnswers || headName || respName || editingSurveyId);
+}
+
+function closeTopActiveModal() {
+    const activeModals = Array.from(document.querySelectorAll('.modal-overlay.active'));
+    for (let i = activeModals.length - 1; i >= 0; i--) {
+        const m = activeModals[i];
+        if (m.id === 'userLoginModal' && (!currentUser || !currentUser.is_authenticated)) {
+            continue;
+        }
+        m.classList.remove('active');
+        m.style.display = 'none';
+        return true;
+    }
+    return false;
+}
+
 // Khởi chạy hệ thống
 document.addEventListener('DOMContentLoaded', async () => {
     initMobilePwaInstallPrompt();
@@ -231,21 +291,83 @@ document.addEventListener('DOMContentLoaded', async () => {
         a.href = apiUrl('/api/export/excel');
     });
     initUserSession();
+    try {
+        window.history.replaceState({ dakmanView: 'menu' }, '');
+    } catch (_) {}
+
     await loadQuestions();
-    await selectTool('P1');
-    switchMainView('menu');
+    const resumable = (currentUser && currentUser.is_authenticated) ? getResumableSurveyScreen() : null;
+    if (resumable && resumable.tool) {
+        await selectTool(resumable.tool);
+        switchMainView('survey', '', false);
+        const stEl = document.getElementById('floatingDraftStatusText');
+        if (stEl) {
+            stEl.textContent = 'Đã tự động khôi phục phiên phỏng vấn đang dở của bạn.';
+        }
+    } else {
+        await selectTool('P1');
+        switchMainView('menu', '', true);
+    }
+
     Promise.allSettled([
+        loadSampleHouseholds(),
         loadSchedule(),
         syncOfflineQueue(true),
         syncPendingDrafts(true),
         loadHouseholdLocks(),
-        refreshDraftBadgeCount(),
+        refreshDraftBadgeCount(true),
         refreshDashboardData(),
         loadSurveysList()
     ]).then(() => {
-        if (currentMainView === 'menu') {
-            refreshDraftBadgeCount();
-            updateMenuSummaryBadges();
+        refreshDraftBadgeCount(false);
+        updateMenuSummaryBadges();
+    });
+
+    // Lưu nhanh khi chuyển app sang Camera/Zalo hoặc tắt màn hình
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden' && currentMainView === 'survey') {
+            saveDraftLocal(false);
+            saveActiveScreenState('survey');
+        }
+    });
+    window.addEventListener('pagehide', () => {
+        if (currentMainView === 'survey') {
+            saveDraftLocal(false);
+            saveActiveScreenState('survey');
+        }
+    });
+    window.addEventListener('beforeunload', (e) => {
+        if (currentMainView === 'survey') {
+            saveDraftLocal(false);
+            saveActiveScreenState('survey');
+            if (hasActiveInterviewWork()) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        }
+    });
+    // Chặn nút Back trên điện thoại Android/iOS làm thoát mất app khi đang phỏng vấn
+    window.addEventListener('popstate', () => {
+        if (closeTopActiveModal()) {
+            try { window.history.pushState({ dakmanView: currentMainView }, ''); } catch (_) {}
+            return;
+        }
+        if (currentMainView === 'survey') {
+            saveDraftLocal(false);
+            if (hasActiveInterviewWork()) {
+                const leave = confirm(
+                    'Bạn đang phỏng vấn dở!\nDữ liệu hiện tại đã được tự động lưu tạm.\n\n• Bấm [OK] để quay ra Menu.\n• Bấm [Hủy] để ở lại tiếp tục phỏng vấn.'
+                );
+                if (!leave) {
+                    try { window.history.pushState({ dakmanView: 'survey' }, ''); } catch (_) {}
+                    return;
+                }
+            }
+            switchMainView('menu', '', true);
+            return;
+        }
+        if (currentMainView !== 'menu') {
+            switchMainView('menu', '', true);
         }
     });
 
@@ -547,7 +669,8 @@ function updateNetworkStatus() {
 // ========================================================
 let currentMainView = 'menu';
 
-function switchMainView(viewId, subTab = '') {
+function switchMainView(viewId, subTab = '', skipHistory = false) {
+    const prevView = currentMainView;
     const views = ['menu', 'pick-tool', 'survey', 'dashboard', 'schedule', 'history'];
     views.forEach(v => {
         const pane = document.getElementById(`view-${v}`);
@@ -557,6 +680,15 @@ function switchMainView(viewId, subTab = '') {
     });
 
     currentMainView = viewId;
+    saveActiveScreenState(viewId);
+    if (!skipHistory && viewId !== prevView) {
+        try {
+            if (!window.history.state || window.history.state.dakmanView !== viewId) {
+                window.history.pushState({ dakmanView: viewId }, '');
+            }
+        } catch (_) {}
+    }
+
     const activePane = document.getElementById(`view-${viewId}`);
     const activeBtn = document.getElementById(`btnView${capitalize(viewId)}`);
     if (activePane) activePane.style.display = 'block';
@@ -593,10 +725,16 @@ function switchMainView(viewId, subTab = '') {
     }
 
     if (viewId === 'menu') {
-        refreshDraftBadgeCount();
+        refreshDraftBadgeCount(false);
         updateMenuSummaryBadges();
     }
     if (viewId === 'survey') {
+        if (!sampleHouseholds || sampleHouseholds.length === 0) {
+            sampleHouseholds = getInitialSampleHouseholdsFallback();
+        }
+        populateSampleGuideFilter();
+        filterSampleHouseholds(Boolean(document.getElementById('sampleFilterGuide')?.value || document.getElementById('sampleSearchInput')?.value));
+        loadSampleHouseholds(false);
         loadHouseholdLocks().then(() => {
             populateSampleGuideFilter();
             filterSampleHouseholds(Boolean(document.getElementById('sampleFilterGuide')?.value || document.getElementById('sampleSearchInput')?.value));
@@ -613,8 +751,10 @@ function switchMainView(viewId, subTab = '') {
 }
 
 async function openNewSurveyTool(toolCode) {
+    currentTool = toolCode || 'P1';
     switchMainView('survey');
     await selectTool(toolCode);
+    saveActiveScreenState('survey');
     const subTitle = document.getElementById('subviewTitleText');
     const toolObj = allQuestionsData[toolCode];
     if (subTitle && toolObj) {
@@ -648,8 +788,41 @@ function capitalize(s) {
 // ========================================================
 // 3. TẢI DỮ LIỆU CÂU HỎI & LỊCH TRÌNH
 // ========================================================
-let sampleHouseholds = [];
+const SAMPLE_CACHE_KEY = 'dakman_sample_households_v1';
+
+function getInitialSampleHouseholdsFallback() {
+    if (Array.isArray(window.__DEFAULT_SAMPLE_HOUSEHOLDS__) && window.__DEFAULT_SAMPLE_HOUSEHOLDS__.length > 0) {
+        return window.__DEFAULT_SAMPLE_HOUSEHOLDS__;
+    }
+    try {
+        const cached = localStorage.getItem(SAMPLE_CACHE_KEY);
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+    } catch (_) {}
+    return [];
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs = 5000, options = {}) {
+    const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+    try {
+        const res = await fetch(url, Object.assign({
+            cache: 'no-store',
+            signal: ctrl ? ctrl.signal : undefined
+        }, options));
+        if (!res.ok) return null;
+        return await res.json();
+    } finally {
+        if (timer) clearTimeout(timer);
+    }
+}
+
+let sampleHouseholds = getInitialSampleHouseholdsFallback();
 let sampleHouseholdsLoadingPromise = null;
+let sampleHouseholdsSynced = false;
+let householdLocksPromise = null;
 let interviewedSurveyCodes = new Set();
 let checkinDraftCodes = new Set();
 let householdLocksMap = new Map();
@@ -691,13 +864,13 @@ function matchesInterviewer(h, nvKey) {
 }
 
 async function loadHouseholdLocks() {
-    if (!navigator.onLine) return;
-    try {
-        const res = await fetch(apiUrl('/api/household-locks'), { cache: 'no-store' });
-        if (!res.ok) return;
-        const rows = await res.json();
-        const nextMap = new Map();
-        if (Array.isArray(rows)) {
+    if (!navigator.onLine) return householdLocksMap;
+    if (householdLocksPromise) return householdLocksPromise;
+    householdLocksPromise = (async () => {
+        try {
+            const rows = await fetchJsonWithTimeout(apiUrl('/api/household-locks'), 5000);
+            if (!Array.isArray(rows)) return householdLocksMap;
+            const nextMap = new Map();
             rows.forEach(r => {
                 const code = String(r.survey_code || '').trim().toUpperCase();
                 if (!code) return;
@@ -706,11 +879,15 @@ async function loadHouseholdLocks() {
                     nextMap.set(code, r);
                 }
             });
+            householdLocksMap = nextMap;
+        } catch (e) {
+            console.warn('Không tải được trạng thái khóa hộ:', e);
+        } finally {
+            householdLocksPromise = null;
         }
-        householdLocksMap = nextMap;
-    } catch (e) {
-        console.warn('Không tải được trạng thái khóa hộ:', e);
-    }
+        return householdLocksMap;
+    })();
+    return householdLocksPromise;
 }
 
 function getHouseholdLockInfo(code) {
@@ -803,40 +980,55 @@ function updateInterviewerFilterOptions() {
 }
 
 async function loadSampleHouseholds(force = false) {
-    if (!force && sampleHouseholds.length > 0) return sampleHouseholds;
+    if (!sampleHouseholds || sampleHouseholds.length === 0) {
+        sampleHouseholds = getInitialSampleHouseholdsFallback();
+    }
+    const refreshSampleUiNow = () => {
+        if (!sampleHouseholds || sampleHouseholds.length === 0) return;
+        populateSampleGuideFilter();
+        const guideVal = document.getElementById('sampleFilterGuide')?.value || '';
+        const kwVal = (document.getElementById('sampleSearchInput')?.value || '').trim();
+        const scopeNote = document.getElementById('sampleScopeNote');
+        if (scopeNote && !guideVal && !kwVal) {
+            autoSelectSampleFilterForUser();
+        } else {
+            filterSampleHouseholds(Boolean(guideVal || kwVal));
+        }
+    };
+
+    // Hiển thị danh sách hộ ngay lập tức từ dữ liệu đóng gói/cache, không chờ mạng hoặc API khóa hộ
+    if (sampleHouseholds.length > 0) {
+        refreshSampleUiNow();
+        if (!force && sampleHouseholdsSynced) return sampleHouseholds;
+    }
     if (sampleHouseholdsLoadingPromise) return sampleHouseholdsLoadingPromise;
 
     sampleHouseholdsLoadingPromise = (async () => {
-        const endpoints = ['./sample_households.json?v=3', apiUrl('/api/sample-households')];
+        const endpoints = [apiUrl('/api/sample-households'), './sample_households.json?v=3'];
         let loaded = null;
         for (const url of endpoints) {
             try {
-                const res = await fetch(url, { cache: 'no-store' });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data) && data.length > 0) {
-                        loaded = data;
-                        break;
-                    }
+                const data = await fetchJsonWithTimeout(url, 5000);
+                if (Array.isArray(data) && data.length > 0) {
+                    loaded = data;
+                    break;
                 }
             } catch (e) {
                 console.warn('Thử tải danh sách hộ mẫu từ ' + url + ' thất bại:', e);
             }
         }
-        await loadHouseholdLocks();
         if (loaded) {
             sampleHouseholds = loaded;
-            populateSampleGuideFilter();
-            autoSelectSampleFilterForUser();
-            if (interviewedSurveyCodes.size === 0) {
-                loadSurveysList();
-            } else {
-                filterSampleHouseholds();
-            }
-        } else {
+            sampleHouseholdsSynced = true;
+            try {
+                localStorage.setItem(SAMPLE_CACHE_KEY, JSON.stringify(loaded));
+            } catch (_) {}
+            refreshSampleUiNow();
+        } else if (sampleHouseholds.length === 0) {
             const cnt = document.getElementById('sampleFilterCount');
-            if (cnt) cnt.textContent = 'Lỗi tải danh sách hộ mẫu (bấm F5 tải lại)';
+            if (cnt) cnt.textContent = 'Đang dùng chế độ ngoại tuyến (chưa tải được hộ mẫu)';
         }
+        loadHouseholdLocks().then(() => refreshSampleUiNow()).catch(() => {});
         sampleHouseholdsLoadingPromise = null;
         return sampleHouseholds;
     })();
@@ -1783,6 +1975,20 @@ async function selectTool(toolCode) {
                 currentHouseholdPhotoData = '';
             } else {
                 clearHouseholdPhoto(true);
+                if (parsed.survey_code) {
+                    const expectedKey = `${toolCode}::${parsed.survey_code}`;
+                    getIdbDrafts().then(idbList => {
+                        const match = (idbList || []).find(d => d.draft_key === expectedKey);
+                        if (match && !currentHouseholdPhotoData && !currentDraftPhotoPath && currentTool === toolCode) {
+                            if (match.photo_data) {
+                                setHouseholdPhotoPreview(match.photo_data, match.photo_meta || 'Đã khôi phục ảnh nháp trên thiết bị');
+                            } else if (match.photo_path) {
+                                currentDraftPhotoPath = match.photo_path;
+                                setHouseholdPhotoPreview(apiUrl(`/api/photos/${match.photo_path}`), match.photo_meta || 'Ảnh nháp đã lưu trên VPS');
+                            }
+                        }
+                    }).catch(() => {});
+                }
             }
             updateDraftTimeDisplay(parsed.saved_at);
         } catch (e) {
@@ -3260,10 +3466,22 @@ function buildCurrentDraftRecord() {
     };
 }
 
+let idbDraftSaveTimer = null;
+let draftsRemoteFetchPromise = null;
+
+function scheduleIdbDraftSave(rec) {
+    if (idbDraftSaveTimer) clearTimeout(idbDraftSaveTimer);
+    idbDraftSaveTimer = setTimeout(() => {
+        idbDraftSaveTimer = null;
+        putIdbDraft(rec).then(() => refreshDraftBadgeCount(false)).catch(() => {});
+    }, 350);
+}
+
 function saveDraftLocal(isManual) {
     if (currentUser?.role === 'viewer') return;
 
     const rec = buildCurrentDraftRecord();
+    const keepSmallPhoto = Boolean(rec.photo_data && rec.photo_data.length < 45000);
     const payload = {
         tool_code: rec.tool_code,
         survey_code: rec.survey_code,
@@ -3273,7 +3491,7 @@ function saveDraftLocal(isManual) {
         phone: rec.respondent_phone,
         guide: rec.guide_name,
         gps: rec.gps,
-        photo_data: rec.photo_data,
+        photo_data: keepSmallPhoto ? rec.photo_data : '',
         photo_path: rec.photo_path,
         photo_meta: rec.photo_meta,
         answers: rec.answers,
@@ -3292,16 +3510,22 @@ function saveDraftLocal(isManual) {
         rec.respondent_name || rec.photo_data || rec.photo_path || rec.gps || rec.answered_count > 0
     );
     if (hasMeaningfulData) {
-        putIdbDraft(rec).then(() => {
-            if (!isManual) refreshDraftBadgeCount();
-        });
+        if (isManual) {
+            if (idbDraftSaveTimer) {
+                clearTimeout(idbDraftSaveTimer);
+                idbDraftSaveTimer = null;
+            }
+            putIdbDraft(rec);
+        } else {
+            scheduleIdbDraftSave(rec);
+        }
     }
 
     updateDraftTimeDisplay(rec.saved_at);
 
     if (isManual) {
         syncCurrentDraftToVps(rec).then((synced) => {
-            refreshDraftBadgeCount();
+            refreshDraftBadgeCount(true);
             const statusText = document.getElementById('floatingDraftStatusText');
             if (statusText) {
                 statusText.textContent = synced
@@ -3357,18 +3581,21 @@ async function syncPendingDrafts(silent = true) {
     if (!silent) refreshDraftBadgeCount();
 }
 
-async function fetchMergedDraftsList() {
+async function fetchMergedDraftsList(syncRemote = true) {
     const localList = await getIdbDrafts();
     const mergedMap = new Map();
     localList.forEach(d => mergedMap.set(d.draft_key, Object.assign({ source: 'Thiết bị (Offline)' }, d)));
 
-    if (navigator.onLine && currentUser) {
+    if (syncRemote && navigator.onLine && currentUser) {
         try {
-            const role = encodeURIComponent(currentUser.role || 'editor');
-            const sid = encodeURIComponent(currentUser.surveyor_id || '');
-            const res = await fetch(apiUrl(`/api/drafts?role=${role}&surveyor_id=${sid}`));
-            if (res.ok) {
-                const remote = await res.json();
+            if (!draftsRemoteFetchPromise) {
+                const role = encodeURIComponent(currentUser.role || 'editor');
+                const sid = encodeURIComponent(currentUser.surveyor_id || '');
+                draftsRemoteFetchPromise = fetchJsonWithTimeout(apiUrl(`/api/drafts?role=${role}&surveyor_id=${sid}`), 6000)
+                    .finally(() => { draftsRemoteFetchPromise = null; });
+            }
+            const remote = await draftsRemoteFetchPromise;
+            if (Array.isArray(remote)) {
                 remote.forEach(r => {
                     const existing = mergedMap.get(r.draft_key);
                     if (existing) {
@@ -3387,8 +3614,8 @@ async function fetchMergedDraftsList() {
     return Array.from(mergedMap.values()).sort((a, b) => String(b.updated_iso || b.updated_at || '').localeCompare(String(a.updated_iso || a.updated_at || '')));
 }
 
-async function refreshDraftBadgeCount() {
-    const drafts = await fetchMergedDraftsList();
+async function refreshDraftBadgeCount(syncRemote = false, preloadedDrafts = null) {
+    const drafts = preloadedDrafts || await fetchMergedDraftsList(syncRemote);
     checkinDraftCodes = new Set(
         drafts.map(d => String(d.survey_code || '').trim().toUpperCase()).filter(Boolean)
     );
@@ -3499,8 +3726,8 @@ async function refreshAllDraftsList() {
     const box = document.getElementById('draftsListContainer');
     if (!box) return;
     box.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải danh sách phiếu lưu tạm...</div>';
-    const drafts = await fetchMergedDraftsList();
-    await refreshDraftBadgeCount();
+    const drafts = await fetchMergedDraftsList(true);
+    await refreshDraftBadgeCount(false, drafts);
 
     if (!drafts.length) {
         box.innerHTML = '<div style="text-align: center; padding: 24px; color: #64748b;">Chưa có phiếu nào đang lưu tạm. Khi đi hiện trường, chỉ cần chọn Chủ hộ, chụp ảnh &amp; lấy GPS rồi bấm <strong>Lưu Tạm</strong> để mở lại hoàn thiện sau.</div>';
@@ -3912,13 +4139,16 @@ async function handlePhotoSelected(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
 
+    saveActiveScreenState('survey');
+    saveDraftLocal(false);
+
     const status = document.getElementById('photoWatermarkStatus');
     if (status) {
         status.style.color = '#d97706';
         status.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lấy GPS & đóng watermark...';
     }
 
-    const gpsStr = await getFreshGpsString(5000);
+    const gpsStr = await getFreshGpsString(4500);
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
     const timestampStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
@@ -3930,14 +4160,12 @@ async function handlePhotoSelected(event) {
     const surveyorName = currentUser?.full_name || 'Điều tra viên';
     const surveyorId = currentUser?.surveyor_id || 'DTV';
 
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
-
-    img.onload = () => {
+    const drawAndSaveSource = (source, rawW, rawH, cleanupFn) => {
+        const canvas = document.createElement('canvas');
         try {
             const maxDim = 1280;
-            let w = img.naturalWidth || img.width;
-            let h = img.naturalHeight || img.height;
+            let w = rawW || 1280;
+            let h = rawH || 960;
             if (w > maxDim || h > maxDim) {
                 if (w >= h) {
                     h = Math.round((h * maxDim) / w);
@@ -3948,11 +4176,10 @@ async function handlePhotoSelected(event) {
                 }
             }
 
-            const canvas = document.createElement('canvas');
             canvas.width = w;
             canvas.height = h;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
+            ctx.drawImage(source, 0, 0, w, h);
 
             const fontSize = Math.max(14, Math.round(w * 0.021));
             const lineHeight = Math.round(fontSize * 1.45);
@@ -3982,29 +4209,52 @@ async function handlePhotoSelected(event) {
             ctx.fillStyle = '#e2e8f0';
             ctx.fillText(line3, leftX, startY + lineHeight * 2);
 
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.80);
             const metaText = `${timestampStr} | GPS: ${gpsStr} | ${surveyCode} — ${respondent}`;
             setHouseholdPhotoPreview(dataUrl, metaText);
             startRealtimeInterviewClock();
             startBackgroundGpsTracker();
             saveDraftLocal(false);
+            const fullRec = buildCurrentDraftRecord();
+            putIdbDraft(fullRec).catch(() => {});
             if (navigator.onLine && currentUser?.role !== 'viewer') {
-                syncCurrentDraftToVps(buildCurrentDraftRecord()).then(() => refreshDraftBadgeCount());
+                syncCurrentDraftToVps(fullRec).then(() => refreshDraftBadgeCount(true));
             }
         } catch (err) {
             alert('Không thể xử lý ảnh watermark: ' + err.message);
             clearHouseholdPhoto(true);
         } finally {
-            URL.revokeObjectURL(objectUrl);
+            canvas.width = 0;
+            canvas.height = 0;
+            if (typeof cleanupFn === 'function') cleanupFn();
         }
     };
 
+    // Ưu tiên createImageBitmap để giải mã ảnh độ phân giải lớn với RAM tối thiểu trên điện thoại Android/iOS
+    if (typeof createImageBitmap === 'function') {
+        try {
+            const bitmap = await createImageBitmap(file, { resizeWidth: 1280, resizeQuality: 'high' });
+            drawAndSaveSource(bitmap, bitmap.width, bitmap.height, () => {
+                try { bitmap.close(); } catch (_) {}
+            });
+            return;
+        } catch (_) {
+            // Fall through to Image() fallback for older browsers
+        }
+    }
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+        drawAndSaveSource(img, img.naturalWidth || img.width, img.naturalHeight || img.height, () => {
+            URL.revokeObjectURL(objectUrl);
+        });
+    };
     img.onerror = () => {
         URL.revokeObjectURL(objectUrl);
         alert('Tệp ảnh không hợp lệ hoặc bị lỗi.');
         clearHouseholdPhoto(true);
     };
-
     img.src = objectUrl;
 }
 
@@ -4168,9 +4418,10 @@ async function handleSurveySubmit(e) {
             const savedId = isEditing ? editingSurveyId : data.survey_id;
 
             localStorage.removeItem(`dakman_draft_${currentTool}`);
+            clearActiveScreenState();
             await deleteIdbDraft(`${currentTool}::${surveyCode}`);
             await loadHouseholdLocks();
-            await refreshDraftBadgeCount();
+            await refreshDraftBadgeCount(true);
             await refreshDashboardData();
             await loadSurveysList();
             updateMenuSummaryBadges();
@@ -4515,17 +4766,25 @@ function renderCommuneProgressTable(data) {
 // ========================================================
 // 10. DANH SÁCH DỮ LIỆU ĐÃ NỘP & CHỈNH SỬA / XÓA PHIẾU
 // ========================================================
+let surveysListFetchPromise = null;
+
 async function loadSurveysList() {
     try {
-        const res = await fetch(apiUrl('/api/surveys'));
-        if (!res.ok) return;
-        const list = await res.json();
+        if (!surveysListFetchPromise) {
+            surveysListFetchPromise = fetchJsonWithTimeout(apiUrl('/api/surveys'), 8000)
+                .finally(() => { surveysListFetchPromise = null; });
+        }
+        const list = await surveysListFetchPromise;
+        if (!Array.isArray(list)) return;
         interviewedSurveyCodes = new Set(
             list.map(s => String(s.survey_code || '').trim().toUpperCase()).filter(Boolean)
         );
         updateMenuSummaryBadges();
         if (sampleHouseholds.length > 0) {
-            autoSelectSampleFilterForUser();
+            const guideVal = document.getElementById('sampleFilterGuide')?.value || '';
+            const kwVal = (document.getElementById('sampleSearchInput')?.value || '').trim();
+            populateSampleGuideFilter();
+            filterSampleHouseholds(Boolean(guideVal || kwVal));
         }
 
         const tbody = document.getElementById('surveyHistoryTbody');

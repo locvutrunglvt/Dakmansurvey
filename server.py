@@ -18,7 +18,7 @@ import tempfile
 import datetime
 import urllib.parse
 import unicodedata
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 PORT = int(os.environ.get("PORT", 8080))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -59,9 +59,15 @@ PASS_ADMIN = "AAdmin123"
 PASS_VIEWER = "View123"
 PASS_EDITOR = "Edit123a#"
 
+def get_db_conn():
+    conn = sqlite3.connect(DB_PATH, timeout=15.0)
+    conn.execute("PRAGMA busy_timeout = 15000")
+    return conn
+
+
 def get_setting(key, default=""):
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_conn()
         cur = conn.cursor()
         cur.execute('CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, val TEXT)')
         cur.execute('SELECT val FROM system_settings WHERE key = ?', (key,))
@@ -73,7 +79,7 @@ def get_setting(key, default=""):
 
 def set_setting(key, val):
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_conn()
         cur = conn.cursor()
         cur.execute('CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, val TEXT)')
         cur.execute('INSERT OR REPLACE INTO system_settings (key, val) VALUES (?, ?)', (key, val))
@@ -83,8 +89,10 @@ def set_setting(key, val):
         print(f"Error setting {key}: {e}")
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_conn()
     cur = conn.cursor()
+    cur.execute('PRAGMA journal_mode = WAL')
+    cur.execute('PRAGMA synchronous = NORMAL')
     cur.execute('''
         CREATE TABLE IF NOT EXISTS surveys (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -540,7 +548,7 @@ def build_multisheet_excel(export_file=None):
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_conn()
     cur = conn.cursor()
     cur.execute('SELECT * FROM surveys ORDER BY id ASC')
     cols = [c[0] for c in cur.description]
@@ -1038,7 +1046,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xem danh sách nhân sự!'}, 403)
                 return
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             cur = conn.cursor()
             cur.execute('SELECT id, surveyor_id, full_name, phone, role, commune_assigned, password, last_login FROM users ORDER BY id DESC')
             cols = ['id', 'surveyor_id', 'full_name', 'phone', 'role', 'commune_assigned', 'password', 'last_login']
@@ -1053,7 +1061,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xem thùng rác & khôi phục!'}, 403)
                 return
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             cur = conn.cursor()
             cur.execute('''
                 SELECT id, original_id, survey_code, tool_code, surveyor_id, respondent_name, deleted_at, deleted_by
@@ -1085,7 +1093,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             try:
                 fd, tmp_path = tempfile.mkstemp(suffix='.sqlite')
                 os.close(fd)
-                src = sqlite3.connect(DB_PATH)
+                src = get_db_conn()
                 dst = sqlite3.connect(tmp_path)
                 src.backup(dst)
                 dst.close()
@@ -1112,7 +1120,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                         pass
 
         elif path == '/api/users':
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             cur = conn.cursor()
             cur.execute('SELECT surveyor_id, full_name, phone, role, commune_assigned FROM users')
             users = [{'surveyor_id': r[0], 'full_name': r[1], 'phone': r[2], 'role': r[3], 'commune_assigned': r[4]} for r in cur.fetchall()]
@@ -1121,7 +1129,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             return
 
         elif path == '/api/stats':
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             cur = conn.cursor()
             cur.execute('SELECT tool_code, COUNT(*) FROM surveys GROUP BY tool_code')
             tool_counts = dict(cur.fetchall())
@@ -1193,7 +1201,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
         elif path == '/api/drafts':
             role_param = (query.get('role', [''])[0] or '').strip().lower()
             surveyor_filter = (query.get('surveyor_id', [''])[0] or '').strip()
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             cur = conn.cursor()
             sql = '''
                 SELECT id, draft_key, tool_code, survey_code, surveyor_id, surveyor_name,
@@ -1224,7 +1232,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             return
 
         elif path == '/api/household-locks':
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             cur = conn.cursor()
             cur.execute('''
                 SELECT survey_code, draft_key, tool_code, surveyor_id, surveyor_name,
@@ -1283,7 +1291,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
             sql += ' ORDER BY id DESC'
 
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             cur = conn.cursor()
             cur.execute(sql, params)
             cols = [c[0] for c in cur.description]
@@ -1320,7 +1328,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                     return
 
                 survey_id = parts[2]
-                conn = sqlite3.connect(DB_PATH)
+                conn = get_db_conn()
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
                 cur.execute('SELECT * FROM surveys WHERE id = ?', (survey_id,))
@@ -1352,7 +1360,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
         elif path.startswith('/api/surveys/'):
             survey_id = path.split('/')[-1]
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             cur = conn.cursor()
             cur.execute('SELECT * FROM surveys WHERE id = ?', (survey_id,))
             row = cur.fetchone()
@@ -1439,7 +1447,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                         self._send_json({'error': 'Vui lòng nhập Mật khẩu riêng được cấp!'}, 400)
                         return
 
-                    conn = sqlite3.connect(DB_PATH)
+                    conn = get_db_conn()
                     cur = conn.cursor()
                     cur.execute('SELECT password, full_name, commune_assigned, surveyor_id FROM users WHERE UPPER(surveyor_id) = UPPER(?) OR UPPER(full_name) = UPPER(?)', (surveyor_id, surveyor_id))
                     u = cur.fetchone()
@@ -1530,7 +1538,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             surveyor_id = (data.get('surveyor_id') or '').strip()
             draft_key = (data.get('draft_key') or f"{tool_code}::{survey_code}").strip()
 
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             cur = conn.cursor()
             cur.execute('''
                 SELECT surveyor_id, surveyor_name, photo_path
@@ -1782,7 +1790,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền khôi phục phiếu!'}, 403)
                 return
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cur.execute('SELECT * FROM deleted_surveys_archive WHERE id = ?', (archive_id,))
@@ -1838,7 +1846,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền khôi phục nhân sự!'}, 403)
                 return
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cur.execute('SELECT * FROM deleted_users_archive WHERE id = ?', (archive_id,))
@@ -1883,7 +1891,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                     self._send_json({'error': 'Mã nhân viên (ID) và Họ tên không được để trống!'}, 400)
                     return
 
-                conn = sqlite3.connect(DB_PATH)
+                conn = get_db_conn()
                 cur = conn.cursor()
                 cur.execute('''
                     INSERT INTO users (surveyor_id, full_name, phone, role, commune_assigned, password, last_login)
@@ -1949,7 +1957,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             if not photo_path:
                 photo_path = (data.get('photo_path') or '').strip()
 
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             cur = conn.cursor()
             draft_key = (data.get('draft_key') or f"{tool_code}::{survey_code}").strip()
             if not photo_path:
@@ -2004,7 +2012,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             raw_body = read_request_body(self.rfile, length)
             try:
                 data = json.loads(raw_body)
-                conn = sqlite3.connect(DB_PATH)
+                conn = get_db_conn()
                 cur = conn.cursor()
                 cur.execute('SELECT surveyor_id FROM users WHERE surveyor_id = ? OR id = ?', (user_id, user_id))
                 old_u = cur.fetchone()
@@ -2055,7 +2063,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
             answers = data.get('answers')
             photo_data = data.get('photo_data')
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
 
@@ -2151,7 +2159,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xóa tài khoản nhân sự!'}, 403)
                 return
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cur.execute('SELECT * FROM users WHERE surveyor_id = ? OR id = ?', (user_id, user_id))
@@ -2182,7 +2190,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền xóa phiếu!'}, 403)
                 return
 
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cur.execute('SELECT * FROM surveys WHERE id = ?', (survey_id,))
@@ -2227,7 +2235,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
         elif path.startswith('/api/drafts/'):
             draft_ref = urllib.parse.unquote(path.split('/api/drafts/', 1)[1]).strip()
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_db_conn()
             cur = conn.cursor()
             cur.execute('DELETE FROM survey_drafts WHERE draft_key = ? OR CAST(id AS TEXT) = ?', (draft_ref, draft_ref))
             conn.commit()
@@ -2245,7 +2253,9 @@ def run():
     print(f" Database:      {DB_PATH}")
     print(f" Web Root:      {PUBLIC_DIR}")
     print(f"============================================================")
-    server = HTTPServer(('0.0.0.0', PORT), SurveyRequestHandler)
+    ThreadingHTTPServer.daemon_threads = True
+    ThreadingHTTPServer.allow_reuse_address = True
+    server = ThreadingHTTPServer(('0.0.0.0', PORT), SurveyRequestHandler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
