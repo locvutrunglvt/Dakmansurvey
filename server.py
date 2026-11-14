@@ -18,6 +18,7 @@ import tempfile
 import datetime
 import urllib.parse
 import unicodedata
+from xml.sax.saxutils import escape as xml_escape
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 PORT = int(os.environ.get("PORT", 8080))
@@ -56,13 +57,263 @@ def sync_questions_bundle(all_q):
 
 # 03 Tầng quyền đăng nhập mặc định (có thể đổi qua giao diện Admin)
 PASS_ADMIN = "AAdmin123"
+ADMIN1_PASS = "123456a"
 PASS_VIEWER = "View123"
 PASS_EDITOR = "Edit123a#"
+
+FIELD_TEAM_ROSTER = [
+    {"surveyor_id": "TCN07", "aliases": ["TCN07", "TCN01"], "full_name": "Lê Đình Duy", "commune": "Ea Kiết"},
+    {"surveyor_id": "TCN02", "aliases": ["TCN02"], "full_name": "Phan Doãn Vọng", "commune": "Ea Tar"},
+    {"surveyor_id": "TCN03", "aliases": ["TCN03"], "full_name": "Phạm Văn Thao", "commune": "Ea Kiết"},
+    {"surveyor_id": "TCN04", "aliases": ["TCN04"], "full_name": "Nguyễn Viết Trụ", "commune": "Ea Kiết"},
+    {"surveyor_id": "TCN05", "aliases": ["TCN05"], "full_name": "Cao Thị Phúc", "commune": "Ea Kiết"},
+    {"surveyor_id": "TCN06", "aliases": ["TCN06"], "full_name": "Hoàng Trường Sinh", "commune": "Ea Kiết"},
+]
 
 def get_db_conn():
     conn = sqlite3.connect(DB_PATH, timeout=15.0)
     conn.execute("PRAGMA busy_timeout = 15000")
     return conn
+
+
+def is_valid_admin_key(auth_key):
+    key = (auth_key or "").strip()
+    if not key:
+        return False
+    cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+    if key == cur_admin_pass or key == PASS_ADMIN or key == ADMIN1_PASS:
+        return True
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT password FROM users WHERE UPPER(surveyor_id) = 'TCN21' OR UPPER(role) LIKE 'ADMIN%'")
+        rows = cur.fetchall()
+        conn.close()
+        for r in rows:
+            if r and r[0] and key == str(r[0]).strip():
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def _parse_utc_ts(ts_str):
+    if not ts_str:
+        return None
+    s = str(ts_str).strip()
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%d %H:%M"):
+        try:
+            return datetime.datetime.strptime(s[:26], fmt)
+        except Exception:
+            continue
+    try:
+        return datetime.datetime.fromisoformat(s.replace("Z", "+00:00")).replace(tzinfo=None)
+    except Exception:
+        return None
+
+
+def _fmt_vn_time(dt_utc):
+    if not dt_utc:
+        return ""
+    dt_vn = dt_utc + datetime.timedelta(hours=7)
+    return dt_vn.strftime("%H:%M %d/%m/%Y")
+
+
+def _fmt_age_text(minutes_ago):
+    if minutes_ago is None:
+        return "Chưa có tín hiệu"
+    if minutes_ago <= 3:
+        return "Đang online"
+    if minutes_ago < 60:
+        return f"{int(minutes_ago)} phút trước"
+    hours = int(minutes_ago // 60)
+    if hours < 24:
+        return f"{hours} giờ trước"
+    days = int(hours // 24)
+    return f"{days} ngày trước"
+
+
+def get_team_locations_data():
+    conn = get_db_conn()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS user_locations (
+            surveyor_id TEXT PRIMARY KEY,
+            full_name TEXT,
+            lat REAL DEFAULT 0,
+            lng REAL DEFAULT 0,
+            accuracy REAL DEFAULT 0,
+            source TEXT,
+            current_view TEXT,
+            survey_code TEXT,
+            commune TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    now_utc = datetime.datetime.utcnow()
+    members = []
+
+    for m in FIELD_TEAM_ROSTER:
+        aliases = m["aliases"]
+        ph = ",".join("?" for _ in aliases)
+        upper_aliases = [a.upper() for a in aliases]
+
+        cur.execute(f"SELECT surveyor_id, full_name, commune_assigned, last_login FROM users WHERE UPPER(surveyor_id) IN ({ph})", upper_aliases)
+        user_rows = [dict(r) for r in cur.fetchall()]
+
+        cur.execute(f"SELECT surveyor_id, lat, lng, accuracy, source, current_view, survey_code, commune, updated_at FROM user_locations WHERE UPPER(surveyor_id) IN ({ph}) ORDER BY updated_at DESC", upper_aliases)
+        loc_rows = [dict(r) for r in cur.fetchall()]
+
+        cur.execute(f"SELECT survey_code, respondent_name, commune, hamlet, gps_lat, gps_lng, updated_at FROM survey_drafts WHERE UPPER(surveyor_id) IN ({ph}) ORDER BY updated_at DESC", upper_aliases)
+        draft_rows = [dict(r) for r in cur.fetchall()]
+
+        cur.execute(f"SELECT survey_code, respondent_name, commune, hamlet, gps_lat, gps_lng, created_at FROM surveys WHERE UPPER(surveyor_id) IN ({ph}) ORDER BY created_at DESC", upper_aliases)
+        survey_rows = [dict(r) for r in cur.fetchall()]
+
+        # Thu thập tọa độ GPS hợp lệ gần nhất
+        gps_candidates = []
+        for lr in loc_rows:
+            lat = float(lr.get("lat") or 0)
+            lng = float(lr.get("lng") or 0)
+            if abs(lat) > 0.01 and abs(lng) > 0.01:
+                dt = _parse_utc_ts(lr.get("updated_at"))
+                gps_candidates.append((dt or datetime.datetime.min, lat, lng, float(lr.get("accuracy") or 0), lr.get("source") or "Định vị trực tiếp", lr.get("survey_code") or "", "", lr.get("commune") or m["commune"]))
+        for dr in draft_rows:
+            lat = float(dr.get("gps_lat") or 0)
+            lng = float(dr.get("gps_lng") or 0)
+            if abs(lat) > 0.01 and abs(lng) > 0.01:
+                dt = _parse_utc_ts(dr.get("updated_at"))
+                gps_candidates.append((dt or datetime.datetime.min, lat, lng, 0.0, "Phiếu nháp thực địa", dr.get("survey_code") or "", dr.get("respondent_name") or "", dr.get("commune") or m["commune"]))
+        for sr in survey_rows:
+            lat = float(sr.get("gps_lat") or 0)
+            lng = float(sr.get("gps_lng") or 0)
+            if abs(lat) > 0.01 and abs(lng) > 0.01:
+                dt = _parse_utc_ts(sr.get("created_at"))
+                gps_candidates.append((dt or datetime.datetime.min, lat, lng, 0.0, "Phiếu đã hoàn thành", sr.get("survey_code") or "", sr.get("respondent_name") or "", sr.get("commune") or m["commune"]))
+
+        gps_candidates.sort(key=lambda x: x[0], reverse=True)
+        best_gps = gps_candidates[0] if gps_candidates else None
+
+        # Thu thập thời điểm hoạt động/online gần nhất
+        activity_times = []
+        for ur in user_rows:
+            dt = _parse_utc_ts(ur.get("last_login"))
+            if dt:
+                activity_times.append((dt, "", "", ur.get("commune_assigned") or m["commune"], "Đăng nhập"))
+        for lr in loc_rows:
+            dt = _parse_utc_ts(lr.get("updated_at"))
+            if dt:
+                activity_times.append((dt, lr.get("survey_code") or "", "", lr.get("commune") or m["commune"], lr.get("current_view") or "Đang mở app"))
+        for dr in draft_rows:
+            dt = _parse_utc_ts(dr.get("updated_at"))
+            if dt:
+                activity_times.append((dt, dr.get("survey_code") or "", dr.get("respondent_name") or "", dr.get("commune") or m["commune"], "Lưu nháp"))
+        for sr in survey_rows:
+            dt = _parse_utc_ts(sr.get("created_at"))
+            if dt:
+                activity_times.append((dt, sr.get("survey_code") or "", sr.get("respondent_name") or "", sr.get("commune") or m["commune"], "Nộp phiếu"))
+
+        activity_times.sort(key=lambda x: x[0], reverse=True)
+        latest_act = activity_times[0] if activity_times else None
+        last_dt = latest_act[0] if latest_act else None
+        minutes_ago = max(0.0, (now_utc - last_dt).total_seconds() / 60.0) if last_dt else None
+
+        if minutes_ago is not None and minutes_ago <= 3.0:
+            status = "online"
+            status_label = "Đang online"
+        elif minutes_ago is not None and minutes_ago <= 30.0:
+            status = "recent"
+            status_label = "Vừa hoạt động"
+        elif last_dt or best_gps:
+            status = "offline"
+            status_label = "Vị trí cuối"
+        else:
+            status = "none"
+            status_label = "Chưa có dữ liệu"
+
+        lat = round(best_gps[1], 6) if best_gps else None
+        lng = round(best_gps[2], 6) if best_gps else None
+        gps_dt = best_gps[0] if (best_gps and best_gps[0] != datetime.datetime.min) else None
+        ge_url = f"https://earth.google.com/web/@{lat},{lng},400a,1800d,35y,0h,0t,0r" if lat is not None and lng is not None else ""
+        gm_url = f"https://www.google.com/maps?q={lat},{lng}" if lat is not None and lng is not None else ""
+
+        last_survey_code = (latest_act[1] if latest_act and latest_act[1] else (best_gps[5] if best_gps else ""))
+        last_household = (latest_act[2] if latest_act and latest_act[2] else (best_gps[6] if best_gps else ""))
+        last_commune = (best_gps[7] if best_gps and best_gps[7] else (latest_act[3] if latest_act and latest_act[3] else m["commune"]))
+
+        members.append({
+            "surveyor_id": m["surveyor_id"],
+            "full_name": m["full_name"],
+            "commune": last_commune,
+            "status": status,
+            "status_label": status_label,
+            "minutes_ago": round(minutes_ago, 1) if minutes_ago is not None else None,
+            "age_text": _fmt_age_text(minutes_ago),
+            "last_seen_vn": _fmt_vn_time(last_dt),
+            "lat": lat,
+            "lng": lng,
+            "accuracy": int(round(best_gps[3])) if (best_gps and best_gps[3]) else None,
+            "gps_source": best_gps[4] if best_gps else "",
+            "gps_time_vn": _fmt_vn_time(gps_dt),
+            "last_survey_code": last_survey_code,
+            "last_household": last_household,
+            "last_activity": latest_act[4] if latest_act else "",
+            "completed_count": len(survey_rows),
+            "draft_count": len(draft_rows),
+            "google_earth_url": ge_url,
+            "google_maps_url": gm_url,
+        })
+
+    conn.close()
+    online_count = sum(1 for x in members if x["status"] == "online")
+    gps_count = sum(1 for x in members if x["lat"] is not None and x["lng"] is not None)
+    return {
+        "updated_at_vn": _fmt_vn_time(now_utc),
+        "online_count": online_count,
+        "gps_count": gps_count,
+        "members": members,
+    }
+
+
+def build_team_locations_kml(data):
+    placemarks = []
+    for m in data.get("members", []):
+        if m.get("lat") is None or m.get("lng") is None:
+            continue
+        style_id = "#pinOnline" if m.get("status") == "online" else ("#pinRecent" if m.get("status") == "recent" else "#pinOffline")
+        name_txt = xml_escape(f"[{m['surveyor_id']}] {m['full_name']} ({m['status_label']})")
+        desc_lines = [
+            f"Trạng thái: {m.get('status_label', '')} ({m.get('age_text', '')})",
+            f"Địa bàn: {m.get('commune', '')}",
+            f"Cập nhật online: {m.get('last_seen_vn', '') or 'Chưa có'}",
+            f"Cập nhật GPS: {m.get('gps_time_vn', '') or 'Chưa có'} ({m.get('gps_source', '')})",
+            f"Phiếu gần nhất: {m.get('last_survey_code', '')} {m.get('last_household', '')}".strip(),
+            f"Số phiếu đã nộp: {m.get('completed_count', 0)} | Nháp: {m.get('draft_count', 0)}",
+        ]
+        desc_txt = xml_escape("\n".join(desc_lines))
+        placemarks.append(
+            f"""  <Placemark>
+    <name>{name_txt}</name>
+    <description>{desc_txt}</description>
+    <styleUrl>{style_id}</styleUrl>
+    <Point><coordinates>{m['lng']},{m['lat']},0</coordinates></Point>
+  </Placemark>"""
+        )
+
+    kml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>Vị trí 06 Điều Tra Viên - Dakman Cư M'gar</name>
+  <description>Cập nhật lúc {xml_escape(data.get('updated_at_vn', ''))}</description>
+  <Style id="pinOnline"><IconStyle><color>ff3dd515</color><scale>1.2</scale><Icon><href>http://maps.google.com/mapfiles/kml/paddle/grn-circle.png</href></Icon></IconStyle></Style>
+  <Style id="pinRecent"><IconStyle><color>ff0b9ef5</color><scale>1.1</scale><Icon><href>http://maps.google.com/mapfiles/kml/paddle/ylw-circle.png</href></Icon></IconStyle></Style>
+  <Style id="pinOffline"><IconStyle><color>ffe66e25</color><scale>1.0</scale><Icon><href>http://maps.google.com/mapfiles/kml/paddle/blu-circle.png</href></Icon></IconStyle></Style>
+{chr(10).join(placemarks)}
+</Document>
+</kml>
+"""
+    return kml.encode("utf-8")
 
 
 def get_setting(key, default=""):
@@ -225,6 +476,39 @@ def init_db():
             INSERT OR REPLACE INTO users (surveyor_id, full_name, phone, role, commune_assigned, password, last_login)
             VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ''', seed_users)
+
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS user_locations (
+            surveyor_id TEXT PRIMARY KEY,
+            full_name TEXT,
+            lat REAL DEFAULT 0,
+            lng REAL DEFAULT 0,
+            accuracy REAL DEFAULT 0,
+            source TEXT,
+            current_view TEXT,
+            survey_code TEXT,
+            commune TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Cập nhật / tạo tài khoản Admin1 (TCN21) với mật khẩu cố định 123456a
+    cur.execute('SELECT id FROM users WHERE UPPER(surveyor_id) = UPPER(?)', ('TCN21',))
+    if cur.fetchone():
+        cur.execute('''
+            UPDATE users
+            SET surveyor_id = 'TCN21',
+                full_name = 'Admin1',
+                role = 'Admin1',
+                commune_assigned = 'Toàn vùng',
+                password = ?
+            WHERE UPPER(surveyor_id) = UPPER(?)
+        ''', (ADMIN1_PASS, 'TCN21'))
+    else:
+        cur.execute('''
+            INSERT INTO users (surveyor_id, full_name, phone, role, commune_assigned, password, last_login)
+            VALUES ('TCN21', 'Admin1', '', 'Admin1', 'Toàn vùng', ?, CURRENT_TIMESTAMP)
+        ''', (ADMIN1_PASS,))
 
     conn.commit()
     conn.close()
@@ -1024,10 +1308,25 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': 'Sample households data file not found'}, 404)
             return
 
+        elif path == '/api/team-locations':
+            self._send_json(get_team_locations_data())
+            return
+
+        elif path == '/api/team-locations.kml':
+            kml_bytes = build_team_locations_kml(get_team_locations_data())
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/vnd.google-earth.kml+xml; charset=utf-8')
+            self.send_header('Content-Disposition', 'attachment; filename="Dakman_6_Dieu_Tra_Vien.kml"')
+            self.send_header('Content-Length', str(len(kml_bytes)))
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(kml_bytes)
+            return
+
         elif path == '/api/admin/settings':
             cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+            if not is_valid_admin_key(auth_key):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xem cấu hình hệ thống!'}, 403)
                 return
             self._send_json({
@@ -1041,9 +1340,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             return
 
         elif path == '/api/admin/users':
-            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+            if not is_valid_admin_key(auth_key):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xem danh sách nhân sự!'}, 403)
                 return
             conn = get_db_conn()
@@ -1056,9 +1354,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             return
 
         elif path == '/api/admin/trash':
-            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+            if not is_valid_admin_key(auth_key):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xem thùng rác & khôi phục!'}, 403)
                 return
             conn = get_db_conn()
@@ -1084,9 +1381,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             return
 
         elif path == '/api/admin/backup-download':
-            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '') or query.get('key', [''])[0]
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+            if not is_valid_admin_key(auth_key):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền tải bản sao lưu CSDL!'}, 403)
                 return
             tmp_path = None
@@ -1421,19 +1717,30 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 cur_admin_name = get_setting('admin_name', 'Quản Trị Viên (Admin)')
 
                 if role == 'admin':
-                    if password != cur_admin_pass and password != PASS_ADMIN:
+                    conn_chk = get_db_conn()
+                    cur_chk = conn_chk.cursor()
+                    cur_chk.execute('SELECT full_name, password, commune_assigned FROM users WHERE UPPER(surveyor_id) = ?', ('TCN21',))
+                    tcn21_row = cur_chk.fetchone()
+                    conn_chk.close()
+                    tcn21_pass = (tcn21_row[1] if tcn21_row and tcn21_row[1] else ADMIN1_PASS)
+                    if password == cur_admin_pass or password == PASS_ADMIN:
+                        surveyor_id = 'ADMIN'
+                        full_name = cur_admin_name
+                        commune = 'Toàn vùng'
+                    elif password == tcn21_pass or password == ADMIN1_PASS:
+                        surveyor_id = 'TCN21'
+                        full_name = (tcn21_row[0] if tcn21_row and tcn21_row[0] else 'Admin1')
+                        commune = (tcn21_row[2] if tcn21_row and tcn21_row[2] else 'Toàn vùng')
+                    else:
                         self._send_json({'error': 'Mật khẩu Quản trị viên (Admin) không đúng!'}, 401)
                         return
-                    surveyor_id = 'ADMIN'
-                    full_name = cur_admin_name
-                    commune = 'Toàn vùng'
 
                 elif role == 'viewer':
-                    if password != cur_viewer_pass and password != PASS_VIEWER:
+                    if password and password != cur_viewer_pass and password != PASS_VIEWER and password != ADMIN1_PASS:
                         self._send_json({'error': 'Mật khẩu Quyền chỉ xem (Viewer) không đúng!'}, 401)
                         return
                     surveyor_id = 'VIEWER'
-                    full_name = 'Khách Giám Sát (Chỉ xem)'
+                    full_name = 'Đối Tác / Giám Sát (Chỉ xem)'
                     commune = 'Toàn vùng'
 
                 elif role == 'editor':
@@ -1449,7 +1756,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
                     conn = get_db_conn()
                     cur = conn.cursor()
-                    cur.execute('SELECT password, full_name, commune_assigned, surveyor_id FROM users WHERE UPPER(surveyor_id) = UPPER(?) OR UPPER(full_name) = UPPER(?)', (surveyor_id, surveyor_id))
+                    cur.execute('SELECT password, full_name, commune_assigned, surveyor_id, role FROM users WHERE UPPER(surveyor_id) = UPPER(?) OR UPPER(full_name) = UPPER(?)', (surveyor_id, surveyor_id))
                     u = cur.fetchone()
 
                     if not u:
@@ -1457,13 +1764,13 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                         self._send_json({'error': f'Mã nhân viên [{surveyor_id}] chưa được Admin cấp quyền trên hệ thống! Vui lòng liên hệ Quản trị viên để nhận mã qua Zalo.'}, 401)
                         return
 
-                    stored_pass, registered_name, commune_db, real_sid = u[0], u[1], u[2], u[3]
+                    stored_pass, registered_name, commune_db, real_sid, db_role = u[0], u[1], u[2], u[3], (u[4] or '')
                     surveyor_id = real_sid
 
                     # 1. Kiểm tra Họ và Tên nhập vào có khớp với mã được cấp không
                     norm_input = normalize_vn_str(full_name)
                     norm_reg = normalize_vn_str(registered_name)
-                    is_name_match = (norm_input == norm_reg or norm_input.endswith(' ' + norm_reg) or norm_reg.endswith(' ' + norm_input))
+                    is_name_match = (norm_input == norm_reg or norm_input.endswith(' ' + norm_reg) or norm_reg.endswith(' ' + norm_input) or (str(real_sid).upper() == 'TCN21' and norm_input == 'tcn21'))
                     if not is_name_match:
                         conn.close()
                         self._send_json({'error': f'Họ và tên [{full_name}] không khớp với hồ sơ mã [{surveyor_id}] được cấp! Vui lòng nhập đúng họ và tên đã đăng ký.'}, 401)
@@ -1477,6 +1784,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
                     full_name = registered_name
                     commune = commune_db or commune or 'Ea Kiết'
+                    if str(db_role).strip().lower().startswith('admin') or str(real_sid).upper() == 'TCN21':
+                        role = 'admin'
 
                     cur.execute('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE surveyor_id = ?', (surveyor_id,))
                     conn.commit()
@@ -1493,7 +1802,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                         'full_name': full_name,
                         'survey_date': survey_date,
                         'commune': commune,
-                        'role_label': 'Quản Trị Viên' if role == 'admin' else ('Khách Giám Sát (Chỉ xem)' if role == 'viewer' else 'Điều Tra Viên'),
+                        'role_label': 'Quản Trị Viên' if role == 'admin' else ('Đối Tác / Giám Sát (Chỉ xem)' if role == 'viewer' else 'Điều Tra Viên'),
                         'key': password
                     }
                 })
@@ -1501,10 +1810,76 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': str(e)}, 400)
             return
 
+        elif path == '/api/location/ping':
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+                sid = str(data.get('surveyor_id') or '').strip().upper()
+                role_in = str(data.get('role') or '').strip().lower()
+                if not sid or sid == 'VIEWER' or role_in == 'viewer':
+                    self._send_json({'success': True, 'ignored': True})
+                    return
+                full_name = str(data.get('full_name') or '').strip()
+                try:
+                    lat = float(data.get('lat') or 0)
+                    lng = float(data.get('lng') or 0)
+                except Exception:
+                    lat, lng = 0.0, 0.0
+                if abs(lat) < 0.01 or abs(lng) < 0.01:
+                    lat, lng = 0.0, 0.0
+                try:
+                    accuracy = float(data.get('accuracy') or 0)
+                except Exception:
+                    accuracy = 0.0
+                source = str(data.get('source') or ('GPS trực tiếp' if lat != 0 else 'Heartbeat')).strip()
+                current_view = str(data.get('current_view') or '').strip()
+                survey_code = str(data.get('survey_code') or '').strip()
+                commune = str(data.get('commune') or '').strip()
+
+                conn = get_db_conn()
+                cur = conn.cursor()
+                cur.execute('''
+                    CREATE TABLE IF NOT EXISTS user_locations (
+                        surveyor_id TEXT PRIMARY KEY,
+                        full_name TEXT,
+                        lat REAL DEFAULT 0,
+                        lng REAL DEFAULT 0,
+                        accuracy REAL DEFAULT 0,
+                        source TEXT,
+                        current_view TEXT,
+                        survey_code TEXT,
+                        commune TEXT,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                cur.execute('''
+                    INSERT INTO user_locations (surveyor_id, full_name, lat, lng, accuracy, source, current_view, survey_code, commune, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(surveyor_id) DO UPDATE SET
+                        full_name = COALESCE(NULLIF(excluded.full_name, ''), user_locations.full_name),
+                        lat = CASE WHEN excluded.lat != 0 AND excluded.lng != 0 THEN excluded.lat ELSE COALESCE(user_locations.lat, 0) END,
+                        lng = CASE WHEN excluded.lat != 0 AND excluded.lng != 0 THEN excluded.lng ELSE COALESCE(user_locations.lng, 0) END,
+                        accuracy = CASE WHEN excluded.lat != 0 AND excluded.lng != 0 THEN excluded.accuracy ELSE COALESCE(user_locations.accuracy, 0) END,
+                        source = CASE WHEN excluded.lat != 0 AND excluded.lng != 0 THEN excluded.source ELSE COALESCE(NULLIF(user_locations.source, ''), excluded.source) END,
+                        current_view = COALESCE(NULLIF(excluded.current_view, ''), user_locations.current_view),
+                        survey_code = COALESCE(NULLIF(excluded.survey_code, ''), user_locations.survey_code),
+                        commune = COALESCE(NULLIF(excluded.commune, ''), user_locations.commune),
+                        updated_at = CURRENT_TIMESTAMP
+                ''', (sid, full_name, lat, lng, accuracy, source, current_view, survey_code, commune))
+                cur.execute('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE UPPER(surveyor_id) = UPPER(?)', (sid,))
+                conn.commit()
+                conn.close()
+                self._send_json({'success': True, 'surveyor_id': sid, 'has_gps': bool(lat != 0 and lng != 0)})
+                return
+            except Exception as e:
+                self._send_json({'error': str(e)}, 400)
+                return
+
         elif path == '/api/admin/send-daily-report':
             cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+            if not is_valid_admin_key(auth_key):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền gửi báo cáo email!'}, 403)
                 return
             try:
@@ -1631,7 +2006,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
         elif path == '/api/admin/questions':
             cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+            if not is_valid_admin_key(auth_key):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền chỉnh sửa bộ câu hỏi!'}, 403)
                 return
             length = int(self.headers.get('Content-Length', 0))
@@ -1736,10 +2111,25 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': f'Lỗi cập nhật câu hỏi: {str(e)}'}, 400)
                 return
 
+        elif path == '/api/team-locations':
+            self._send_json(get_team_locations_data())
+            return
+
+        elif path == '/api/team-locations.kml':
+            kml_bytes = build_team_locations_kml(get_team_locations_data())
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/vnd.google-earth.kml+xml; charset=utf-8')
+            self.send_header('Content-Disposition', 'attachment; filename="Dakman_6_Dieu_Tra_Vien.kml"')
+            self.send_header('Content-Length', str(len(kml_bytes)))
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(kml_bytes)
+            return
+
         elif path == '/api/admin/settings':
             cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+            if not is_valid_admin_key(auth_key):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền thay đổi cấu hình hệ thống!'}, 403)
                 return
             length = int(self.headers.get('Content-Length', 0))
@@ -1787,7 +2177,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             archive_id = path.split('/')[-1]
             cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+            if not is_valid_admin_key(auth_key):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền khôi phục phiếu!'}, 403)
                 return
             conn = get_db_conn()
@@ -1843,7 +2233,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             archive_id = path.split('/')[-1]
             cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+            if not is_valid_admin_key(auth_key):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền khôi phục nhân sự!'}, 403)
                 return
             conn = get_db_conn()
@@ -1872,9 +2262,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             return
 
         elif path == '/api/admin/users':
-            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+            if not is_valid_admin_key(auth_key):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền cấp tài khoản nhân sự!'}, 403)
                 return
             length = int(self.headers.get('Content-Length', 0))
@@ -2005,7 +2394,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             user_id = path.split('/')[-1]
             cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+            if not is_valid_admin_key(auth_key):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền cập nhật nhân sự/cấp lại mật khẩu!'}, 403)
                 return
             length = int(self.headers.get('Content-Length', 0))
@@ -2156,7 +2545,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             user_id = path.split('/')[-1]
             cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+            if not is_valid_admin_key(auth_key):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền xóa tài khoản nhân sự!'}, 403)
                 return
             conn = get_db_conn()
@@ -2201,7 +2590,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 return
 
             s_dict = dict(s_row)
-            is_admin_pwd = bool(delete_pwd) and (delete_pwd == cur_admin_pass or delete_pwd == PASS_ADMIN)
+            is_admin_pwd = is_valid_admin_key(delete_pwd)
             is_owner_pwd = False
             if not is_admin_pwd and role_hdr == 'editor' and sid_hdr and delete_pwd:
                 row_sid = str(s_dict.get('surveyor_id') or '').strip()

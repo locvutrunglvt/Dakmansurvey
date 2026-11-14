@@ -23,6 +23,9 @@
 
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet Maps for Google Satellite Hybrid Basemap -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
     <style>
         :root {
@@ -2380,10 +2383,63 @@
                         </div>
                     </div>
 
+                    <!-- Live Google Hybrid Map & 6 Surveyors Tracking -->
+                    <div id="teamLocationMapSection"
+                        style="background: #ffffff; border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin: 18px 0 22px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                            <div>
+                                <h3 style="font-size: 0.96rem; font-weight: 700; color: var(--navy); margin: 0; text-transform: uppercase;">
+                                    <i class="fa-solid fa-earth-asia" style="color: #0284c7;"></i> 1. Bản đồ Google Hybrid — Vị trí cuối cùng &amp; Trực tuyến của 06 Điều tra viên
+                                </h3>
+                                <div id="teamLocationSummaryText" style="font-size: 0.82rem; color: var(--slate-600); margin-top: 4px;">
+                                    Đang tải tọa độ mới nhất từ máy chủ...
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button type="button" onclick="loadTeamLocationsMap(true)" class="qgis-btn-secondary" style="font-size: 0.82rem; padding: 6px 12px;">
+                                    <i class="fa-solid fa-rotate"></i> Làm mới vị trí
+                                </button>
+                                <a id="btnDownloadTeamKml" href="/api/team-locations.kml" target="_blank" class="qgis-btn-primary" style="font-size: 0.82rem; padding: 6px 12px; text-decoration: none; background: #0f766e;">
+                                    <i class="fa-solid fa-file-export"></i> Tải KML (Google Earth)
+                                </a>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.8rem; margin-bottom: 10px; color: var(--slate-700);">
+                            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#16a34a;margin-right:4px;"></span>Đang online (&le; 3 phút)</span>
+                            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:4px;"></span>Vừa hoạt động (&le; 30 phút)</span>
+                            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2563eb;margin-right:4px;"></span>Vị trí cuối cùng</span>
+                            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#94a3b8;margin-right:4px;"></span>Chưa có tọa độ</span>
+                        </div>
+
+                        <div id="teamGoogleEarthMap"
+                            style="width: 100%; height: 390px; border-radius: 6px; border: 1px solid #cbd5e1; background: #e2e8f0; margin-bottom: 14px; z-index: 1;"></div>
+
+                        <div style="overflow-x: auto;">
+                            <table class="report-table" style="margin-bottom: 0;">
+                                <thead>
+                                    <tr>
+                                        <th>Mã NV</th>
+                                        <th>Họ và Tên ĐTV</th>
+                                        <th>Địa bàn</th>
+                                        <th>Trạng thái</th>
+                                        <th>Tọa độ GPS cuối</th>
+                                        <th>Phiếu / Hộ gần nhất</th>
+                                        <th style="text-align: center;">Đã thu</th>
+                                        <th style="text-align: center;">Xem bản đồ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teamLocationsTbody">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- Progress by 4 Target Groups -->
                     <h3
                         style="font-size: 0.95rem; font-weight: 700; color: var(--navy); margin: 20px 0 10px 0; text-transform: uppercase;">
-                        1. Tiến độ theo đối tượng tham vấn (238 đối tượng • 2 chủ mô hình trong 220 hộ)
+                        2. Tiến độ theo đối tượng tham vấn (238 đối tượng • 2 chủ mô hình trong 220 hộ)
                     </h3>
                     <table class="report-table">
                         <thead>
@@ -2405,7 +2461,7 @@
                     <!-- Progress by 3 Communes -->
                     <h3
                         style="font-size: 0.95rem; font-weight: 700; color: var(--navy); margin: 24px 0 10px 0; text-transform: uppercase;">
-                        2. Tiến độ khảo sát hộ nông dân (P1) theo 3 Xã trọng điểm
+                        3. Tiến độ khảo sát hộ nông dân (P1) theo 3 Xã trọng điểm
                     </h3>
                     <table class="report-table">
                         <thead>
@@ -2599,7 +2655,7 @@
                         <i class="fa-solid fa-user-pen" style="color: #15803d;"></i> 1. Điều Tra Viên
                     </button>
                     <button type="button" class="qgis-tab-btn" id="btnTierViewer" onclick="selectLoginTier('viewer')">
-                        <i class="fa-solid fa-eye" style="color: #2563eb;"></i> 2. Chỉ Xem
+                        <i class="fa-solid fa-eye" style="color: #2563eb;"></i> 2. Đối Tác (Chỉ Xem)
                     </button>
                     <button type="button" class="qgis-tab-btn" id="btnTierAdmin" onclick="selectLoginTier('admin')">
                         <i class="fa-solid fa-user-shield" style="color: #dc2626;"></i> 3. Quản Trị Viên
@@ -2621,7 +2677,7 @@
                             </div>
                             <div class="form-group" style="margin-bottom: 10px;">
                                 <label style="font-size: 0.83rem; font-weight: 700;">Mã Nhân Viên Được Cấp
-                                    (TCN01 – TCN07) <span class="req">*</span></label>
+                                    (TCN02 – TCN07, TCN21) <span class="req">*</span></label>
                                 <input type="text" class="form-control" id="modalUserId"
                                     placeholder="Nhập đúng mã nhân viên được cấp qua Zalo...">
                             </div>
@@ -2635,6 +2691,11 @@
                                 Viên <span class="req">*</span></label>
                             <input type="password" class="form-control" id="modalUserPassword" required
                                 placeholder="Nhập mật khẩu truy cập...">
+                        </div>
+
+                        <div id="viewerQuickNotice"
+                            style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 9px 12px; border-radius: 4px; font-size: 0.82rem; margin-top: 10px;">
+                            <strong>Chế độ Đối tác / Chỉ xem (mặc định):</strong> Có thể vào xem trực tiếp tiến độ, phiếu đã thu và bản đồ Google Hybrid vị trí 06 điều tra viên (không cần nhập mật khẩu).
                         </div>
 
                         <div id="loginErrorMsg"
@@ -3237,7 +3298,7 @@
     <!-- Bundled Questions & Households Fallback + Application Logic -->
     <script src="questions_bundle.js?v=1"></script>
     <script src="sample_households_bundle.js?v=1"></script>
-    <script src="app.js?v=2.37"></script>
+    <script src="app.js?v=2.38"></script>
 
 </body>
 

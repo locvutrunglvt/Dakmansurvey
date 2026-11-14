@@ -321,6 +321,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     ]).then(() => {
         refreshDraftBadgeCount(false);
         updateMenuSummaryBadges();
+        if (currentUser && currentUser.is_authenticated && currentUser.role !== 'viewer') {
+            startTeamHeartbeat();
+            sendTeamLocationPing(null, null, null, 'Mở ứng dụng');
+        }
     });
 
     // Lưu nhanh khi chuyển app sang Camera/Zalo hoặc tắt màn hình
@@ -412,8 +416,9 @@ function selectLoginTier(tier) {
 
     const staffFields = document.getElementById('editorStaffFields');
     const lblPass = document.getElementById('lblPasswordTier');
-    const hint = document.getElementById('passwordHint');
     const passInput = document.getElementById('modalUserPassword');
+    const viewerNotice = document.getElementById('viewerQuickNotice');
+    const submitBtn = document.getElementById('btnLoginSubmit');
     const errBox = document.getElementById('loginErrorMsg');
     if (errBox) errBox.style.display = 'none';
 
@@ -421,16 +426,25 @@ function selectLoginTier(tier) {
         staffFields.style.display = 'none';
         lblPass.innerHTML = 'Mật Khẩu Quản Trị Viên <span class="req">*</span>';
         passInput.placeholder = 'Nhập mật khẩu quản trị viên...';
+        passInput.required = true;
+        if (viewerNotice) viewerNotice.style.display = 'none';
+        if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng Nhập Hệ Thống';
     } else if (tier === 'viewer') {
         staffFields.style.display = 'none';
-        lblPass.innerHTML = 'Mật Khẩu Quyền Xem <span class="req">*</span>';
-        passInput.placeholder = 'Nhập mật khẩu quyền xem...';
+        lblPass.innerHTML = 'Mật Khẩu Đối Tác (Không bắt buộc — để trống để vào ngay)';
+        passInput.placeholder = 'Có thể để trống và bấm Vào Xem Ngay...';
+        passInput.required = false;
+        if (viewerNotice) viewerNotice.style.display = 'block';
+        if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-eye"></i> Vào Xem Ngay (Đối tác)';
     } else {
         staffFields.style.display = 'block';
         lblPass.innerHTML = 'Mật Khẩu Điều Tra Viên <span class="req">*</span>';
         passInput.placeholder = 'Nhập mật khẩu điều tra viên...';
+        passInput.required = true;
+        if (viewerNotice) viewerNotice.style.display = 'none';
+        if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng Nhập Hệ Thống';
         if (!document.getElementById('modalUserId').value) {
-            document.getElementById('modalUserId').value = 'TCN01';
+            document.getElementById('modalUserId').value = 'TCN02';
         }
     }
 }
@@ -511,31 +525,51 @@ async function saveUserLogin(e) {
             currentUser = data.user;
             currentUser.key = password;
             currentUser.is_authenticated = true;
-            if (role === 'admin') {
+            if (currentUser.role === 'admin') {
                 localStorage.setItem('dakman_admin_key', password);
             }
             localStorage.setItem('dakman_surveyor_session', JSON.stringify(currentUser));
             hideLoginModal();
             updateUserDisplay();
             loadSurveysList(); // Làm mới danh sách theo quyền mới
+            if (typeof sendTeamLocationPing === 'function') {
+                sendTeamLocationPing(null, null, null, 'Đăng nhập hệ thống');
+                startTeamHeartbeat();
+            }
         } else {
             errBox.style.display = 'block';
             errBox.textContent = data.error || 'Đăng nhập không thành công. Vui lòng kiểm tra lại mật khẩu.';
         }
     } catch (err) {
         // Hỗ trợ kiểm tra offline theo mật khẩu chuẩn
-        if (role === 'admin' && password === 'AAdmin123') {
-            currentUser = { role: 'admin', surveyor_id: 'ADMIN', full_name: 'Quản Trị Viên (Admin)', survey_date: userDate, commune: 'Toàn vùng', key: password, is_authenticated: true };
+        if (role === 'admin' && (password === 'AAdmin123' || password === '123456a')) {
+            const isAdmin1 = (password === '123456a');
+            currentUser = {
+                role: 'admin',
+                surveyor_id: isAdmin1 ? 'TCN21' : 'ADMIN',
+                full_name: isAdmin1 ? 'Admin1' : 'Quản Trị Viên (Admin)',
+                survey_date: userDate,
+                commune: 'Toàn vùng',
+                key: password,
+                is_authenticated: true
+            };
+            localStorage.setItem('dakman_admin_key', password);
             localStorage.setItem('dakman_surveyor_session', JSON.stringify(currentUser));
             hideLoginModal();
             updateUserDisplay();
-        } else if (role === 'viewer' && password === 'View123') {
-            currentUser = { role: 'viewer', surveyor_id: 'VIEWER', full_name: 'Khách Giám Sát (Chỉ xem)', survey_date: userDate, commune: 'Toàn vùng', key: password, is_authenticated: true };
+        } else if (role === 'viewer' && (!password || password === 'View123' || password === '123456a')) {
+            currentUser = { role: 'viewer', surveyor_id: 'VIEWER', full_name: 'Đối Tác / Giám Sát (Chỉ xem)', survey_date: userDate, commune: 'Toàn vùng', key: password, is_authenticated: true };
+            localStorage.setItem('dakman_surveyor_session', JSON.stringify(currentUser));
+            hideLoginModal();
+            updateUserDisplay();
+        } else if (role === 'editor' && userId.toUpperCase() === 'TCN21' && password === '123456a') {
+            currentUser = { role: 'admin', surveyor_id: 'TCN21', full_name: 'Admin1', survey_date: userDate, commune: 'Toàn vùng', key: password, is_authenticated: true };
+            localStorage.setItem('dakman_admin_key', password);
             localStorage.setItem('dakman_surveyor_session', JSON.stringify(currentUser));
             hideLoginModal();
             updateUserDisplay();
         } else if (role === 'editor' && (password === 'Edit123a#' || password)) {
-            currentUser = { role: 'editor', surveyor_id: userId || 'TCN01', full_name: userName || 'Điều tra viên', survey_date: userDate, commune: userCommune, key: password, is_authenticated: true };
+            currentUser = { role: 'editor', surveyor_id: userId || 'TCN02', full_name: userName || 'Điều tra viên', survey_date: userDate, commune: userCommune, key: password, is_authenticated: true };
             localStorage.setItem('dakman_surveyor_session', JSON.stringify(currentUser));
             hideLoginModal();
             updateUserDisplay();
@@ -3910,6 +3944,9 @@ function autoCaptureGPS() {
         if (gpsEl) gpsEl.value = str;
         currentDraftAnswers['A05'] = str;
         saveDraftLocal(false);
+        if (typeof sendTeamLocationPing === 'function') {
+            sendTeamLocationPing(lat, lng, Math.round(pos.coords.accuracy || 0), 'Lấy GPS thực địa');
+        }
         alert(`Đã lấy tọa độ GPS thành công:\nVĩ độ: ${lat}\nKinh độ: ${lng}\nĐộ chính xác: ±${Math.round(pos.coords.accuracy)} mét`);
     };
 
@@ -4072,6 +4109,9 @@ function startBackgroundGpsTracker() {
                     if (gpsEl) gpsEl.value = str;
                     currentDraftAnswers._gps_bg = bgBestGps;
                     saveDraftLocal(false);
+                    if (typeof sendTeamLocationPing === 'function') {
+                        sendTeamLocationPing(lat, lng, Math.round(acc), 'GPS nền hiện trường');
+                    }
                 }
             },
             () => { /* Chạy ngầm yên lặng, không làm phiền điều tra viên */ },
@@ -4617,6 +4657,9 @@ async function refreshDashboardData() {
 
         renderGroupProgressTable(data);
         renderCommuneProgressTable(data);
+        if (typeof loadTeamLocationsMap === 'function') {
+            loadTeamLocationsMap(false);
+        }
     } catch (e) {
         console.warn('Không tải được số liệu thống kê:', e);
     }
@@ -5982,5 +6025,275 @@ async function deleteStaffConfirm(sid, name) {
         }
     } catch (err) {
         alert('Lỗi kết nối máy chủ VPS.');
+    }
+}
+
+// ========================================================
+// BẢN ĐỒ GOOGLE HYBRID & THEO DÕI VỊ TRÍ 06 ĐIỀU TRA VIÊN
+// ========================================================
+let teamGeoMap = null;
+let teamGeoLayerGroup = null;
+let teamMarkersById = {};
+let teamHeartbeatTimer = null;
+let teamMapRefreshTimer = null;
+let lastTeamPingSentAt = 0;
+
+function getCurrentFormGpsTuple() {
+    const gpsRaw = (document.getElementById('gpsInput')?.value || currentDraftAnswers?.A05 || '').trim();
+    const parts = gpsRaw.split(',').map(x => parseFloat(String(x).trim()));
+    if (parts.length === 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) && Math.abs(parts[0]) > 0.01 && Math.abs(parts[1]) > 0.01) {
+        return { lat: parts[0], lng: parts[1] };
+    }
+    if (bgBestGps && Number.isFinite(parseFloat(bgBestGps.lat)) && Number.isFinite(parseFloat(bgBestGps.lng))) {
+        return { lat: parseFloat(bgBestGps.lat), lng: parseFloat(bgBestGps.lng) };
+    }
+    return { lat: 0, lng: 0 };
+}
+
+async function sendTeamLocationPing(latIn, lngIn, accIn, sourceLabel) {
+    if (!currentUser || !currentUser.is_authenticated || currentUser.role === 'viewer') return;
+    if (!navigator.onLine) return;
+
+    const nowMs = Date.now();
+    const hasExplicitGps = (latIn !== null && lngIn !== null && Math.abs(Number(latIn) || 0) > 0.01 && Math.abs(Number(lngIn) || 0) > 0.01);
+    if (!hasExplicitGps && (nowMs - lastTeamPingSentAt) < 15000) return;
+
+    let lat = hasExplicitGps ? Number(latIn) : 0;
+    let lng = hasExplicitGps ? Number(lngIn) : 0;
+    let acc = Number(accIn) || 0;
+    if (!hasExplicitGps) {
+        const curGps = getCurrentFormGpsTuple();
+        lat = curGps.lat;
+        lng = curGps.lng;
+    }
+
+    lastTeamPingSentAt = nowMs;
+    const payload = {
+        surveyor_id: currentUser.surveyor_id || '',
+        full_name: currentUser.full_name || '',
+        role: currentUser.role || 'editor',
+        lat: lat,
+        lng: lng,
+        accuracy: acc,
+        source: sourceLabel || (lat !== 0 ? 'GPS thực địa' : 'Đang online'),
+        current_view: typeof currentMainView !== 'undefined' ? currentMainView : '',
+        survey_code: (document.getElementById('surveyCodeInput')?.value || '').trim(),
+        commune: (document.getElementById('communeSelect')?.value || currentUser.commune || '').trim()
+    };
+
+    try {
+        await fetch(apiUrl('/api/location/ping'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    } catch (_) {
+        // Bỏ qua lỗi mạng tạm thời khi đang chạy nền
+    }
+}
+
+function startTeamHeartbeat() {
+    if (teamHeartbeatTimer) clearInterval(teamHeartbeatTimer);
+    teamHeartbeatTimer = setInterval(() => {
+        if (document.visibilityState !== 'visible') return;
+        if (!currentUser || !currentUser.is_authenticated || currentUser.role === 'viewer') return;
+        const curGps = getCurrentFormGpsTuple();
+        if (curGps.lat !== 0 && curGps.lng !== 0) {
+            sendTeamLocationPing(curGps.lat, curGps.lng, 0, 'GPS hiện trường');
+        } else if (navigator.geolocation && currentMainView === 'survey') {
+            try {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        sendTeamLocationPing(
+                            pos.coords.latitude.toFixed(6),
+                            pos.coords.longitude.toFixed(6),
+                            Math.round(pos.coords.accuracy || 0),
+                            'Định vị tự động'
+                        );
+                    },
+                    () => sendTeamLocationPing(0, 0, 0, 'Đang online'),
+                    { enableHighAccuracy: false, maximumAge: 60000, timeout: 5000 }
+                );
+            } catch (_) {
+                sendTeamLocationPing(0, 0, 0, 'Đang online');
+            }
+        } else {
+            sendTeamLocationPing(0, 0, 0, 'Đang online');
+        }
+    }, 45000);
+}
+
+function ensureTeamGoogleHybridMap() {
+    const mapEl = document.getElementById('teamGoogleEarthMap');
+    if (!mapEl || typeof L === 'undefined') return null;
+
+    if (!teamGeoMap) {
+        teamGeoMap = L.map('teamGoogleEarthMap', {
+            center: [12.885, 108.115],
+            zoom: 12,
+            zoomControl: true
+        });
+
+        const googleHybridLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            attribution: 'Google Satellite Hybrid'
+        });
+
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: 'OpenStreetMap'
+        });
+
+        googleHybridLayer.addTo(teamGeoMap);
+        L.control.layers(
+            {
+                'Google Map Hybrid (Vệ tinh + Tên đường)': googleHybridLayer,
+                'OpenStreetMap (Đường sá)': osmLayer
+            },
+            null,
+            { position: 'topright' }
+        ).addTo(teamGeoMap);
+
+        teamGeoLayerGroup = L.layerGroup().addTo(teamGeoMap);
+    }
+
+    setTimeout(() => {
+        if (teamGeoMap) teamGeoMap.invalidateSize();
+    }, 150);
+
+    return teamGeoMap;
+}
+
+function getTeamStatusBadgeHtml(member) {
+    const st = member.status || 'none';
+    if (st === 'online') {
+        return `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:#dcfce7;color:#166534;font-weight:700;font-size:0.78rem;"><span style="width:8px;height:8px;border-radius:50%;background:#16a34a;"></span>${member.age_text || 'Đang online'}</span>`;
+    }
+    if (st === 'recent') {
+        return `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:#fef3c7;color:#92400e;font-weight:700;font-size:0.78rem;"><span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;"></span>${member.age_text || 'Vừa hoạt động'}</span>`;
+    }
+    if (st === 'offline') {
+        return `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:#dbeafe;color:#1e40af;font-weight:700;font-size:0.78rem;"><span style="width:8px;height:8px;border-radius:50%;background:#2563eb;"></span>${member.age_text || 'Vị trí cuối'}</span>`;
+    }
+    return `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:#f1f5f9;color:#475569;font-weight:600;font-size:0.78rem;">Chưa có tín hiệu</span>`;
+}
+
+function focusTeamMemberOnMap(surveyorId) {
+    const marker = teamMarkersById[String(surveyorId || '').toUpperCase()];
+    if (!marker || !teamGeoMap) {
+        alert(`Điều tra viên ${surveyorId} hiện chưa ghi nhận tọa độ GPS nào trên máy chủ.`);
+        return;
+    }
+    const ll = marker.getLatLng();
+    teamGeoMap.setView(ll, 16, { animate: true });
+    marker.openPopup();
+    document.getElementById('teamGoogleEarthMap')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function loadTeamLocationsMap(fitAll = false) {
+    const summaryEl = document.getElementById('teamLocationSummaryText');
+    const tbody = document.getElementById('teamLocationsTbody');
+    const kmlBtn = document.getElementById('btnDownloadTeamKml');
+    if (kmlBtn) kmlBtn.href = apiUrl('/api/team-locations.kml');
+
+    try {
+        const data = await fetchJsonWithTimeout(apiUrl('/api/team-locations'), 8000);
+        const members = Array.isArray(data.members) ? data.members : [];
+        if (summaryEl) {
+            summaryEl.innerHTML = `Cập nhật lúc <strong>${data.updated_at_vn || ''}</strong> • Đang online: <strong style="color:#15803d;">${data.online_count || 0}/6</strong> ĐTV • Đã có tọa độ GPS: <strong style="color:#0369a1;">${data.gps_count || 0}/6</strong> ĐTV`;
+        }
+
+        const map = ensureTeamGoogleHybridMap();
+        teamMarkersById = {};
+        const bounds = [];
+
+        if (map && teamGeoLayerGroup) {
+            teamGeoLayerGroup.clearLayers();
+            members.forEach((m) => {
+                if (m.lat === null || m.lng === null) return;
+                const color = m.status === 'online' ? '#16a34a' : (m.status === 'recent' ? '#f59e0b' : '#2563eb');
+                const markerIcon = L.divIcon({
+                    className: 'team-pin-wrapper',
+                    html: `<div style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);">
+                        <div style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;white-space:nowrap;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);">
+                            ${escapeHtml(m.surveyor_id)} • ${escapeHtml(m.full_name)}
+                        </div>
+                        <div style="width:12px;height:12px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.45);margin-top:2px;"></div>
+                    </div>`,
+                    iconSize: [0, 0],
+                    iconAnchor: [0, 0]
+                });
+                const marker = L.marker([m.lat, m.lng], { icon: markerIcon }).addTo(teamGeoLayerGroup);
+                const popupHtml = `
+                    <div style="min-width:220px;font-size:12.5px;line-height:1.45;">
+                        <div style="font-weight:800;color:#0f2a4a;font-size:13.5px;margin-bottom:4px;">[${escapeHtml(m.surveyor_id)}] ${escapeHtml(m.full_name)}</div>
+                        <div><strong>Trạng thái:</strong> ${escapeHtml(m.status_label)} (${escapeHtml(m.age_text || '')})</div>
+                        <div><strong>Địa bàn:</strong> ${escapeHtml(m.commune || '')}</div>
+                        <div><strong>Tọa độ:</strong> <code>${m.lat}, ${m.lng}</code></div>
+                        <div><strong>Thời gian GPS:</strong> ${escapeHtml(m.gps_time_vn || m.last_seen_vn || 'Chưa có')}</div>
+                        <div><strong>Hoạt động / Hộ:</strong> ${escapeHtml(m.last_survey_code || '—')} ${escapeHtml(m.last_household || '')}</div>
+                        <div><strong>Phiếu đã nộp:</strong> ${m.completed_count || 0} phiếu</div>
+                        <div style="margin-top:7px;display:flex;gap:8px;flex-wrap:wrap;">
+                            <a href="${m.google_earth_url}" target="_blank" style="color:#0369a1;font-weight:700;text-decoration:none;"><i class="fa-solid fa-earth-asia"></i> Google Earth Web</a>
+                            <a href="${m.google_maps_url}" target="_blank" style="color:#15803d;font-weight:700;text-decoration:none;"><i class="fa-solid fa-map-pin"></i> Google Maps</a>
+                        </div>
+                    </div>
+                `;
+                marker.bindPopup(popupHtml);
+                teamMarkersById[String(m.surveyor_id).toUpperCase()] = marker;
+                bounds.push([m.lat, m.lng]);
+            });
+
+            if (bounds.length > 0 && (fitAll || !map._teamBoundsFitted)) {
+                map.fitBounds(bounds, { padding: [45, 45], maxZoom: 15 });
+                map._teamBoundsFitted = true;
+            }
+        }
+
+        if (tbody) {
+            tbody.innerHTML = members.map((m) => {
+                const coordHtml = (m.lat !== null && m.lng !== null)
+                    ? `<div><code style="font-size:0.78rem;">${m.lat}, ${m.lng}</code></div><div style="font-size:0.74rem;color:var(--slate-500);">${escapeHtml(m.gps_time_vn || '')} • ${escapeHtml(m.gps_source || '')}</div>`
+                    : `<span style="color:var(--slate-400);font-size:0.8rem;">Chưa ghi nhận GPS</span>`;
+                const surveyHtml = m.last_survey_code
+                    ? `<strong>${escapeHtml(m.last_survey_code)}</strong><div style="font-size:0.75rem;color:var(--slate-600);">${escapeHtml(m.last_household || m.last_activity || '')}</div>`
+                    : `<span style="color:var(--slate-500);font-size:0.78rem;">${escapeHtml(m.last_activity || '—')}</span>`;
+                const actionHtml = (m.lat !== null && m.lng !== null)
+                    ? `<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+                        <button type="button" onclick="focusTeamMemberOnMap('${escapeHtml(m.surveyor_id)}')" class="qgis-btn-secondary" style="padding:4px 8px;font-size:0.76rem;">
+                            <i class="fa-solid fa-crosshairs"></i> Định vị
+                        </button>
+                        <a href="${m.google_earth_url}" target="_blank" class="qgis-btn-secondary" style="padding:4px 8px;font-size:0.76rem;text-decoration:none;color:#0369a1;">
+                            <i class="fa-solid fa-earth-asia"></i> Earth
+                        </a>
+                       </div>`
+                    : `<span style="color:var(--slate-400);font-size:0.76rem;">—</span>`;
+
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(m.surveyor_id)}</strong></td>
+                        <td><strong>${escapeHtml(m.full_name)}</strong><div style="font-size:0.74rem;color:var(--slate-500);">${escapeHtml(m.last_seen_vn || '')}</div></td>
+                        <td>${escapeHtml(m.commune || '')}</td>
+                        <td>${getTeamStatusBadgeHtml(m)}</td>
+                        <td>${coordHtml}</td>
+                        <td>${surveyHtml}</td>
+                        <td style="text-align:center;"><strong>${m.completed_count || 0}</strong></td>
+                        <td style="text-align:center;">${actionHtml}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        if (!teamMapRefreshTimer) {
+            teamMapRefreshTimer = setInterval(() => {
+                if (typeof currentMainView !== 'undefined' && currentMainView === 'dashboard' && document.visibilityState === 'visible') {
+                    loadTeamLocationsMap(false);
+                }
+            }, 30000);
+        }
+    } catch (e) {
+        if (summaryEl) {
+            summaryEl.textContent = 'Không thể tải dữ liệu vị trí trực tuyến từ máy chủ lúc này.';
+        }
     }
 }
