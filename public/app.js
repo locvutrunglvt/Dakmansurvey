@@ -1717,23 +1717,52 @@ function autoCaptureGPS() {
         alert('Tài khoản ở chế độ chỉ xem.');
         return;
     }
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const lat = pos.coords.latitude.toFixed(6);
-                const lng = pos.coords.longitude.toFixed(6);
-                document.getElementById('gpsInput').value = `${lat}, ${lng}`;
-                saveDraftLocal(false);
-                alert(`Đã lấy tọa độ GPS thành công:\nVĩ độ: ${lat}\nKinh độ: ${lng}\nĐộ chính xác: ±${Math.round(pos.coords.accuracy)} mét`);
-            },
-            (err) => {
-                alert('Không thể lấy tọa độ tự động: ' + err.message + '. Vui lòng kiểm tra quyền truy cập vị trí trên thiết bị.');
-            },
-            { enableHighAccuracy: true, timeout: 10000 }
-        );
-    } else {
-        alert('Thiết bị của bạn không hỗ trợ định vị Geolocation API.');
+    if (!navigator.geolocation) {
+        alert('Thiết bị của bạn không hỗ trợ định vị Geolocation API. Vui lòng mở Google Maps và dán tọa độ vào ô Tọa Độ GPS.');
+        return;
     }
+
+    const onSuccess = (pos) => {
+        const lat = pos.coords.latitude.toFixed(6);
+        const lng = pos.coords.longitude.toFixed(6);
+        const str = `${lat}, ${lng}`;
+        const gpsEl = document.getElementById('gpsInput');
+        if (gpsEl) gpsEl.value = str;
+        currentDraftAnswers['A05'] = str;
+        saveDraftLocal(false);
+        alert(`Đã lấy tọa độ GPS thành công:\nVĩ độ: ${lat}\nKinh độ: ${lng}\nĐộ chính xác: ±${Math.round(pos.coords.accuracy)} mét`);
+    };
+
+    const showDeniedHelp = (err) => {
+        if (err && err.code === 1) {
+            alert(
+                'Thiết bị/trình duyệt đang CHẶN quyền Vị trí (User denied Geolocation).\n\n' +
+                'Cách khắc phục nhanh:\n' +
+                '1. Nếu bạn mở link từ Zalo / Messenger: bấm dấu ⋮ góc trên phải → chọn "Mở bằng Chrome / Safari".\n' +
+                '2. Kiểm tra đã bật Vị trí (GPS) trên điện thoại.\n' +
+                '3. Bấm biểu tượng ổ khóa (hoặc Cài đặt) bên trái thanh địa chỉ → Quyền → Vị trí → Cho phép, rồi tải lại trang.\n' +
+                '4. Hoặc mở Google Maps → nhấn giữ vị trí → copy tọa độ dán vào ô Tọa Độ GPS.'
+            );
+        } else {
+            alert('Không thể lấy tọa độ tự động (' + (err?.message || 'Lỗi GPS') + '). Hãy ra chỗ thoáng hoặc dán tọa độ từ Google Maps.');
+        }
+    };
+
+    navigator.geolocation.getCurrentPosition(
+        onSuccess,
+        (err) => {
+            if (err && (err.code === 2 || err.code === 3)) {
+                navigator.geolocation.getCurrentPosition(
+                    onSuccess,
+                    showDeniedHelp,
+                    { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+                );
+            } else {
+                showDeniedHelp(err);
+            }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 }
+    );
 }
 
 // ========================================================
