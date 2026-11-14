@@ -23,8 +23,10 @@ function getPdfExportUrl(surveyId) {
 
 let currentHouseholdPhotoData = '';
 let currentHouseholdPhotoMeta = '';
+let currentDraftPhotoPath = '';
 let editingSurveyId = null;
 let deferredInstallPrompt = null;
+let mobilePwaDismissedInView = false;
 
 // Đăng ký Service Worker cho chế độ Cài App (PWA) & lưu phiên đăng nhập bền vững
 if ('serviceWorker' in navigator) {
@@ -38,16 +40,78 @@ window.addEventListener('beforeinstallprompt', (e) => {
     deferredInstallPrompt = e;
     const btn = document.getElementById('btnInstallPwa');
     if (btn) btn.style.display = 'inline-block';
+    const actionBtn = document.getElementById('btnMobilePwaAction');
+    if (actionBtn) actionBtn.innerHTML = '<i class="fa-solid fa-download"></i> Cài App Ngay (1 Chạm)';
+    initMobilePwaInstallPrompt();
 });
 
 window.addEventListener('appinstalled', () => {
     deferredInstallPrompt = null;
     const btn = document.getElementById('btnInstallPwa');
     if (btn) btn.style.display = 'none';
+    const banner = document.getElementById('mobilePwaPromptBanner');
+    if (banner) banner.style.display = 'none';
 });
 
 function isRunningStandalone() {
     return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function getMobileBrowserInstallContext() {
+    const ua = navigator.userAgent || '';
+    const isIos = /iphone|ipad|ipod/i.test(ua);
+    const isAndroid = /android/i.test(ua);
+    const isInAppBrowser = /zalo|fbav|fban|messenger|line|micromessenger/i.test(ua);
+    const isChromeIos = isIos && /crios/i.test(ua);
+    const isSafariIos = isIos && !isChromeIos && /safari/i.test(ua);
+    const isMobileDevice = isIos || isAndroid || /mobile|tablet/i.test(ua) || (window.innerWidth <= 900 && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
+    return { isIos, isAndroid, isInAppBrowser, isChromeIos, isSafariIos, isMobileDevice };
+}
+
+function initMobilePwaInstallPrompt() {
+    const banner = document.getElementById('mobilePwaPromptBanner');
+    const textEl = document.getElementById('mobilePwaPromptText');
+    const btnEl = document.getElementById('btnMobilePwaAction');
+    const navBtn = document.getElementById('btnInstallPwa');
+
+    if (isRunningStandalone()) {
+        if (banner) banner.style.display = 'none';
+        if (navBtn) navBtn.style.display = 'none';
+        return;
+    }
+
+    const ctx = getMobileBrowserInstallContext();
+    if (!ctx.isMobileDevice || mobilePwaDismissedInView) {
+        if (banner) banner.style.display = 'none';
+        return;
+    }
+
+    if (textEl) {
+        if (ctx.isInAppBrowser) {
+            textEl.innerHTML = 'Bạn đang mở trong trình duyệt <strong>Zalo/Messenger</strong>. Bấm dấu <strong>⋮</strong> (góc trên phải) &rarr; chọn <strong>Mở bằng Safari / Chrome</strong> rồi cài App để giữ đăng nhập &amp; lưu nháp tốt nhất.';
+            if (btnEl) btnEl.innerHTML = '<i class="fa-solid fa-compass"></i> Xem Hướng Dẫn';
+        } else if (ctx.isSafariIos) {
+            textEl.innerHTML = '<strong>iPhone (Safari):</strong> Bấm <strong>Chia sẻ (⬆️)</strong> ở thanh dưới &rarr; chọn <strong>"Thêm vào MH chính"</strong> &rarr; bấm <strong>"Thêm"</strong>.';
+            if (btnEl) btnEl.innerHTML = '<i class="fa-solid fa-share-from-square"></i> Hướng Dẫn iPhone';
+        } else if (ctx.isChromeIos) {
+            textEl.innerHTML = '<strong>iPhone (Chrome):</strong> Bấm <strong>Chia sẻ (⬆️)</strong> ở góc trên phải thanh địa chỉ &rarr; chọn <strong>"Thêm vào Màn hình chính"</strong> (hoặc mở bằng Safari).';
+            if (btnEl) btnEl.innerHTML = '<i class="fa-solid fa-share-from-square"></i> Hướng Dẫn iOS Chrome';
+        } else if (deferredInstallPrompt) {
+            textEl.innerHTML = '<strong>Android (Chrome):</strong> Bấm nút bên phải để cài trực tiếp App vào màn hình chính, chạy mượt và lưu ảnh/GPS ngoài rẫy.';
+            if (btnEl) btnEl.innerHTML = '<i class="fa-solid fa-download"></i> Cài App Ngay (1 Chạm)';
+        } else {
+            textEl.innerHTML = '<strong>Android (Chrome):</strong> Bấm Menu <strong>⋮</strong> (góc trên phải) &rarr; chọn <strong>"Cài đặt ứng dụng"</strong> hoặc <strong>"Thêm vào màn hình chính"</strong>.';
+            if (btnEl) btnEl.innerHTML = '<i class="fa-solid fa-download"></i> Hướng Dẫn Cài App';
+        }
+    }
+    if (banner) banner.style.display = 'block';
+    if (navBtn) navBtn.style.display = 'inline-block';
+}
+
+function dismissMobilePwaBannerForNow() {
+    mobilePwaDismissedInView = true;
+    const banner = document.getElementById('mobilePwaPromptBanner');
+    if (banner) banner.style.display = 'none';
 }
 
 async function installPwaApp() {
@@ -60,11 +124,27 @@ async function installPwaApp() {
         const choice = await deferredInstallPrompt.userChoice;
         if (choice && choice.outcome === 'accepted') {
             deferredInstallPrompt = null;
+            const banner = document.getElementById('mobilePwaPromptBanner');
+            if (banner) banner.style.display = 'none';
         }
         return;
     }
-    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    if (isIos) {
+    const ctx = getMobileBrowserInstallContext();
+    if (ctx.isInAppBrowser) {
+        alert(
+            'BẠN ĐANG MỞ TỪ ZALO / MESSENGER:\n' +
+            '1. Bấm nút Menu (⋮ hoặc ⋯) ở góc trên/dưới trình duyệt.\n' +
+            '2. Chọn "Mở bằng trình duyệt mặc định" (Chrome trên Android hoặc Safari trên iPhone).\n' +
+            '3. Sau đó bấm Cài App / Thêm vào Màn hình chính để sử dụng đầy đủ GPS, Camera và Lưu nháp.'
+        );
+    } else if (ctx.isChromeIos) {
+        alert(
+            'HƯỚNG DẪN CÀI APP TRÊN IPHONE (CHROME):\n' +
+            '1. Bấm biểu tượng Chia sẻ (ô vuông có mũi tên lên ⬆️) ở góc trên phải thanh địa chỉ Chrome.\n' +
+            '2. Cuộn xuống chọn "Thêm vào Màn hình chính" (Add to Home Screen).\n' +
+            '3. Bấm "Thêm". Hoặc mở link bằng trình duyệt Safari nếu không thấy mục này.'
+        );
+    } else if (ctx.isIos) {
         alert(
             'HƯỚNG DẪN CÀI APP TRÊN IPHONE / IPAD (SAFARI):\n' +
             '1. Bấm biểu tượng Chia sẻ (ô vuông có mũi tên lên ⬆️) ở thanh dưới trình duyệt.\n' +
@@ -127,10 +207,7 @@ let currentUser = null;
 
 // Khởi chạy hệ thống
 document.addEventListener('DOMContentLoaded', async () => {
-    if (isRunningStandalone()) {
-        const pwaBtn = document.getElementById('btnInstallPwa');
-        if (pwaBtn) pwaBtn.style.display = 'none';
-    }
+    initMobilePwaInstallPrompt();
     document.querySelectorAll('a[href="/api/export/excel"]').forEach(a => {
         a.href = apiUrl('/api/export/excel');
     });
@@ -138,6 +215,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadQuestions();
     await loadSchedule();
     await syncOfflineQueue(true);
+    await syncPendingDrafts(true);
+    await refreshDraftBadgeCount();
     await refreshDashboardData();
     await loadSurveysList();
     selectTool('P1');
@@ -146,6 +225,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('online', () => {
         updateNetworkStatus();
         syncOfflineQueue(true);
+        syncPendingDrafts(true);
     });
     window.addEventListener('offline', updateNetworkStatus);
     updateNetworkStatus();
@@ -174,7 +254,7 @@ function initUserSession() {
 }
 
 function selectLoginTier(tier) {
-    document.querySelectorAll('.tier-tab-btn, .qgis-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#userLoginModal .tier-tab-btn, #userLoginModal .qgis-tab-btn').forEach(b => b.classList.remove('active'));
     const targetBtn = document.getElementById(`btnTier${capitalize(tier)}`);
     if (targetBtn) targetBtn.classList.add('active');
     document.getElementById('loginSelectedRole').value = tier;
@@ -506,6 +586,7 @@ function getUserAssignedScope() {
     if (sid === 'TCN11' || sid === 'VIEWER' || sid === 'ADMIN') return '';
     const idMap = {
         TCN01: 'Duy',
+        TCN07: 'Duy',
         TCN02: 'Vọng',
         TCN03: 'Thao',
         TCN04: 'Trụ',
@@ -864,8 +945,9 @@ function formatDateVN(dateStr) {
 function selectTool(toolCode) {
     currentTool = toolCode;
     editingSurveyId = null;
+    currentDraftPhotoPath = '';
     const submitBtn = document.getElementById('btnSubmitForm');
-    if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> GỬI KẾT QUẢ LÊN HỆ THỐNG DAKMAN';
+    if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> LƯU VÀ HOÀN THÀNH PHIẾU';
 
     document.querySelectorAll('.tool-tab').forEach(btn => btn.classList.remove('active'));
     const activeBtn = document.getElementById(`toolBtn-${toolCode}`);
@@ -879,13 +961,14 @@ function selectTool(toolCode) {
         heading.textContent = `CÔNG CỤ: ${toolObj.tool_code} — ${toolObj.tool_name.toUpperCase()} (${toolObj.target_count || ''})`;
     }
 
-    // Khôi phục bản nháp nếu có
+    // Khôi phục bản nháp gần nhất của công cụ nếu có
     const draftKey = `dakman_draft_${toolCode}`;
     const savedDraft = localStorage.getItem(draftKey);
     if (savedDraft) {
         try {
             const parsed = JSON.parse(savedDraft);
             currentDraftAnswers = parsed.answers || {};
+            currentDraftPhotoPath = parsed.photo_path || '';
             if (parsed.survey_code) document.getElementById('surveyCodeInput').value = parsed.survey_code;
             if (parsed.commune) document.getElementById('communeSelect').value = parsed.commune;
             if (parsed.hamlet) document.getElementById('hamletInput').value = parsed.hamlet;
@@ -895,16 +978,21 @@ function selectTool(toolCode) {
             if (parsed.gps) document.getElementById('gpsInput').value = parsed.gps;
             if (parsed.photo_data) {
                 setHouseholdPhotoPreview(parsed.photo_data, parsed.photo_meta || 'Đã khôi phục ảnh nháp có watermark');
+            } else if (parsed.photo_path) {
+                setHouseholdPhotoPreview(apiUrl(`/api/photos/${parsed.photo_path}`), parsed.photo_meta || 'Ảnh nháp đã lưu trên VPS');
+                currentHouseholdPhotoData = '';
             } else {
                 clearHouseholdPhoto(true);
             }
             updateDraftTimeDisplay(parsed.saved_at);
         } catch (e) {
             currentDraftAnswers = {};
+            currentDraftPhotoPath = '';
             clearHouseholdPhoto(true);
         }
     } else {
         currentDraftAnswers = {};
+        currentDraftPhotoPath = '';
         const todayNum = new Date().toISOString().slice(2, 10).replace(/-/g, '');
         document.getElementById('surveyCodeInput').value = `${toolCode}_${currentUser?.surveyor_id || 'DTV'}_${todayNum}_01`;
         document.getElementById('respondentNameInput').value = '';
@@ -1807,42 +1895,378 @@ function removeMultiTxRow(code, btn) {
 }
 
 // ========================================================
-// 6. LƯU BẢN NHÁP (LOCAL STORAGE & AUTO SAVE)
+// 6. LƯU BẢN NHÁP ĐA PHIẾU (INDEXEDDB OFFLINE + VPS /api/drafts)
 // ========================================================
+const DRAFTS_IDB_NAME = 'dakman_drafts_db';
+const DRAFTS_IDB_STORE = 'drafts';
+
+function openDraftsIdb() {
+    return new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+            reject(new Error('IndexedDB unavailable'));
+            return;
+        }
+        const req = indexedDB.open(DRAFTS_IDB_NAME, 1);
+        req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(DRAFTS_IDB_STORE)) {
+                db.createObjectStore(DRAFTS_IDB_STORE, { keyPath: 'draft_key' });
+            }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function getIdbDrafts() {
+    try {
+        const db = await openDraftsIdb();
+        return await new Promise((resolve) => {
+            const tx = db.transaction(DRAFTS_IDB_STORE, 'readonly');
+            const req = tx.objectStore(DRAFTS_IDB_STORE).getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => resolve([]);
+        });
+    } catch (_) {
+        return [];
+    }
+}
+
+async function putIdbDraft(record) {
+    try {
+        const db = await openDraftsIdb();
+        await new Promise((resolve) => {
+            const tx = db.transaction(DRAFTS_IDB_STORE, 'readwrite');
+            tx.objectStore(DRAFTS_IDB_STORE).put(record);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+        });
+    } catch (_) {}
+}
+
+async function deleteIdbDraft(draftKey) {
+    try {
+        const db = await openDraftsIdb();
+        await new Promise((resolve) => {
+            const tx = db.transaction(DRAFTS_IDB_STORE, 'readwrite');
+            tx.objectStore(DRAFTS_IDB_STORE).delete(draftKey);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+        });
+    } catch (_) {}
+}
+
+function buildCurrentDraftRecord() {
+    const surveyCode = (document.getElementById('surveyCodeInput')?.value || '').trim() || `${currentTool}_${Date.now()}`;
+    const gpsStr = (document.getElementById('gpsInput')?.value || '').trim();
+    let gpsLat = 0.0, gpsLng = 0.0;
+    const coordMatch = gpsStr.match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+    if (coordMatch) {
+        gpsLat = parseFloat(coordMatch[1]) || 0.0;
+        gpsLng = parseFloat(coordMatch[2]) || 0.0;
+    }
+    const visible = getVisibleQuestions(currentTool);
+    const ansCount = visible.filter(q => isQuestionAnswered(q.code)).length;
+    const isDataUrl = Boolean(currentHouseholdPhotoData && currentHouseholdPhotoData.startsWith('data:'));
+
+    return {
+        draft_key: `${currentTool}::${surveyCode}`,
+        tool_code: currentTool,
+        survey_code: surveyCode,
+        surveyor_id: currentUser?.surveyor_id || 'DTV',
+        surveyor_name: currentUser?.full_name || 'Điều tra viên',
+        survey_date: document.getElementById('surveyDateInput')?.value || new Date().toISOString().split('T')[0],
+        commune: document.getElementById('communeSelect')?.value || 'Ea Kiết',
+        hamlet: (document.getElementById('hamletInput')?.value || '').trim(),
+        respondent_name: (document.getElementById('respondentNameInput')?.value || '').trim(),
+        respondent_phone: (document.getElementById('phoneInput')?.value || '').trim(),
+        guide_name: (document.getElementById('guideNameInput')?.value || currentDraftAnswers['_guide'] || '').trim(),
+        gps: gpsStr,
+        gps_lat: gpsLat,
+        gps_lng: gpsLng,
+        current_section: currentSection || '',
+        photo_data: isDataUrl ? currentHouseholdPhotoData : '',
+        photo_path: currentDraftPhotoPath || '',
+        photo_meta: currentHouseholdPhotoMeta || '',
+        answers: Object.assign({}, currentDraftAnswers),
+        answered_count: ansCount,
+        total_count: visible.length,
+        saved_at: new Date().toLocaleTimeString('vi-VN'),
+        updated_iso: new Date().toISOString(),
+        sync_pending: true
+    };
+}
+
 function saveDraftLocal(isManual) {
     if (currentUser?.role === 'viewer') return;
 
+    const rec = buildCurrentDraftRecord();
     const payload = {
-        tool_code: currentTool,
-        survey_code: document.getElementById('surveyCodeInput').value,
-        commune: document.getElementById('communeSelect').value,
-        hamlet: document.getElementById('hamletInput').value,
-        respondent_name: document.getElementById('respondentNameInput').value,
-        phone: document.getElementById('phoneInput')?.value || '',
-        guide: document.getElementById('guideNameInput')?.value || '',
-        gps: document.getElementById('gpsInput').value,
-        photo_data: currentHouseholdPhotoData || '',
-        photo_meta: currentHouseholdPhotoMeta || '',
-        answers: currentDraftAnswers,
-        saved_at: new Date().toLocaleTimeString('vi-VN')
+        tool_code: rec.tool_code,
+        survey_code: rec.survey_code,
+        commune: rec.commune,
+        hamlet: rec.hamlet,
+        respondent_name: rec.respondent_name,
+        phone: rec.respondent_phone,
+        guide: rec.guide_name,
+        gps: rec.gps,
+        photo_data: rec.photo_data,
+        photo_path: rec.photo_path,
+        photo_meta: rec.photo_meta,
+        answers: rec.answers,
+        saved_at: rec.saved_at
     };
 
     try {
         localStorage.setItem(`dakman_draft_${currentTool}`, JSON.stringify(payload));
     } catch (e) {
-        // Nếu ảnh vượt quota localStorage, lưu nháp không kèm ảnh
         const lightPayload = Object.assign({}, payload, { photo_data: '' });
         try { localStorage.setItem(`dakman_draft_${currentTool}`, JSON.stringify(lightPayload)); } catch (_) {}
     }
-    updateDraftTimeDisplay(payload.saved_at);
+
+    // Lưu đa phiếu + ảnh vào IndexedDB nếu đã có tên hộ, ảnh, GPS hoặc câu trả lời
+    const hasMeaningfulData = Boolean(
+        rec.respondent_name || rec.photo_data || rec.photo_path || rec.gps || rec.answered_count > 0
+    );
+    if (hasMeaningfulData) {
+        putIdbDraft(rec).then(() => {
+            if (!isManual) refreshDraftBadgeCount();
+        });
+    }
+
+    updateDraftTimeDisplay(rec.saved_at);
 
     if (isManual) {
-        alert('Đã lưu bản nháp thành công vào bộ nhớ trình duyệt!');
+        syncCurrentDraftToVps(rec).then((synced) => {
+            refreshDraftBadgeCount();
+            const statusText = document.getElementById('floatingDraftStatusText');
+            if (statusText) {
+                statusText.textContent = synced
+                    ? `Đã lưu tạm [${rec.respondent_name || rec.survey_code}] lên Thiết bị + VPS lúc ${rec.saved_at}.`
+                    : `Đã lưu tạm [${rec.respondent_name || rec.survey_code}] an toàn trên Thiết bị (sẽ tự đồng bộ VPS khi có mạng).`;
+            }
+            alert(
+                synced
+                    ? `ĐÃ LƯU TẠM THÀNH CÔNG LÊN THIẾT BỊ & MÁY CHỦ VPS!\n- Mã phiếu: ${rec.survey_code}\n- Chủ hộ: ${rec.respondent_name || '(Chưa nhập tên)'}\n- Ảnh hiện trường: ${(rec.photo_data || rec.photo_path) ? 'Đã lưu' : 'Chưa chụp'}\n- GPS: ${rec.gps || 'Chưa có'}\n\nKhi nào về nhà mở mục "Phiếu Lưu Tạm" là có thể nhập tiếp từ phiếu giấy!`
+                    : `ĐÃ LƯU TẠM AN TOÀN TRÊN THIẾT BỊ (OFFLINE)!\n- Mã phiếu: ${rec.survey_code}\n- Chủ hộ: ${rec.respondent_name || '(Chưa nhập tên)'}\nHệ thống sẽ tự động đẩy lên VPS khi có sóng mạng.`
+            );
+        });
     }
+}
+
+async function syncCurrentDraftToVps(rec) {
+    if (!rec || currentUser?.role === 'viewer') return false;
+    try {
+        const res = await fetch(apiUrl('/api/drafts'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(Object.assign({ role: currentUser?.role || 'editor' }, rec))
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.photo_path) {
+                currentDraftPhotoPath = data.photo_path;
+                rec.photo_path = data.photo_path;
+            }
+            rec.sync_pending = false;
+            await putIdbDraft(rec);
+            return true;
+        }
+    } catch (_) {}
+    return false;
+}
+
+async function syncPendingDrafts(silent = true) {
+    if (!navigator.onLine || currentUser?.role === 'viewer') return;
+    const list = await getIdbDrafts();
+    for (const rec of list) {
+        if (rec.sync_pending) {
+            await syncCurrentDraftToVps(rec);
+        }
+    }
+    if (!silent) refreshDraftBadgeCount();
+}
+
+async function fetchMergedDraftsList() {
+    const localList = await getIdbDrafts();
+    const mergedMap = new Map();
+    localList.forEach(d => mergedMap.set(d.draft_key, Object.assign({ source: 'Thiết bị (Offline)' }, d)));
+
+    if (navigator.onLine && currentUser) {
+        try {
+            const role = encodeURIComponent(currentUser.role || 'editor');
+            const sid = encodeURIComponent(currentUser.surveyor_id || '');
+            const res = await fetch(apiUrl(`/api/drafts?role=${role}&surveyor_id=${sid}`));
+            if (res.ok) {
+                const remote = await res.json();
+                remote.forEach(r => {
+                    const existing = mergedMap.get(r.draft_key);
+                    if (existing) {
+                        mergedMap.set(r.draft_key, Object.assign({}, r, existing, {
+                            photo_path: existing.photo_path || r.photo_path,
+                            photo_url: r.photo_url || existing.photo_url,
+                            source: existing.sync_pending ? 'Thiết bị (Chờ đồng bộ VPS)' : 'Thiết bị + VPS'
+                        }));
+                    } else {
+                        mergedMap.set(r.draft_key, Object.assign({ source: 'VPS (Từ thiết bị khác)' }, r));
+                    }
+                });
+            }
+        } catch (_) {}
+    }
+    return Array.from(mergedMap.values()).sort((a, b) => String(b.updated_iso || b.updated_at || '').localeCompare(String(a.updated_iso || a.updated_at || '')));
+}
+
+async function refreshDraftBadgeCount() {
+    const drafts = await fetchMergedDraftsList();
+    const b1 = document.getElementById('draftListCountBadge');
+    const b2 = document.getElementById('draftStripCountBadge');
+    if (b1) b1.textContent = drafts.length;
+    if (b2) b2.textContent = drafts.length;
 }
 
 function manualSaveDraft() {
     saveDraftLocal(true);
+}
+
+async function saveDraftAndNextHousehold() {
+    if (currentUser?.role === 'viewer') return;
+    const rec = buildCurrentDraftRecord();
+    await putIdbDraft(rec);
+    const synced = await syncCurrentDraftToVps(rec);
+    await refreshDraftBadgeCount();
+
+    currentDraftAnswers = {};
+    editingSurveyId = null;
+    currentDraftPhotoPath = '';
+    stopBackgroundGpsTracker();
+    stopRealtimeInterviewClock();
+    clearHouseholdPhoto(true);
+    localStorage.removeItem(`dakman_draft_${currentTool}`);
+
+    ['surveyCodeInput', 'hamletInput', 'respondentNameInput', 'phoneInput', 'guideNameInput', 'gpsInput'].forEach(fid => {
+        const el = document.getElementById(fid);
+        if (el) el.value = '';
+    });
+    const banner = document.getElementById('sampleSelectedBanner');
+    if (banner) banner.style.display = 'none';
+
+    selectTool(currentTool);
+    filterSampleHouseholds();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    alert(
+        synced
+            ? `Đã lưu tạm hộ [${rec.respondent_name || rec.survey_code}] lên VPS & thiết bị!\nBây giờ có thể chọn hộ tiếp theo hoặc chụp ảnh/GPS tại vườn kế tiếp.`
+            : `Đã lưu tạm hộ [${rec.respondent_name || rec.survey_code}] trên thiết bị!\nBây giờ có thể chọn hộ tiếp theo.`
+    );
+}
+
+async function openDraftsModal() {
+    const modal = document.getElementById('draftsListModal');
+    if (modal) {
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    }
+    await refreshAllDraftsList();
+}
+
+function hideDraftsModal() {
+    const modal = document.getElementById('draftsListModal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+}
+
+async function refreshAllDraftsList() {
+    const box = document.getElementById('draftsListContainer');
+    if (!box) return;
+    box.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải danh sách phiếu lưu tạm...</div>';
+    const drafts = await fetchMergedDraftsList();
+    await refreshDraftBadgeCount();
+
+    if (!drafts.length) {
+        box.innerHTML = '<div style="text-align: center; padding: 24px; color: #64748b;">Chưa có phiếu nào đang lưu tạm. Khi đi hiện trường, chỉ cần chọn Chủ hộ, chụp ảnh &amp; lấy GPS rồi bấm <strong>Lưu Tạm</strong>.</div>';
+        return;
+    }
+
+    box.innerHTML = drafts.map(d => {
+        const hasPhoto = Boolean(d.photo_data || d.photo_url || d.photo_path);
+        const gpsText = d.gps || ((d.gps_lat && d.gps_lng) ? `${d.gps_lat}, ${d.gps_lng}` : 'Chưa có GPS');
+        const thumbSrc = d.photo_data || (d.photo_url ? apiUrl(d.photo_url) : (d.photo_path ? apiUrl(`/api/photos/${d.photo_path}`) : ''));
+        return `
+            <div style="border: 1px solid #cbd5e1; border-left: 4px solid #d97706; border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; background: #fff; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                ${thumbSrc ? `<img src="${thumbSrc}" alt="Ảnh" style="width: 72px; height: 72px; object-fit: cover; border-radius: 3px; border: 1px solid #e2e8f0; flex-shrink: 0;">` : `<div style="width:72px; height:72px; background:#f1f5f9; border:1px dashed #cbd5e1; border-radius:3px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:0.72rem; text-align:center; flex-shrink:0;">Chưa ảnh</div>`}
+                <div style="flex: 1; min-width: 210px; font-size: 0.82rem; line-height: 1.5;">
+                    <div><strong style="color: #002060; font-family: monospace;">${escapeHtml(d.survey_code || '—')}</strong> <span style="background:#e0e7ff;color:#3730a3;padding:1px 5px;border-radius:2px;font-weight:700;font-size:0.72rem;">${escapeHtml(d.tool_code || 'P1')}</span> — <strong>${escapeHtml(d.respondent_name || '(Chưa nhập tên chủ hộ)')}</strong></div>
+                    <div style="color: #475569;">Địa bàn: ${escapeHtml(d.commune || '')}${d.hamlet ? ` (${escapeHtml(d.hamlet)})` : ''} | Dẫn đường: ${escapeHtml(d.guide_name || d.guide || '—')}</div>
+                    <div style="color: #475569;">GPS: <span style="font-family:monospace;">${escapeHtml(gpsText)}</span> | Ảnh: ${hasPhoto ? '<span style="color:#15803d;font-weight:700;">✓ Đã có</span>' : '<span style="color:#b45309;">Chưa chụp</span>'} | Đã nhập: <strong>${d.answered_count || 0}/${d.total_count || '?'}</strong> câu</div>
+                    <div style="font-size: 0.74rem; color: #64748b;">Lưu lúc: ${escapeHtml(d.saved_at || d.updated_at || '')} • ${escapeHtml(d.source || '')}</div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;">
+                    <button type="button" onclick="loadDraftIntoForm('${escapeQuotes(d.draft_key)}')" class="qgis-btn-primary" style="background: #15803d; border-color: #166534; padding: 6px 12px; font-size: 0.80rem;">
+                        <i class="fa-solid fa-pen-to-square"></i> Mở Nhập Tiếp
+                    </button>
+                    <button type="button" onclick="deleteDraftItem('${escapeQuotes(d.draft_key)}')" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 0.76rem; font-weight: 600;">
+                        <i class="fa-solid fa-trash-can"></i> Xóa Nháp
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function loadDraftIntoForm(draftKey) {
+    const drafts = await fetchMergedDraftsList();
+    const d = drafts.find(item => item.draft_key === draftKey);
+    if (!d) {
+        alert('Không tìm thấy bản nháp cần mở!');
+        return;
+    }
+
+    hideDraftsModal();
+    switchMainView('survey');
+    localStorage.removeItem(`dakman_draft_${d.tool_code || 'P1'}`);
+    selectTool(d.tool_code || 'P1');
+
+    currentDraftAnswers = Object.assign({}, d.answers || {});
+    currentDraftPhotoPath = d.photo_path || '';
+    document.getElementById('surveyCodeInput').value = d.survey_code || '';
+    if (d.commune) document.getElementById('communeSelect').value = d.commune;
+    document.getElementById('hamletInput').value = d.hamlet || '';
+    document.getElementById('respondentNameInput').value = d.respondent_name || '';
+    if (document.getElementById('phoneInput')) document.getElementById('phoneInput').value = d.respondent_phone || d.phone || '';
+    if (document.getElementById('guideNameInput')) document.getElementById('guideNameInput').value = d.guide_name || d.guide || '';
+    document.getElementById('gpsInput').value = d.gps || ((d.gps_lat && d.gps_lng) ? `${d.gps_lat}, ${d.gps_lng}` : '');
+
+    if (d.photo_data) {
+        setHouseholdPhotoPreview(d.photo_data, d.photo_meta || 'Ảnh nháp đã lưu trên thiết bị');
+    } else if (d.photo_url || d.photo_path) {
+        const u = d.photo_url ? apiUrl(d.photo_url) : apiUrl(`/api/photos/${d.photo_path}`);
+        setHouseholdPhotoPreview(u, d.photo_meta || `Ảnh nháp đã lưu trên VPS (${d.survey_code})`);
+        currentHouseholdPhotoData = '';
+    } else {
+        clearHouseholdPhoto(true);
+    }
+
+    const sections = getToolSections();
+    if (d.current_section && sections.includes(d.current_section)) {
+        selectSection(d.current_section, sections.indexOf(d.current_section));
+    } else {
+        renderQuestionsForSection(currentSection);
+    }
+    updateAnsweredSummaryBadge();
+    saveDraftLocal(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function deleteDraftItem(draftKey) {
+    if (!confirm('Bạn có chắc chắn muốn xóa bản nháp lưu tạm này?')) return;
+    await deleteIdbDraft(draftKey);
+    try {
+        await fetch(apiUrl(`/api/drafts/${encodeURIComponent(draftKey)}`), { method: 'DELETE' });
+    } catch (_) {}
+    await refreshAllDraftsList();
 }
 
 function updateDraftTimeDisplay(timeStr) {
@@ -1970,6 +2394,9 @@ function triggerHouseholdPhotoCapture() {
 
 function setHouseholdPhotoPreview(dataUrl, metaText) {
     currentHouseholdPhotoData = dataUrl || '';
+    if (currentHouseholdPhotoData.startsWith('data:')) {
+        currentDraftPhotoPath = '';
+    }
     currentHouseholdPhotoMeta = metaText || '';
     const box = document.getElementById('photoPreviewBox');
     const img = document.getElementById('photoPreviewImg');
@@ -2005,9 +2432,9 @@ let bgGpsStopTimeout = null;
 let bgBestGps = null;
 
 function updatePhotoLockState() {
-    const hasPhoto = Boolean(currentHouseholdPhotoData && currentHouseholdPhotoData.trim());
+    const imgSrc = document.getElementById('photoPreviewImg')?.getAttribute('src') || '';
+    const hasPhoto = Boolean((currentHouseholdPhotoData && currentHouseholdPhotoData.trim()) || currentDraftPhotoPath || imgSrc);
     const isReadOnlyOrAdmin = (currentUser?.role === 'viewer' || Boolean(editingSurveyId));
-    const unlocked = hasPhoto || isReadOnlyOrAdmin;
 
     const lockEl = document.getElementById('photoRequiredLock');
     const progEl = document.getElementById('surveyProgressBar');
@@ -2015,13 +2442,12 @@ function updatePhotoLockState() {
     const stepEl = document.getElementById('sectionStepNav');
     const qBoxEl = document.getElementById('surveyQuestionsBox');
 
-    if (lockEl) lockEl.style.display = unlocked ? 'none' : 'block';
-    if (progEl) progEl.style.display = unlocked ? 'flex' : 'none';
-    if (navEl && !unlocked) navEl.style.display = 'none';
-    else if (navEl && unlocked && getToolSections().length > 1) navEl.style.display = 'flex';
-    if (stepEl && !unlocked) stepEl.style.display = 'none';
-    else if (stepEl && unlocked && getToolSections().length > 1) stepEl.style.display = 'flex';
-    if (qBoxEl) qBoxEl.style.display = unlocked ? 'block' : 'none';
+    // Luôn hiển thị bảng câu hỏi & thanh phần A-G (không ẩn nhập nhằng); chỉ hiện nhắc chụp ảnh khi chưa có ảnh
+    if (lockEl) lockEl.style.display = (hasPhoto || isReadOnlyOrAdmin) ? 'none' : 'block';
+    if (progEl) progEl.style.display = 'flex';
+    if (navEl && getToolSections().length > 1) navEl.style.display = 'flex';
+    if (stepEl && getToolSections().length > 1) stepEl.style.display = 'flex';
+    if (qBoxEl) qBoxEl.style.display = 'block';
 }
 
 function startRealtimeInterviewClock() {
@@ -2106,6 +2532,7 @@ function stopBackgroundGpsTracker() {
 function clearHouseholdPhoto(silent = false) {
     const input = document.getElementById('householdPhotoInput');
     if (input) input.value = '';
+    if (!silent) currentDraftPhotoPath = '';
     setHouseholdPhotoPreview('', '');
     if (!silent) {
         saveDraftLocal(false);
@@ -2314,6 +2741,8 @@ async function handleSurveySubmit(e) {
         gps_lat: gpsLat,
         gps_lng: gpsLng,
         photo_data: currentHouseholdPhotoData || '',
+        photo_path: currentDraftPhotoPath || '',
+        draft_key: `${currentTool}::${surveyCode}`,
         answers: currentDraftAnswers
     };
 
@@ -2331,6 +2760,8 @@ async function handleSurveySubmit(e) {
             const savedId = isEditing ? editingSurveyId : data.survey_id;
 
             localStorage.removeItem(`dakman_draft_${currentTool}`);
+            await deleteIdbDraft(`${currentTool}::${surveyCode}`);
+            await refreshDraftBadgeCount();
             await refreshDashboardData();
             await loadSurveysList();
 
@@ -2403,6 +2834,7 @@ function finishAfterCompletion() {
 
     currentDraftAnswers = {};
     editingSurveyId = null;
+    currentDraftPhotoPath = '';
     stopBackgroundGpsTracker();
     stopRealtimeInterviewClock();
     clearHouseholdPhoto(true);
@@ -3042,11 +3474,19 @@ function escapeHtml(str) {
 // 13. QUẢN LÝ NHÂN SỰ & BẢO MẬT ADMIN (DUAL TABS)
 // ========================================================
 function generateStaffId() {
-    const now = new Date();
     const tbody = document.getElementById('staffListTbody');
-    const existingCount = tbody ? tbody.querySelectorAll('tr').length : 0;
-    const nextNum = String(existingCount + 1).padStart(2, '0');
-    const code = `TCN${nextNum}`;
+    const existingIds = new Set();
+    if (tbody) {
+        tbody.querySelectorAll('tr td:nth-child(2)').forEach(td => {
+            existingIds.add(td.textContent.trim().toUpperCase());
+        });
+    }
+    let idx = 1;
+    let code = 'TCN01';
+    while (existingIds.has(code)) {
+        idx += 1;
+        code = `TCN${String(idx).padStart(2, '0')}`;
+    }
     const target = document.getElementById('newStaffId');
     if (target) target.value = code;
     return code;
@@ -3549,9 +3989,15 @@ async function loadAdminSettings() {
         const pAdmin = document.getElementById('cfgAdminPass');
         const pView = document.getElementById('cfgViewerPass');
         const aName = document.getElementById('cfgAdminName');
+        const sSender = document.getElementById('cfgSmtpSender');
+        const sPass = document.getElementById('cfgSmtpPassword');
+        const rRcpts = document.getElementById('cfgReportRecipients');
         if (pAdmin) pAdmin.value = data.pass_admin || '';
         if (pView) pView.value = data.pass_viewer || '';
         if (aName) aName.value = data.admin_name || 'Quản Trị Viên (Admin)';
+        if (sSender) sSender.value = data.smtp_sender || '';
+        if (sPass) sPass.value = data.smtp_password || '';
+        if (rRcpts) rRcpts.value = data.report_recipients || '';
     } catch (err) {
         console.error('Lỗi tải cấu hình bảo mật:', err);
     }
@@ -3562,6 +4008,9 @@ async function handleSaveAdminSettings(e) {
     const pAdmin = document.getElementById('cfgAdminPass').value.trim();
     const pView = document.getElementById('cfgViewerPass').value.trim();
     const aName = document.getElementById('cfgAdminName').value.trim();
+    const sSender = (document.getElementById('cfgSmtpSender')?.value || '').trim();
+    const sPass = (document.getElementById('cfgSmtpPassword')?.value || '').trim();
+    const rRcpts = (document.getElementById('cfgReportRecipients')?.value || '').trim();
 
     if (!pAdmin || !pView) {
         alert('Vui lòng không để trống mật khẩu Admin hoặc mật khẩu Chỉ xem!');
@@ -3578,7 +4027,10 @@ async function handleSaveAdminSettings(e) {
             body: JSON.stringify({
                 pass_admin: pAdmin,
                 pass_viewer: pView,
-                admin_name: aName
+                admin_name: aName,
+                smtp_sender: sSender,
+                smtp_password: sPass,
+                report_recipients: rRcpts
             })
         });
 
@@ -3591,7 +4043,7 @@ async function handleSaveAdminSettings(e) {
                 localStorage.setItem('dakman_surveyor_session', JSON.stringify(currentUser));
                 updateUserDisplay();
             }
-            alert('ĐÃ CẬP NHẬT THÀNH CÔNG!\n- Mật khẩu Quản trị viên mới đã được lưu.\n- Mật khẩu Khách xem mới đã được lưu.\n- Tên Quản trị viên hiển thị đã được cập nhật.');
+            alert('ĐÃ CẬP NHẬT THÀNH CÔNG!\n- Mật khẩu Quản trị viên & Khách xem đã được lưu.\n- Cấu hình Email báo cáo cuối ngày đã được cập nhật.');
         } else {
             alert('Lỗi: ' + (data.error || 'Không thể lưu cài đặt'));
         }
@@ -3625,17 +4077,23 @@ async function loadStaffList() {
                 <td style="font-family: monospace; font-weight: 700; color: var(--primary);">${escapeHtml(u.surveyor_id)}</td>
                 <td style="font-weight: 600;">${escapeHtml(u.full_name)}</td>
                 <td>${escapeHtml(u.commune_assigned || 'Ea Kiết')}</td>
-                <td style="font-family: monospace; font-size: 0.78rem; font-weight: 700; color: #dc2626;">••••••••</td>
+                <td style="font-family: monospace; font-size: 0.78rem; font-weight: 700; color: #dc2626; white-space: nowrap;">
+                    <span id="staffPwdMask_${idx}" data-shown="0" data-pwd="${escapeHtml(u.password || '')}">••••••••</span>
+                    <button type="button" onclick="toggleStaffRowPassword(${idx})" title="Hiện/ẩn mật khẩu"
+                        style="background: none; border: none; color: #475569; cursor: pointer; padding: 2px 4px; margin-left: 4px;">
+                        <i class="fa-solid fa-eye" id="staffPwdEye_${idx}"></i>
+                    </button>
+                </td>
                 <td style="text-align: center; white-space: nowrap;">
                     <button type="button" class="action-btn" title="Gửi tài khoản qua Zalo" 
                             onclick="copyZaloText('${escapeQuotes(u.surveyor_id)}', '${escapeQuotes(u.full_name)}', '${escapeQuotes(u.commune_assigned || 'Ea Kiết')}', '${escapeQuotes(u.password || '')}')"
                             style="background: #0284c7; color: #ffffff; padding: 3px 7px; border-radius: 3px; font-size: 0.75rem;">
                         <i class="fa-solid fa-share-nodes"></i> Zalo
                     </button>
-                    <button type="button" class="action-btn" title="Chỉnh sửa hoặc đổi mật khẩu" 
+                    <button type="button" class="action-btn" title="Sửa mã NV / họ tên / đổi mật khẩu" 
                             onclick="openEditStaffModal('${escapeQuotes(u.surveyor_id)}', '${escapeQuotes(u.full_name)}', '${escapeQuotes(u.phone || '')}', '${escapeQuotes(u.commune_assigned || 'Ea Kiết')}', '${escapeQuotes(u.password || '')}')"
                             style="background: #eab308; color: #713f12; padding: 3px 7px; border-radius: 3px; font-size: 0.75rem; margin: 0 2px;">
-                        <i class="fa-solid fa-key"></i> Đổi MK
+                        <i class="fa-solid fa-key"></i> Sửa / Đổi MK
                     </button>
                     <button type="button" class="action-btn" title="Xóa điều tra viên" 
                             onclick="deleteStaffConfirm('${escapeQuotes(u.surveyor_id)}', '${escapeQuotes(u.full_name)}')"
@@ -3648,6 +4106,21 @@ async function loadStaffList() {
     } catch (err) {
         console.error('Lỗi tải danh sách nhân viên:', err);
         tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #dc2626; padding: 14px;">Lỗi tải danh sách nhân viên.</td></tr>';
+    }
+}
+
+function toggleStaffRowPassword(idx) {
+    const span = document.getElementById(`staffPwdMask_${idx}`);
+    const eye = document.getElementById(`staffPwdEye_${idx}`);
+    if (!span) return;
+    if (span.dataset.shown === '1') {
+        span.textContent = '••••••••';
+        span.dataset.shown = '0';
+        if (eye) eye.className = 'fa-solid fa-eye';
+    } else {
+        span.textContent = span.dataset.pwd || '';
+        span.dataset.shown = '1';
+        if (eye) eye.className = 'fa-solid fa-eye-slash';
     }
 }
 
@@ -3732,11 +4205,17 @@ function hideEditStaffModal() {
 
 async function handleEditStaffSubmit(e) {
     e.preventDefault();
-    const origId = document.getElementById('editStaffOrigId').value;
+    const origId = document.getElementById('editStaffOrigId').value.trim();
+    const newId = document.getElementById('editStaffId').value.trim();
     const name = document.getElementById('editStaffName').value.trim();
     const phone = document.getElementById('editStaffPhone').value.trim();
     const commune = document.getElementById('editStaffCommune').value;
     const pwd = document.getElementById('editStaffPassword').value.trim();
+
+    if (!newId || !name || !pwd) {
+        alert('Vui lòng điền đầy đủ Mã NV, Họ tên và Mật khẩu!');
+        return;
+    }
 
     try {
         const res = await fetch(apiUrl(`/api/admin/users/${encodeURIComponent(origId)}`), {
@@ -3746,6 +4225,7 @@ async function handleEditStaffSubmit(e) {
                 'X-Admin-Key': getAdminKey()
             },
             body: JSON.stringify({
+                new_surveyor_id: newId,
                 full_name: name,
                 phone: phone,
                 commune_assigned: commune,
@@ -3755,7 +4235,7 @@ async function handleEditStaffSubmit(e) {
 
         const data = await res.json();
         if (res.ok && data.success) {
-            copyZaloText(origId, name, commune, pwd, false);
+            copyZaloText(newId, name, commune, pwd, false);
             hideEditStaffModal();
             await loadStaffList();
         } else {

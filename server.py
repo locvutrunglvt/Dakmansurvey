@@ -155,9 +155,37 @@ def init_db():
             row_json TEXT
         )
     ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS survey_drafts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            draft_key TEXT UNIQUE,
+            tool_code TEXT,
+            survey_code TEXT,
+            surveyor_id TEXT,
+            surveyor_name TEXT,
+            survey_date TEXT,
+            commune TEXT,
+            hamlet TEXT,
+            respondent_name TEXT,
+            respondent_phone TEXT,
+            guide_name TEXT,
+            gps_lat REAL,
+            gps_lng REAL,
+            current_section TEXT,
+            photo_path TEXT,
+            photo_meta TEXT,
+            answers_json TEXT,
+            answered_count INTEGER DEFAULT 0,
+            total_count INTEGER DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('pass_admin', 'AAdmin123'))
     cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('pass_viewer', 'View123'))
     cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('admin_name', 'Quản Trị Viên (Admin)'))
+    cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('smtp_sender', 'coffeedatavn@gmail.com'))
+    cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('smtp_password', 'maytinh123@TCN'))
+    cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('report_recipients', 'dothanhduy21vn@gmail.com, locvutrung@gmail.com'))
     conn.commit()
     try:
         cur.execute('ALTER TABLE users ADD COLUMN password TEXT')
@@ -482,7 +510,8 @@ def build_survey_pdf(survey_row):
     return buf.getvalue()
 
 DAILY_REPORT_RECIPIENTS = ["dothanhduy21vn@gmail.com", "locvutrung@gmail.com"]
-DAILY_REPORT_SENDER = "impact@slowforest.vn"
+DAILY_REPORT_SENDER = "coffeedatavn@gmail.com"
+DAILY_REPORT_FALLBACK_SENDER = "impact@slowforest.vn"
 
 def _excel_safe_val(val, q_type="TX"):
     if isinstance(val, list):
@@ -774,47 +803,84 @@ def build_multisheet_excel(export_file=None):
 
 def send_daily_excel_report(recipients=None):
     import subprocess
+    import smtplib
     from email.mime.multipart import MIMEMultipart
     from email.mime.base import MIMEBase
     from email.mime.text import MIMEText
     from email import encoders
 
-    target_list = recipients or DAILY_REPORT_RECIPIENTS
+    cfg_recipients = get_setting("report_recipients", "")
+    if recipients:
+        target_list = recipients
+    elif cfg_recipients.strip():
+        target_list = [e.strip() for e in re.split(r'[,;\s]+', cfg_recipients) if '@' in e]
+        if not target_list:
+            target_list = DAILY_REPORT_RECIPIENTS
+    else:
+        target_list = DAILY_REPORT_RECIPIENTS
+
+    smtp_sender = (get_setting("smtp_sender", DAILY_REPORT_SENDER) or DAILY_REPORT_SENDER).strip()
+    smtp_password = (get_setting("smtp_password", "maytinh123@TCN") or "").strip()
+
     today_str = datetime.datetime.now().strftime("%Y-%m-%d")
     export_path = os.path.join(BASE_DIR, "export_surveys_latest.xlsx")
     _, file_bytes, total_count = build_multisheet_excel(export_path)
 
-    msg = MIMEMultipart()
-    msg["From"] = f"Dakman Survey System <{DAILY_REPORT_SENDER}>"
-    msg["To"] = ", ".join(target_list)
-    msg["Subject"] = f"[Dakman Cu M'gar] Bao cao tong hop phong van ngay {today_str} ({total_count} phieu)"
+    def _build_msg(from_addr, reply_to=None):
+        m = MIMEMultipart()
+        m["From"] = f"Dakman Survey System <{from_addr}>"
+        m["To"] = ", ".join(target_list)
+        if reply_to and reply_to != from_addr:
+            m["Reply-To"] = reply_to
+        m["Subject"] = f"[Dakman Cu M'gar] Bao cao tong hop phong van ngay {today_str} ({total_count} phieu)"
 
-    body = (
-        f"Kính gửi Ban Quản Lý Dự Án (Đỗ Thành Duy & Lộc Vũ Trung),\n\n"
-        f"Hệ thống Khảo Sát Dakman Cư M'gar gửi đính kèm file Excel tổng hợp kết quả phỏng vấn cuối ngày {today_str}.\n"
-        f"- Tổng số phiếu hiện có trên VPS: {total_count} phiếu\n"
-        f"- Cấu trúc file: Gồm sheet Tổng Hợp Tiến Độ, Danh Sách Phiếu, các sheet tách theo từng phần câu hỏi (P1 Phần A–G) và các công cụ (NT, CQ, HTX, TT, MH), cùng Từ Điển Câu Hỏi.\n\n"
-        f"Trân trọng,\nHệ thống Dakman Survey (https://dakmansurvey.coffeedata.it.com)"
-    )
-    msg.attach(MIMEText(body, "plain", "utf-8"))
+        body = (
+            f"Kính gửi Ban Quản Lý Dự Án (Đỗ Thành Duy & Lộc Vũ Trung),\n\n"
+            f"Hệ thống Khảo Sát Dakman Cư M'gar gửi đính kèm file Excel tổng hợp kết quả phỏng vấn cuối ngày {today_str}.\n"
+            f"- Tổng số phiếu hiện có trên VPS: {total_count} phiếu\n"
+            f"- Cấu trúc file: Gồm sheet Tổng Hợp Tiến Độ, Danh Sách Phiếu, các sheet tách theo từng phần câu hỏi (P1 Phần A–G) và các công cụ (NT, CQ, HTX, TT, MH), cùng Từ Điển Câu Hỏi.\n\n"
+            f"Trân trọng,\nHệ thống Dakman Survey (https://dakmansurvey.coffeedata.it.com)"
+        )
+        m.attach(MIMEText(body, "plain", "utf-8"))
 
-    part = MIMEBase("application", "vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    part.set_payload(file_bytes)
-    encoders.encode_base64(part)
-    attach_name = f"Dakman_Survey_KetQua_{today_str}.xlsx"
-    part.add_header("Content-Disposition", f'attachment; filename="{attach_name}"')
-    msg.attach(part)
+        part = MIMEBase("application", "vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        part.set_payload(file_bytes)
+        encoders.encode_base64(part)
+        attach_name = f"Dakman_Survey_KetQua_{today_str}.xlsx"
+        part.add_header("Content-Disposition", f'attachment; filename="{attach_name}"')
+        m.attach(part)
+        return m
 
+    smtp_err = ""
+    if smtp_sender and smtp_password:
+        try:
+            msg = _build_msg(smtp_sender)
+            s = smtplib.SMTP("smtp.gmail.com", 587, timeout=30)
+            s.ehlo()
+            s.starttls()
+            s.ehlo()
+            s.login(smtp_sender, smtp_password)
+            s.send_message(msg)
+            s.quit()
+            return True, total_count, target_list, f"smtp:{smtp_sender}"
+        except Exception as e:
+            smtp_err = str(e)
+            print(f"Primary SMTP ({smtp_sender}) failed, falling back to msmtp: {smtp_err}")
+
+    msg_fb = _build_msg(DAILY_REPORT_FALLBACK_SENDER, reply_to=smtp_sender)
     proc = subprocess.run(
         ["msmtp", "--"] + target_list,
-        input=msg.as_string().encode("utf-8"),
+        input=msg_fb.as_string().encode("utf-8"),
         capture_output=True,
         timeout=60,
     )
     if proc.returncode != 0:
         err_msg = proc.stderr.decode("utf-8", errors="replace")
-        raise RuntimeError(f"msmtp failed: {err_msg}")
-    return True, total_count, target_list
+        raise RuntimeError(f"SMTP ({smtp_sender}) error: {smtp_err} | msmtp failed: {err_msg}")
+    note = f"msmtp:{DAILY_REPORT_FALLBACK_SENDER}"
+    if smtp_err:
+        note += f" (Gmail {smtp_sender} can Mat khau ung dung / App Password 16 ky tu: {smtp_err})"
+    return True, total_count, target_list, note
 
 class SurveyRequestHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -887,7 +953,10 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             self._send_json({
                 'pass_admin': cur_admin_pass,
                 'pass_viewer': get_setting('pass_viewer', PASS_VIEWER),
-                'admin_name': get_setting('admin_name', 'Quản Trị Viên (Admin)')
+                'admin_name': get_setting('admin_name', 'Quản Trị Viên (Admin)'),
+                'smtp_sender': get_setting('smtp_sender', DAILY_REPORT_SENDER),
+                'smtp_password': get_setting('smtp_password', 'maytinh123@TCN'),
+                'report_recipients': get_setting('report_recipients', ', '.join(DAILY_REPORT_RECIPIENTS))
             })
             return
 
@@ -1041,6 +1110,39 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 'commune_counts': commune_counts,
                 'targets': targets
             })
+            return
+
+        elif path == '/api/drafts':
+            role_param = (query.get('role', [''])[0] or '').strip().lower()
+            surveyor_filter = (query.get('surveyor_id', [''])[0] or '').strip()
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            sql = '''
+                SELECT id, draft_key, tool_code, survey_code, surveyor_id, surveyor_name,
+                       survey_date, commune, hamlet, respondent_name, respondent_phone,
+                       guide_name, gps_lat, gps_lng, current_section, photo_path, photo_meta,
+                       answers_json, answered_count, total_count, updated_at
+                FROM survey_drafts
+            '''
+            params = []
+            if role_param != 'admin' and surveyor_filter:
+                sql += ' WHERE UPPER(surveyor_id) = UPPER(?)'
+                params.append(surveyor_filter)
+            sql += ' ORDER BY updated_at DESC, id DESC'
+            cur.execute(sql, params)
+            cols = [c[0] for c in cur.description]
+            drafts = []
+            for r in cur.fetchall():
+                d = dict(zip(cols, r))
+                try:
+                    d['answers'] = json.loads(d.get('answers_json') or '{}')
+                except Exception:
+                    d['answers'] = {}
+                if d.get('photo_path'):
+                    d['photo_url'] = f"/api/photos/{d['photo_path']}"
+                drafts.append(d)
+            conn.close()
+            self._send_json(drafts)
             return
 
         elif path == '/api/surveys':
@@ -1279,13 +1381,103 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': 'Chỉ Quản trị viên mới có quyền gửi báo cáo email!'}, 403)
                 return
             try:
-                _, total_count, rcpts = send_daily_excel_report()
+                _, total_count, rcpts, via_note = send_daily_excel_report()
+                msg_text = f'Đã tạo file Excel nhiều sheet ({total_count} phiếu) và gửi thành công tới: {", ".join(rcpts)}\n(Kênh gửi: {via_note})'
                 self._send_json({
                     'success': True,
-                    'message': f'Đã tạo file Excel nhiều sheet ({total_count} phiếu) và gửi thành công tới: {", ".join(rcpts)}'
+                    'via': via_note,
+                    'message': msg_text
                 })
             except Exception as e:
                 self._send_json({'error': f'Lỗi gửi email báo cáo: {str(e)}'}, 500)
+            return
+
+        elif path == '/api/drafts':
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+            except Exception as e:
+                self._send_json({'error': f'Invalid JSON: {str(e)}'}, 400)
+                return
+
+            role = data.get('role', 'editor')
+            if role == 'viewer':
+                self._send_json({'error': 'Chế độ chỉ xem không được phép lưu tạm!'}, 403)
+                return
+
+            tool_code = (data.get('tool_code') or 'P1').strip()
+            survey_code = (data.get('survey_code') or f"{tool_code}_{datetime.datetime.now().strftime('%H%M%S')}").strip()
+            surveyor_id = (data.get('surveyor_id') or '').strip()
+            draft_key = (data.get('draft_key') or f"{tool_code}::{survey_code}").strip()
+
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute('SELECT photo_path, photo_meta FROM survey_drafts WHERE draft_key = ?', (draft_key,))
+            existing_draft = cur.fetchone()
+
+            photo_path = (data.get('photo_path') or '').strip()
+            if data.get('photo_data'):
+                saved_p = save_survey_photo(f"DRAFT_{survey_code}", data.get('photo_data'))
+                if saved_p:
+                    photo_path = saved_p
+            if not photo_path and existing_draft:
+                photo_path = existing_draft[0] or ''
+
+            photo_meta = (data.get('photo_meta') or (existing_draft[1] if existing_draft else '') or '').strip()
+            answers = data.get('answers') or {}
+            answers_json = json.dumps(answers, ensure_ascii=False)
+
+            cur.execute('''
+                INSERT INTO survey_drafts (
+                    draft_key, tool_code, survey_code, surveyor_id, surveyor_name,
+                    survey_date, commune, hamlet, respondent_name, respondent_phone,
+                    guide_name, gps_lat, gps_lng, current_section, photo_path, photo_meta,
+                    answers_json, answered_count, total_count, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(draft_key) DO UPDATE SET
+                    tool_code = excluded.tool_code,
+                    survey_code = excluded.survey_code,
+                    surveyor_id = excluded.surveyor_id,
+                    surveyor_name = excluded.surveyor_name,
+                    survey_date = excluded.survey_date,
+                    commune = excluded.commune,
+                    hamlet = excluded.hamlet,
+                    respondent_name = excluded.respondent_name,
+                    respondent_phone = excluded.respondent_phone,
+                    guide_name = excluded.guide_name,
+                    gps_lat = excluded.gps_lat,
+                    gps_lng = excluded.gps_lng,
+                    current_section = excluded.current_section,
+                    photo_path = COALESCE(NULLIF(excluded.photo_path, ''), survey_drafts.photo_path),
+                    photo_meta = COALESCE(NULLIF(excluded.photo_meta, ''), survey_drafts.photo_meta),
+                    answers_json = excluded.answers_json,
+                    answered_count = excluded.answered_count,
+                    total_count = excluded.total_count,
+                    updated_at = CURRENT_TIMESTAMP
+            ''', (
+                draft_key, tool_code, survey_code, surveyor_id,
+                data.get('surveyor_name', ''), data.get('survey_date', ''),
+                data.get('commune', ''), data.get('hamlet', ''),
+                data.get('respondent_name', ''), data.get('respondent_phone', ''),
+                data.get('guide_name', ''), data.get('gps_lat', 0.0) or 0.0,
+                data.get('gps_lng', 0.0) or 0.0, data.get('current_section', ''),
+                photo_path, photo_meta, answers_json,
+                int(data.get('answered_count', 0) or 0), int(data.get('total_count', 0) or 0)
+            ))
+            conn.commit()
+            cur.execute('SELECT id, updated_at FROM survey_drafts WHERE draft_key = ?', (draft_key,))
+            d_row = cur.fetchone()
+            conn.close()
+            append_audit_event('SAVE_DRAFT', {'draft_key': draft_key, 'survey_code': survey_code, 'surveyor_id': surveyor_id})
+            self._send_json({
+                'success': True,
+                'draft_id': d_row[0] if d_row else None,
+                'draft_key': draft_key,
+                'photo_path': photo_path,
+                'photo_url': f"/api/photos/{photo_path}" if photo_path else '',
+                'updated_at': d_row[1] if d_row else datetime.datetime.now().isoformat()
+            })
             return
 
         elif path == '/api/admin/questions':
@@ -1408,6 +1600,9 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 new_admin_pass = data.get('pass_admin', '').strip()
                 new_viewer_pass = data.get('pass_viewer', '').strip()
                 new_admin_name = data.get('admin_name', '').strip()
+                new_smtp_sender = data.get('smtp_sender', '').strip()
+                new_smtp_password = data.get('smtp_password', '').strip()
+                new_report_recipients = data.get('report_recipients', '').strip()
 
                 if new_admin_pass:
                     set_setting('pass_admin', new_admin_pass)
@@ -1415,14 +1610,23 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                     set_setting('pass_viewer', new_viewer_pass)
                 if new_admin_name:
                     set_setting('admin_name', new_admin_name)
+                if new_smtp_sender:
+                    set_setting('smtp_sender', new_smtp_sender)
+                if new_smtp_password:
+                    set_setting('smtp_password', new_smtp_password)
+                if new_report_recipients:
+                    set_setting('report_recipients', new_report_recipients)
 
                 self._send_json({
                     'success': True,
-                    'message': 'Đã cập nhật thông tin và mật khẩu quản trị thành công!',
+                    'message': 'Đã cập nhật thông tin, mật khẩu và cấu hình email thành công!',
                     'settings': {
                         'pass_admin': get_setting('pass_admin', PASS_ADMIN),
                         'pass_viewer': get_setting('pass_viewer', PASS_VIEWER),
-                        'admin_name': get_setting('admin_name', 'Quản Trị Viên (Admin)')
+                        'admin_name': get_setting('admin_name', 'Quản Trị Viên (Admin)'),
+                        'smtp_sender': get_setting('smtp_sender', DAILY_REPORT_SENDER),
+                        'smtp_password': get_setting('smtp_password', 'maytinh123@TCN'),
+                        'report_recipients': get_setting('report_recipients', ', '.join(DAILY_REPORT_RECIPIENTS))
                     }
                 })
                 return
@@ -1568,6 +1772,39 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': str(e)}, 400)
                 return
 
+        elif path == '/api/drafts':
+            role_param = (query.get('role', [''])[0] or '').strip().lower()
+            surveyor_filter = (query.get('surveyor_id', [''])[0] or '').strip()
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            sql = '''
+                SELECT id, draft_key, tool_code, survey_code, surveyor_id, surveyor_name,
+                       survey_date, commune, hamlet, respondent_name, respondent_phone,
+                       guide_name, gps_lat, gps_lng, current_section, photo_path, photo_meta,
+                       answers_json, answered_count, total_count, updated_at
+                FROM survey_drafts
+            '''
+            params = []
+            if role_param != 'admin' and surveyor_filter:
+                sql += ' WHERE UPPER(surveyor_id) = UPPER(?)'
+                params.append(surveyor_filter)
+            sql += ' ORDER BY updated_at DESC, id DESC'
+            cur.execute(sql, params)
+            cols = [c[0] for c in cur.description]
+            drafts = []
+            for r in cur.fetchall():
+                d = dict(zip(cols, r))
+                try:
+                    d['answers'] = json.loads(d.get('answers_json') or '{}')
+                except Exception:
+                    d['answers'] = {}
+                if d.get('photo_path'):
+                    d['photo_url'] = f"/api/photos/{d['photo_path']}"
+                drafts.append(d)
+            conn.close()
+            self._send_json(drafts)
+            return
+
         elif path == '/api/surveys':
             length = int(self.headers.get('Content-Length', 0))
             raw_body = read_request_body(self.rfile, length)
@@ -1601,9 +1838,18 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             answers = data.get('answers', {})
             answers_json = json.dumps(answers, ensure_ascii=False)
             photo_path = save_survey_photo(survey_code, data.get('photo_data'))
+            if not photo_path:
+                photo_path = (data.get('photo_path') or '').strip()
 
             conn = sqlite3.connect(DB_PATH)
             cur = conn.cursor()
+            draft_key = (data.get('draft_key') or f"{tool_code}::{survey_code}").strip()
+            if not photo_path:
+                cur.execute('SELECT photo_path FROM survey_drafts WHERE draft_key = ?', (draft_key,))
+                d_photo = cur.fetchone()
+                if d_photo and d_photo[0]:
+                    photo_path = d_photo[0]
+
             cur.execute('''
                 INSERT INTO surveys (
                     survey_code, tool_code, tool_name, surveyor_id, surveyor_name,
@@ -1616,6 +1862,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 respondent_phone, gps_lat, gps_lng, start_time, end_time, answers_json, photo_path
             ))
             survey_id = cur.lastrowid
+            cur.execute('DELETE FROM survey_drafts WHERE draft_key = ?', (draft_key,))
             cur.execute('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE surveyor_id = ?', (surveyor_id,))
             conn.commit()
             conn.close()
@@ -1651,20 +1898,30 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 data = json.loads(raw_body)
                 conn = sqlite3.connect(DB_PATH)
                 cur = conn.cursor()
+                cur.execute('SELECT surveyor_id FROM users WHERE surveyor_id = ? OR id = ?', (user_id, user_id))
+                old_u = cur.fetchone()
+                old_sid = old_u[0] if old_u else user_id
+                new_sid = (data.get('new_surveyor_id') or '').strip()
+
                 cur.execute("""
                     UPDATE users SET 
+                        surveyor_id = COALESCE(NULLIF(?, ''), surveyor_id),
                         full_name = COALESCE(?, full_name),
                         phone = COALESCE(?, phone),
                         commune_assigned = COALESCE(?, commune_assigned),
                         password = COALESCE(?, password)
                     WHERE surveyor_id = ? OR id = ?
                 """, (
+                    new_sid,
                     data.get('full_name'),
                     data.get('phone'),
                     data.get('commune_assigned'),
                     data.get('password'),
                     user_id, user_id
                 ))
+                if new_sid and old_sid and new_sid != old_sid:
+                    cur.execute('UPDATE surveys SET surveyor_id = ? WHERE surveyor_id = ?', (new_sid, old_sid))
+                    cur.execute('UPDATE survey_drafts SET surveyor_id = ? WHERE surveyor_id = ?', (new_sid, old_sid))
                 conn.commit()
                 conn.close()
                 self._send_json({'success': True, 'message': 'Đã cập nhật thông tin và mật khẩu nhân sự thành công'})
@@ -1859,6 +2116,17 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             conn.close()
             self._send_json({'success': True, 'message': f'Đã chuyển phiếu #{survey_id} vào Thùng rác lưu trữ (có thể khôi phục bất cứ lúc nào).'})
             return
+
+        elif path.startswith('/api/drafts/'):
+            draft_ref = urllib.parse.unquote(path.split('/api/drafts/', 1)[1]).strip()
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute('DELETE FROM survey_drafts WHERE draft_key = ? OR CAST(id AS TEXT) = ?', (draft_ref, draft_ref))
+            conn.commit()
+            conn.close()
+            self._send_json({'success': True, 'message': 'Đã xóa bản nháp lưu tạm.'})
+            return
+
         self._send_json({'error': 'Not found'}, 404)
 
 def run():
@@ -1878,7 +2146,7 @@ def run():
 
 if __name__ == '__main__':
     if '--send-daily-report' in sys.argv:
-        ok, total, rcpts = send_daily_excel_report()
-        print(f"Daily Excel report ({total} surveys) sent to {', '.join(rcpts)}")
+        ok, total, rcpts, via_note = send_daily_excel_report()
+        print(f"Daily Excel report ({total} surveys) sent to {', '.join(rcpts)} via {via_note}")
     else:
         run()

@@ -789,12 +789,45 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(30, 41, 59, 0.55);
+            background: rgba(15, 23, 42, 0.58);
             z-index: 9999;
             align-items: center;
             justify-content: center;
             padding: 16px;
-            backdrop-filter: blur(3px);
+        }
+
+        .qgis-single-row-tabs {
+            background: #dcdcdc;
+            padding: 6px 12px 0 12px;
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid #b8b8b8;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .qgis-single-row-tabs .qgis-tab-btn {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .floating-draft-strip {
+            position: sticky;
+            bottom: 8px;
+            z-index: 120;
+            margin: 12px 0;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border: 1px solid #93b4d7;
+            border-left: 4px solid #d97706;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.14);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .modal-overlay.active {
@@ -1372,7 +1405,8 @@
         body.viewer-locked-mode .summary-link,
         body.viewer-locked-mode .download-btn,
         body.viewer-locked-mode #btnSubmitForm,
-        body.viewer-locked-mode button[onclick="manualSaveDraft()"] {
+        body.viewer-locked-mode button[onclick="manualSaveDraft()"],
+        body.viewer-locked-mode button[onclick="saveDraftAndNextHousehold()"] {
             display: none !important;
         }
 
@@ -1415,6 +1449,31 @@
                 <span id="serverBadge" style="color: #4ade80; font-size: 0.78rem;">
                     <i class="fa-solid fa-circle-check"></i> Trực tuyến • Đã kết nối máy chủ
                 </span>
+            </div>
+        </div>
+
+        <!-- Mobile PWA Install Prompt Banner (Luôn đề xuất trên điện thoại khi chưa cài App) -->
+        <div id="mobilePwaPromptBanner"
+            style="display: none; margin: 8px 10px 0 10px; background: linear-gradient(90deg, #002060 0%, #15803d 100%); color: #ffffff; border-radius: 4px; padding: 10px 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 220px;">
+                    <div style="font-size: 0.88rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-mobile-screen-button"></i> CÀI ĐẶT ỨNG DỤNG VÀO MÀN HÌNH CHÍNH ĐIỆN THOẠI
+                    </div>
+                    <div id="mobilePwaPromptText" style="font-size: 0.78rem; color: #e2e8f0; margin-top: 3px; line-height: 1.45;">
+                        Cài App để mở nhanh như phần mềm, giữ đăng nhập bền vững và lưu nháp offline khi đi rẫy.
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                    <button type="button" id="btnMobilePwaAction" onclick="installPwaApp()"
+                        style="background: #facc15; color: #1e293b; border: none; padding: 7px 12px; border-radius: 4px; font-size: 0.82rem; font-weight: 800; cursor: pointer;">
+                        <i class="fa-solid fa-download"></i> Cài App Ngay
+                    </button>
+                    <button type="button" onclick="dismissMobilePwaBannerForNow()"
+                        style="background: rgba(255,255,255,0.16); color: #ffffff; border: 1px solid rgba(255,255,255,0.35); padding: 6px 10px; border-radius: 4px; font-size: 0.76rem; font-weight: 600; cursor: pointer;">
+                        Thu gọn
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1462,6 +1521,11 @@
             </button>
             <button type="button" class="view-tab-btn" id="btnViewHistory" onclick="switchMainView('history')">
                 <i class="fa-solid fa-database"></i> 4. Dữ Liệu Đã Nộp
+            </button>
+            <button type="button" class="view-tab-btn" id="btnOpenDraftsBar" onclick="openDraftsModal()"
+                style="margin-left: auto; color: #b45309; background: #fffbeb; border-color: #fcd34d;"
+                title="Mở danh sách các hộ đã chụp ảnh/lưu tạm để nhập tiếp hoặc sửa">
+                <i class="fa-solid fa-folder-open"></i> Phiếu Lưu Tạm (<span id="draftListCountBadge">0</span>)
             </button>
         </div>
 
@@ -1621,9 +1685,11 @@
                                 <label>Ngày Thực Hiện <span class="req">*</span></label>
                                 <input type="date" class="form-control" id="surveyDateInput" required>
                             </div>
-                            <div class="form-group" id="gpsFieldGroup" style="display: none;">
-                                <label>Tọa Độ GPS Vườn / Nhà (Chạy ngầm tự động)</label>
-                                <input type="text" class="form-control" id="gpsInput" readonly>
+                            <div class="form-group" id="gpsFieldGroup">
+                                <label>Tọa Độ GPS Hiện Trường <button type="button" onclick="autoCaptureGPS()" style="margin-left:4px; background:#0284c7; color:#fff; border:none; border-radius:2px; padding:1px 7px; font-size:0.72rem; cursor:pointer;">📍 Lấy GPS</button></label>
+                                <input type="text" class="form-control" id="gpsInput"
+                                    oninput="currentDraftAnswers['_gps_text'] = this.value; saveDraftLocal(false);"
+                                    placeholder="Tự động lấy GPS hoặc dán lat, lng">
                             </div>
                         </div>
 
@@ -1663,19 +1729,19 @@
                         </div>
                     </div>
 
-                    <!-- Photo Required Lock Banner -->
+                    <!-- Photo Reminder Banner (Không ẩn bảng câu hỏi — cho phép xem và nhập từ phiếu giấy bất cứ lúc nào) -->
                     <div id="photoRequiredLock"
-                        style="display: none; background: #fffbeb; border: 2px dashed #f59e0b; border-radius: 6px; padding: 24px 16px; text-align: center; margin-bottom: 12px;">
-                        <div style="font-size: 1.05rem; font-weight: 700; color: #92400e; margin-bottom: 6px;">
-                            <i class="fa-solid fa-camera"></i> BẮT BUỘC CHỤP ẢNH CÙNG CHỦ HỘ ĐỂ MỞ BẢNG CÂU HỎI
+                        style="display: none; background: #fffbeb; border: 1px solid #fcd34d; border-left: 4px solid #f59e0b; border-radius: 4px; padding: 10px 14px; margin-bottom: 10px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                            <div style="font-size: 0.84rem; color: #78350f;">
+                                <strong style="color: #92400e;"><i class="fa-solid fa-camera"></i> Chưa có ảnh hiện trường cùng chủ hộ:</strong>
+                                Anh/Chị có thể bấm <strong>Chụp Ảnh</strong> để lưu GPS + Watermark rồi bấm <strong>Lưu Tạm</strong> (phỏng vấn giấy xong về nhà nhập tiếp), hoặc nhập luôn dữ liệu bên dưới.
+                            </div>
+                            <button type="button" onclick="triggerHouseholdPhotoCapture()"
+                                style="background: #15803d; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 0.82rem; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                                <i class="fa-solid fa-camera-retro"></i> Chụp / Chọn Ảnh
+                            </button>
                         </div>
-                        <div style="font-size: 0.86rem; color: #78350f; margin-bottom: 14px;">
-                            Vui lòng chụp hoặc chọn <strong>Ảnh Chụp Đầu Tiên Cùng Chủ Hộ</strong> ở phía trên. Sau khi có ảnh, hệ thống sẽ tự động mở bảng câu hỏi, ghi nhận thời gian phỏng vấn thực tế và định vị ngầm.
-                        </div>
-                        <button type="button" onclick="triggerHouseholdPhotoCapture()"
-                            style="background: #15803d; color: #fff; border: none; padding: 9px 18px; border-radius: 4px; font-size: 0.9rem; font-weight: 700; cursor: pointer;">
-                            <i class="fa-solid fa-camera-retro"></i> Chụp / Chọn Ảnh Chủ Hộ Ngay
-                        </button>
                     </div>
 
                     <!-- Progress & Missing Question Check Bar -->
@@ -1725,13 +1791,35 @@
                         </button>
                     </div>
 
+                    <!-- Floating Always-Available Draft Strip (Lưu tạm ở bất cứ phần/trang nào) -->
+                    <div id="floatingDraftBar" class="floating-draft-strip">
+                        <div style="font-size: 0.80rem; color: #334155;">
+                            <strong style="color: #b45309;"><i class="fa-solid fa-bookmark"></i> Lưu tạm hiện trường:</strong>
+                            <span id="floatingDraftStatusText">Chụp ảnh &amp; lấy tọa độ xong có thể bấm Lưu Tạm để phỏng vấn giấy, về nhà mở lại nhập tiếp.</span>
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <button type="button" onclick="manualSaveDraft()"
+                                style="background: #d97706; color: #fff; border: none; padding: 7px 12px; border-radius: 3px; font-size: 0.80rem; font-weight: 700; cursor: pointer;">
+                                <i class="fa-solid fa-floppy-disk"></i> Lưu Tạm (Giữ Trang Này)
+                            </button>
+                            <button type="button" onclick="saveDraftAndNextHousehold()"
+                                style="background: #0369a1; color: #fff; border: none; padding: 7px 12px; border-radius: 3px; font-size: 0.80rem; font-weight: 700; cursor: pointer;">
+                                <i class="fa-solid fa-forward-step"></i> Lưu Tạm &amp; Hộ Tiếp Theo
+                            </button>
+                            <button type="button" onclick="openDraftsModal()"
+                                style="background: #ffffff; color: #002060; border: 1px solid #93b4d7; padding: 7px 11px; border-radius: 3px; font-size: 0.80rem; font-weight: 700; cursor: pointer;">
+                                <i class="fa-solid fa-folder-open"></i> Mở Nháp (<span id="draftStripCountBadge">0</span>)
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Bottom Submit Bar -->
                     <div class="submit-bar">
                         <button type="submit" class="btn-bottom-primary" id="btnSubmitForm">
                             <i class="fa-solid fa-circle-check"></i> LƯU VÀ HOÀN THÀNH PHIẾU
                         </button>
                         <button type="button" class="btn-bottom-secondary" onclick="manualSaveDraft()">
-                            <i class="fa-solid fa-floppy-disk"></i> LƯU TẠM BẢN NHÁP TRÊN THIẾT BỊ
+                            <i class="fa-solid fa-floppy-disk"></i> LƯU TẠM BẢN NHÁP (CHỜ NHẬP TIẾP)
                         </button>
                     </div>
                 </form>
@@ -1997,7 +2085,7 @@
                             </div>
                             <div class="form-group" style="margin-bottom: 10px;">
                                 <label style="font-size: 0.83rem; font-weight: 700;">Mã Nhân Viên Được Cấp
-                                    (TCN01 – TCN06) <span class="req">*</span></label>
+                                    (TCN01 – TCN07) <span class="req">*</span></label>
                                 <input type="text" class="form-control" id="modalUserId"
                                     placeholder="Nhập đúng mã nhân viên được cấp qua Zalo...">
                             </div>
@@ -2035,90 +2123,26 @@
     </div>
 
 
-    <!-- Modal Chỉnh Sửa & Cấp Lại Mật Khẩu Nhân Viên (Admin - QGIS Desktop Style) -->
-    <div id="staffEditModal" class="modal-overlay">
-        <div class="modal-card qgis-dialog-card" style="max-width: 520px;">
-            <div class="qgis-dialog-titlebar">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-user-shield" style="color: #60a5fa;"></i>
-                    <span>CẬP NHẬT & CẤP LẠI MẬT KHẨU NHÂN VIÊN</span>
-                </div>
-                <button type="button" class="qgis-close-btn" onclick="hideEditStaffModal()">✕</button>
-            </div>
-            <div class="qgis-dialog-body" style="background: #ffffff; padding: 18px;">
-                <form onsubmit="handleEditStaffSubmit(event)">
-                    <input type="hidden" id="editStaffOrigId">
-                    <div class="form-group" style="margin-bottom: 10px;">
-                        <label>Mã Nhân Viên</label>
-                        <input type="text" class="form-control" id="editStaffId" readonly
-                            style="background: var(--slate-100); font-weight: 700; color: var(--primary);">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 10px;">
-                        <label>Họ Và Tên Điều Tra Viên <span class="req">*</span></label>
-                        <input type="text" class="form-control" id="editStaffName" required>
-                    </div>
-                    <div class="grid-2" style="margin-bottom: 10px;">
-                        <div class="form-group">
-                            <label>Số Điện Thoại / Zalo</label>
-                            <input type="text" class="form-control" id="editStaffPhone">
-                        </div>
-                        <div class="form-group">
-                            <label>Địa Bàn Phân Công</label>
-                            <select class="form-control" id="editStaffCommune">
-                                <option value="Ea Kiết">Xã Ea Kiết</option>
-                                <option value="Ea Tar">Xã Ea Tar</option>
-                                <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
-                                <option value="Toàn vùng">Toàn vùng Cư M'gar (Giám sát viên)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <label>Cấp Lại Mật Khẩu Mới Cho Nhân Viên <span class="req">*</span></label>
-                        <div style="display: flex; gap: 6px;">
-                            <input type="text" class="form-control" id="editStaffPassword" required
-                                style="font-weight: 700; color: #dc2626;">
-                            <button type="button" onclick="generateRandomStaffPass()"
-                                style="background: var(--slate-200); border: 1px solid var(--border); padding: 0 10px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap;">
-                                <i class="fa-solid fa-arrows-rotate"></i> Tạo MK
-                            </button>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button type="submit" class="btn-bottom-primary" style="flex: 2;">
-                            <i class="fa-solid fa-paper-plane"></i> LƯU & SAO CHÉP GỬI ZALO
-                        </button>
-                        <button type="button" class="btn-bottom-secondary" style="flex: 1;"
-                            onclick="hideEditStaffModal()">
-                            HỦY
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- Modal Quản Lý Hệ Thống & Cấp Tài Khoản (QGIS Desktop Style — Dành riêng cho Admin) -->
     <div id="staffManagerModal" class="modal-overlay">
         <div class="modal-card qgis-dialog-card"
-            style="max-width: 760px; max-height: 90vh; display: flex; flex-direction: column;">
+            style="max-width: 960px; max-height: 92vh; display: flex; flex-direction: column;">
             <div class="qgis-dialog-titlebar">
-                <span><i class="fa-solid fa-users-gear" style="color: #60a5fa;"></i> QUẢN TRỊ HỆ THỐNG — ĐIỀU TRA VIÊN &
-                    BẢO MẬT</span>
+                <span><i class="fa-solid fa-users-gear" style="color: #60a5fa;"></i> QUẢN TRỊ HỆ THỐNG — ĐIỀU TRA VIÊN &amp; BẢO MẬT</span>
                 <button type="button" class="qgis-close-btn" onclick="hideStaffModal()">✕</button>
             </div>
 
-            <div
-                style="background: #dcdcdc; padding: 5px 12px 0 12px; display: flex; gap: 4px; border-bottom: 1px solid #b8b8b8; flex-wrap: wrap;">
+            <div class="qgis-single-row-tabs">
                 <button type="button" class="qgis-tab-btn active" id="btnAdminTabStaff"
                     onclick="switchAdminSubTab('staff')">
-                    <i class="fa-solid fa-users"></i> 1. Quản Lý Điều Tra Viên
+                    <i class="fa-solid fa-users"></i> 1. Điều Tra Viên
                 </button>
                 <button type="button" class="qgis-tab-btn" id="btnAdminTabSecurity"
                     onclick="switchAdminSubTab('security')">
-                    <i class="fa-solid fa-shield-halved"></i> 2. Mật Khẩu Admin & Hệ Thống
+                    <i class="fa-solid fa-shield-halved"></i> 2. Bảo Mật &amp; Email
                 </button>
                 <button type="button" class="qgis-tab-btn" id="btnAdminTabTrash" onclick="switchAdminSubTab('trash')">
-                    <i class="fa-solid fa-clock-rotate-left"></i> 3. Khôi Phục & Sao Lưu
+                    <i class="fa-solid fa-clock-rotate-left"></i> 3. Khôi Phục &amp; Sao Lưu
                 </button>
                 <button type="button" class="qgis-tab-btn" id="btnAdminTabQuestions" onclick="switchAdminSubTab('questions')">
                     <i class="fa-solid fa-list-ul"></i> 4. Quản Lý Câu Hỏi
@@ -2135,10 +2159,10 @@
                         </div>
                         <div class="grid-3" style="margin-bottom: 8px;">
                             <div class="form-group">
-                                <label>Mã Nhân Viên (TCN01 – TCN06) <span class="req">*</span></label>
+                                <label>Mã Nhân Viên (TCN01 – TCN07) <span class="req">*</span></label>
                                 <div style="display: flex; gap: 4px;">
                                     <input type="text" class="form-control" id="newStaffId" required
-                                        placeholder="TCN01">
+                                        placeholder="TCN07">
                                     <button type="button" class="qgis-btn-secondary" onclick="generateStaffId()"
                                         style="padding: 0 8px; font-size: 0.76rem;" title="Tạo mã tự động">
                                         <i class="fa-solid fa-wand-magic-sparkles"></i> Tạo
@@ -2175,7 +2199,7 @@
 
                         <div style="text-align: right;">
                             <button type="submit" class="qgis-btn-primary">
-                                <i class="fa-solid fa-paper-plane"></i> Lưu & Tự Động Copy Gửi Zalo
+                                <i class="fa-solid fa-paper-plane"></i> Lưu &amp; Tự Động Copy Gửi Zalo
                             </button>
                         </div>
                     </form>
@@ -2184,12 +2208,12 @@
                         style="font-size: 0.86rem; font-weight: 700; color: #002060; text-transform: uppercase; margin-bottom: 8px;">
                         <i class="fa-solid fa-list-check"></i> Danh Sách Điều Tra Viên Đã Cấp Quyền:
                     </h4>
-                    <div style="overflow-y: auto; max-height: 240px; border: 1px solid #cbd5e1;">
+                    <div style="overflow-x: auto; border: 1px solid #cbd5e1;">
                         <table class="report-table" style="margin-top: 0; font-size: 0.8rem;">
                             <thead>
                                 <tr>
                                     <th style="width: 38px; text-align: center;">STT</th>
-                                    <th>Mã NV (TCN01 – TCN06)</th>
+                                    <th>Mã NV (TCN01 – TCN07)</th>
                                     <th>Họ Và Tên</th>
                                     <th>Địa Bàn</th>
                                     <th>Mật Khẩu</th>
@@ -2203,13 +2227,13 @@
                     </div>
                 </div>
 
-                <!-- SUB-TAB 2: SECURITY & ADMIN PASSWORDS -->
+                <!-- SUB-TAB 2: SECURITY, ADMIN PASSWORDS & DAILY EMAIL SMTP -->
                 <div id="adminTabPaneSecurity" style="display: none;">
                     <form onsubmit="handleSaveAdminSettings(event)"
-                        style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 18px; border-radius: 3px; max-width: 580px; margin: 0 auto;">
+                        style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 18px; border-radius: 3px; max-width: 640px; margin: 0 auto;">
                         <div
                             style="font-size: 0.9rem; font-weight: 700; color: #002060; margin-bottom: 14px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;">
-                            <i class="fa-solid fa-key"></i> THIẾT LẬP MẬT KHẨU QUẢN TRỊ VIÊN & HỆ THỐNG
+                            <i class="fa-solid fa-key"></i> THIẾT LẬP MẬT KHẨU QUẢN TRỊ VIÊN &amp; HỆ THỐNG
                         </div>
 
                         <div class="form-group" style="margin-bottom: 12px;">
@@ -2218,21 +2242,43 @@
                                 value="Quản Trị Viên (Admin)">
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <label>Mật Khẩu Quản Trị Viên Cấp Cao (Admin Master Password) <span
-                                    class="req">*</span></label>
-                            <input type="text" class="form-control" id="cfgAdminPass" required
-                                placeholder="Nhập mật khẩu Admin mới..." style="font-weight: 700; color: #dc2626;">
-                            <div style="font-size: 0.76rem; color: var(--slate-500); margin-top: 2px;">(Nhập mật khẩu
-                                quản trị viên mới nếu cần đổi)</div>
+                        <div class="grid-2" style="margin-bottom: 14px;">
+                            <div class="form-group">
+                                <label>Mật Khẩu Quản Trị Viên (Admin) <span class="req">*</span></label>
+                                <input type="text" class="form-control" id="cfgAdminPass" required
+                                    placeholder="Nhập mật khẩu Admin mới..." style="font-weight: 700; color: #dc2626;">
+                            </div>
+                            <div class="form-group">
+                                <label>Mật Khẩu Khách Giám Sát (Chỉ Xem) <span class="req">*</span></label>
+                                <input type="text" class="form-control" id="cfgViewerPass" required
+                                    placeholder="Nhập mật khẩu View mới..." style="font-weight: 700; color: #2563eb;">
+                            </div>
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 16px;">
-                            <label>Mật Khẩu Khách Giám Sát (Chỉ Xem) <span class="req">*</span></label>
-                            <input type="text" class="form-control" id="cfgViewerPass" required
-                                placeholder="Nhập mật khẩu View mới..." style="font-weight: 700; color: #2563eb;">
-                            <div style="font-size: 0.76rem; color: var(--slate-500); margin-top: 2px;">(Nhập mật khẩu
-                                chỉ xem mới nếu cần đổi)</div>
+                        <div
+                            style="font-size: 0.88rem; font-weight: 700; color: #15803d; margin: 16px 0 10px 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;">
+                            <i class="fa-solid fa-envelope"></i> CẤU HÌNH EMAIL GỬI BÁO CÁO EXCEL CUỐI NGÀY (21:00)
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom: 10px;">
+                            <div class="form-group">
+                                <label>Email Gửi (Gmail SMTP Sender)</label>
+                                <input type="email" class="form-control" id="cfgSmtpSender"
+                                    placeholder="coffeedatavn@gmail.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Mật Khẩu Ứng Dụng Gmail (App Password 16 ký tự)</label>
+                                <input type="text" class="form-control" id="cfgSmtpPassword"
+                                    placeholder="Nhập App Password 16 ký tự của Gmail...">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 14px;">
+                            <label>Danh Sách Email Nhận Báo Cáo (cách nhau bởi dấu phẩy)</label>
+                            <input type="text" class="form-control" id="cfgReportRecipients"
+                                placeholder="dothanhduy21vn@gmail.com, locvutrung@gmail.com">
+                            <div style="font-size: 0.75rem; color: var(--slate-500); margin-top: 4px;">
+                                Lưu ý: Gmail yêu cầu bật Xác minh 2 bước và dùng Mật khẩu ứng dụng 16 ký tự (App Password). Nếu chưa nhập App Password hợp lệ, VPS sẽ tự gửi dự phòng qua máy chủ bưu chính hệ thống để không gián đoạn báo cáo.
+                            </div>
                         </div>
 
                         <div id="adminSettingsMsg"
@@ -2241,7 +2287,7 @@
 
                         <div style="text-align: right;">
                             <button type="submit" class="qgis-btn-primary">
-                                <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi Mật Khẩu
+                                <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi Mật Khẩu &amp; Email
                             </button>
                         </div>
                     </form>
@@ -2435,6 +2481,93 @@
         </div>
     </div>
 
+    <!-- Modal Chỉnh Sửa & Đổi Mã / Cấp Lại Mật Khẩu Nhân Viên (Luôn nổi trên Modal Quản Trị) -->
+    <div id="staffEditModal" class="modal-overlay" style="z-index: 10020;">
+        <div class="modal-card qgis-dialog-card" style="max-width: 520px;">
+            <div class="qgis-dialog-titlebar">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-user-shield" style="color: #60a5fa;"></i>
+                    <span>CẬP NHẬT MÃ NV &amp; CẤP LẠI MẬT KHẨU</span>
+                </div>
+                <button type="button" class="qgis-close-btn" onclick="hideEditStaffModal()">✕</button>
+            </div>
+            <div class="qgis-dialog-body" style="background: #ffffff; padding: 18px;">
+                <form onsubmit="handleEditStaffSubmit(event)">
+                    <input type="hidden" id="editStaffOrigId">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Mã Nhân Viên (Sửa được nếu cần đổi mã, VD: TCN07) <span class="req">*</span></label>
+                        <input type="text" class="form-control" id="editStaffId" required
+                            style="font-weight: 700; color: var(--primary);">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Họ Và Tên Điều Tra Viên <span class="req">*</span></label>
+                        <input type="text" class="form-control" id="editStaffName" required>
+                    </div>
+                    <div class="grid-2" style="margin-bottom: 10px;">
+                        <div class="form-group">
+                            <label>Số Điện Thoại / Zalo</label>
+                            <input type="text" class="form-control" id="editStaffPhone">
+                        </div>
+                        <div class="form-group">
+                            <label>Địa Bàn Phân Công</label>
+                            <select class="form-control" id="editStaffCommune">
+                                <option value="Ea Kiết">Xã Ea Kiết</option>
+                                <option value="Ea Tar">Xã Ea Tar</option>
+                                <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
+                                <option value="Toàn vùng">Toàn vùng Cư M'gar (Giám sát viên)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label>Cấp Lại Mật Khẩu Mới Cho Nhân Viên <span class="req">*</span></label>
+                        <div style="display: flex; gap: 6px;">
+                            <input type="text" class="form-control" id="editStaffPassword" required
+                                style="font-weight: 700; color: #dc2626;">
+                            <button type="button" onclick="generateRandomStaffPass()"
+                                style="background: var(--slate-200); border: 1px solid var(--border); padding: 0 10px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap;">
+                                <i class="fa-solid fa-arrows-rotate"></i> Tạo MK
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn-bottom-primary" style="flex: 2;">
+                            <i class="fa-solid fa-paper-plane"></i> LƯU &amp; SAO CHÉP GỬI ZALO
+                        </button>
+                        <button type="button" class="btn-bottom-secondary" style="flex: 1;"
+                            onclick="hideEditStaffModal()">
+                            HỦY
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Danh Sách Phiếu Lưu Tạm (Chụp ảnh/GPS ngoài đồng -> Về nhà nhập giấy vào) -->
+    <div id="draftsListModal" class="modal-overlay" style="z-index: 10010;">
+        <div class="modal-card qgis-dialog-card" style="max-width: 820px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="qgis-dialog-titlebar" style="background: #b45309; color: #ffffff;">
+                <span><i class="fa-solid fa-folder-open"></i> DANH SÁCH PHIẾU ĐANG LƯU TẠM (CHỜ NHẬP TIẾP)</span>
+                <button type="button" class="qgis-close-btn" onclick="hideDraftsModal()">✕</button>
+            </div>
+            <div style="padding: 14px 16px; overflow-y: auto; flex-grow: 1; background: #ffffff;">
+                <div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; padding: 9px 12px; border-radius: 3px; font-size: 0.82rem; color: #78350f; margin-bottom: 12px;">
+                    <strong><i class="fa-solid fa-circle-info"></i> Quy trình thực địa &rarr; về nhà nhập phiếu giấy:</strong>
+                    Khi đi hiện trường, chỉ cần chọn Chủ hộ, chụp ảnh &amp; lấy tọa độ rồi bấm <strong>Lưu Tạm</strong> (đồng bộ an toàn lên thiết bị + VPS). Khi về nhà, bấm <strong>Mở nhập tiếp</strong> để điền từ phiếu giấy và bấm Hoàn thành.
+                </div>
+                <div id="draftsListContainer">
+                    <div style="text-align: center; padding: 20px; color: #64748b;">Đang tải danh sách phiếu lưu tạm...</div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #f1f5f9; border-top: 1px solid #cbd5e1; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="qgis-btn-primary" onclick="refreshAllDraftsList()" style="background: #0369a1;">
+                    <i class="fa-solid fa-rotate"></i> Đồng bộ danh sách nháp
+                </button>
+                <button type="button" class="qgis-btn-secondary" onclick="hideDraftsModal()">Đóng cửa sổ</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Chỉnh Sửa Nội Dung Phiếu Khảo Sát (Dành cho Admin & Người lập) -->
     <div id="surveyEditModal" class="modal-overlay">
         <div class="modal-card qgis-dialog-card"
@@ -2510,7 +2643,7 @@
     </div>
 
     <!-- Modal Xem Chi Tiết Phiếu Đã Nộp -->
-    <div id="surveyDetailModal" class="modal-overlay">
+    <div id="surveyDetailModal" class="modal-overlay" style="z-index: 10030;">
         <div class="modal-card qgis-dialog-card"
             style="max-width: 720px; max-height: 85vh; display: flex; flex-direction: column;">
             <div class="qgis-dialog-titlebar">
@@ -2526,7 +2659,7 @@
     </div>
 
     <!-- Modal Cảm Ơn & Xem Lại Phiếu Sau Khi Hoàn Thành -->
-    <div id="surveyCompletionModal" class="modal-overlay">
+    <div id="surveyCompletionModal" class="modal-overlay" style="z-index: 10040;">
         <div class="modal-card qgis-dialog-card" style="max-width: 560px; display: flex; flex-direction: column;">
             <div class="qgis-dialog-titlebar" style="background: #15803d;">
                 <span><i class="fa-solid fa-circle-check"></i> HOÀN THÀNH &amp; LƯU PHIẾU THÀNH CÔNG</span>
@@ -2566,7 +2699,7 @@
     </div>
 
     <!-- Application Logic -->
-    <script src="app.js?v=2.28"></script>
+    <script src="app.js?v=2.29"></script>
 
 </body>
 
