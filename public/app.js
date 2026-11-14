@@ -1338,12 +1338,14 @@ function renderQuestionsForSection(secName) {
                     const boxStyle = showFollowUp
                         ? 'margin-top: 8px; padding: 8px 10px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 4px;'
                         : 'margin-top: 8px;';
+                    const structuredNoteHtml = renderStructuredFieldsHtml(q, 'note', isViewer);
                     return `
                         <div id="followUp_${code}" data-follow-on="${escapeHtml(q.follow_up_on || '')}" style="${boxStyle}">
                             <div id="followUpLabel_${code}" style="font-size: 0.78rem; font-weight: 600; color: ${showFollowUp ? '#92400e' : '#64748b'}; margin-bottom: 4px;">
                                 <i class="fa-solid fa-pen-nib"></i> ${noteLabel}
                             </div>
-                            <textarea class="form-control"
+                            ${structuredNoteHtml}
+                            <textarea id="followUpNote_${code}" class="form-control"
                                       rows="2"
                                       ${isViewer ? 'disabled' : ''}
                                       placeholder="${escapeHtml(q.follow_up_placeholder || 'Nhập bổ sung thêm hoặc ghi rõ phương án khác (nếu có)...')}"
@@ -1422,36 +1424,46 @@ function renderQuestionsForSection(secName) {
             `;
         } else {
             const rawHint = String(q.options_raw || '');
-            let chipHtml = '';
+            const spec = getStructuredSpec(code, 'answer');
+            const parsedChips = [];
             if (rawHint.includes('☐')) {
-                const chipItems = rawHint.split('☐').slice(1).map(s => {
-                    const cut = s.split(/[\n\r.]/)[0].trim();
-                    return cut.replace(/:\s*_+$/, '').trim();
-                }).filter(Boolean);
-                const uniqueChips = Array.from(new Set(chipItems));
-                if (uniqueChips.length > 0) {
-                    chipHtml = `
-                        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px;">
-                            ${uniqueChips.map(ch => `
-                                <button type="button"
-                                        ${isViewer ? 'disabled' : ''}
-                                        onclick="onTxChipClick('${escapeQuotes(code)}', '${escapeQuotes(ch)}')"
-                                        style="background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 999px; padding: 3px 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">
-                                    <i class="fa-regular fa-square-check" style="color: #15803d;"></i> ${escapeHtml(ch)}
-                                </button>
-                            `).join('')}
-                        </div>
-                    `;
-                }
+                rawHint.split('☐').slice(1).forEach(s => {
+                    const cut = s.split(/[\n\r.]/)[0].trim().replace(/:\s*_+$/, '').trim();
+                    if (cut) parsedChips.push(cut);
+                });
             }
+            const specChips = Array.isArray(spec?.chips) ? spec.chips : [];
+            const allChips = Array.from(new Set([...specChips, ...parsedChips]));
+            let chipHtml = '';
+            if (allChips.length > 0) {
+                chipHtml = `
+                    <div id="txChips_${code}" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                        ${allChips.map(ch => {
+                            const active = isTxChipSelected(val, ch);
+                            return `
+                            <button type="button"
+                                    data-chip-for="${escapeHtml(code)}"
+                                    data-chip-label="${escapeHtml(ch)}"
+                                    ${isViewer ? 'disabled' : ''}
+                                    onclick="onTxChipClick('${escapeQuotes(code)}', '${escapeQuotes(ch)}')"
+                                    style="${getTxChipStyle(active)}">
+                                <i class="${active ? 'fa-solid' : 'fa-regular'} fa-square-check" style="color: ${active ? '#ffffff' : '#15803d'};"></i> ${escapeHtml(ch)}
+                            </button>
+                        `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+            const structuredHtml = renderStructuredFieldsHtml(q, 'answer', isViewer);
             inputHtml = `
                 <div style="margin-top: 8px;">
                     ${chipHtml}
+                    ${structuredHtml}
                     <textarea id="txInput_${code}" class="form-control" 
                               rows="2" 
                               ${isViewer ? 'disabled' : ''}
                               oninput="onAnswerChange('${code}', this, false)" 
-                              placeholder="Ghi chép câu trả lời của đối tượng...">${escapeHtml(val)}</textarea>
+                              placeholder="${structuredHtml ? 'Tổng hợp tự động từ các ô trên (hoặc ghi chú bổ sung thêm)...' : 'Ghi chép câu trả lời của đối tượng...'}">${escapeHtml(val)}</textarea>
                 </div>
             `;
         }
@@ -1472,6 +1484,8 @@ function renderQuestionsForSection(secName) {
             </span>
         ` : '';
 
+        const displayHint = formatQuestionHintText(q);
+
         return `
             <div class="question-card" id="qCard_${code}" data-code="${code}" data-condition="${escapeQuotes(q.condition || '')}">
                 <div class="q-header">
@@ -1480,7 +1494,7 @@ function renderQuestionsForSection(secName) {
                     ${adminActionsHtml}
                 </div>
                 ${q.condition ? `<div class="q-condition"><i class="fa-solid fa-code-branch"></i> Điều kiện xuất hiện: ${q.condition}</div>` : ''}
-                ${q.options_raw && !q.options?.length ? `<div style="font-size: 0.8rem; color: var(--slate-500); font-style: italic; margin-top: 4px;">Gợi ý: ${q.options_raw}</div>` : ''}
+                ${displayHint ? `<div style="font-size: 0.8rem; color: var(--slate-500); font-style: italic; margin-top: 4px;">${escapeHtml(displayHint)}</div>` : ''}
                 ${inputHtml}
             </div>
         `;
@@ -1743,22 +1757,421 @@ const EXCLUSIVE_NEG_OPTIONS = new Set([
     'Không biết/chưa từng được vẽ', 'Không rõ tên tiêu chuẩn/chứng nhận'
 ]);
 
+const STRUCTURED_FIELD_SPECS = {
+    A03: {
+        target: 'answer',
+        fields: [
+            { key: 'total_ha', label: 'Tổng diện tích cà phê', unit: 'ha', type: 'number', placeholder: 'VD: 1.5' },
+            { key: 'harvest_ha', label: 'Diện tích đang cho thu hoạch', unit: 'ha', type: 'number', placeholder: 'VD: 1.2' }
+        ],
+        chips: ['Không nhớ/không rõ']
+    },
+    B02: {
+        target: 'answer',
+        fields: [
+            { key: 'sessions', label: 'Số buổi đã tham gia', unit: 'buổi', type: 'number', placeholder: 'VD: 3' },
+            { key: 'recent_year', label: 'Năm tham gia gần nhất', unit: '', type: 'number', placeholder: 'VD: 2024' }
+        ],
+        chips: ['Không nhớ', 'Ước tính']
+    },
+    B07: {
+        target: 'answer',
+        fields: [
+            { key: 'variety', label: 'Giống/loại cà phê', unit: '', type: 'text', placeholder: 'VD: TR4, Xanh lùn...' },
+            { key: 'qty', label: 'Số lượng', unit: 'cây', type: 'number', placeholder: 'VD: 200' },
+            { key: 'time', label: 'Thời điểm nhận', unit: '', type: 'text', placeholder: 'VD: Tháng 6/2023' }
+        ],
+        chips: ['Không nhớ']
+    },
+    B08: {
+        target: 'answer',
+        rows: [
+            { key: 'sp1', label: 'Loài 1', cols: [{ sub: 'name', label: 'Tên loài cây', placeholder: 'VD: Muồng đen' }, { sub: 'qty', label: 'Số cây', type: 'number', unit: 'cây' }] },
+            { key: 'sp2', label: 'Loài 2', cols: [{ sub: 'name', label: 'Tên loài cây', placeholder: 'VD: Sầu riêng' }, { sub: 'qty', label: 'Số cây', type: 'number', unit: 'cây' }] },
+            { key: 'sp3', label: 'Loài 3', cols: [{ sub: 'name', label: 'Tên loài cây', placeholder: 'Tên loài cây' }, { sub: 'qty', label: 'Số cây', type: 'number', unit: 'cây' }] },
+            { key: 'sp4', label: 'Loài 4', cols: [{ sub: 'name', label: 'Tên loài cây', placeholder: 'Tên loài cây' }, { sub: 'qty', label: 'Số cây', type: 'number', unit: 'cây' }] },
+            { key: 'sp5', label: 'Loài 5', cols: [{ sub: 'name', label: 'Tên loài cây', placeholder: 'Tên loài cây' }, { sub: 'qty', label: 'Số cây', type: 'number', unit: 'cây' }] },
+            { key: 'sp6', label: 'Loài 6', cols: [{ sub: 'name', label: 'Tên loài cây', placeholder: 'Tên loài cây' }, { sub: 'qty', label: 'Số cây', type: 'number', unit: 'cây' }] }
+        ],
+        fields: [
+            { key: 'time', label: 'Thời điểm nhận', unit: '', type: 'text', placeholder: 'VD: Năm 2023' }
+        ],
+        chips: ['Không nhớ']
+    },
+    B09: {
+        target: 'note',
+        fields: [
+            { key: 'alive_trees', label: 'Số cây còn sống ước tính', unit: 'cây', type: 'number', placeholder: 'Nhập số cây...' }
+        ]
+    },
+    C05: {
+        target: 'answer',
+        fields: [
+            { key: 'manure', label: 'Phân chuồng / tự ủ', unit: 'kg hoặc tấn', type: 'text', placeholder: 'VD: 5 tấn' },
+            { key: 'org_bought', label: 'Phân hữu cơ mua ngoài', unit: 'kg hoặc bao', type: 'text', placeholder: 'VD: 20 bao' },
+            { key: 'org_bag_kg', label: 'Quy cách bao (nếu tính bao)', unit: 'kg/bao', type: 'number', placeholder: 'VD: 50' },
+            { key: 'bio', label: 'Phân vi sinh', unit: 'kg hoặc lít', type: 'text', placeholder: 'VD: 10 kg' }
+        ],
+        chips: ['Không nhớ', 'Ước tính']
+    },
+    C06: {
+        target: 'answer',
+        fields: [
+            { key: 'npk_bags', label: 'NPK', unit: 'bao', type: 'number', placeholder: 'Số bao' },
+            { key: 'npk_kg', label: 'Quy cách bao NPK', unit: 'kg/bao', type: 'number', placeholder: 'VD: 50' },
+            { key: 'ure_bags', label: 'Urê', unit: 'bao', type: 'number', placeholder: 'Số bao' },
+            { key: 'dap_bags', label: 'DAP', unit: 'bao', type: 'number', placeholder: 'Số bao' },
+            { key: 'kali_bags', label: 'Kali', unit: 'bao', type: 'number', placeholder: 'Số bao' },
+            { key: 'other_name', label: 'Loại phân khác', unit: '', type: 'text', placeholder: 'Tên loại phân...' },
+            { key: 'other_qty', label: 'Lượng loại khác', unit: 'kg/bao/tấn', type: 'text', placeholder: 'VD: 100 kg' },
+            { key: 'times', label: 'Số lần bón/năm', unit: 'lần', type: 'number', placeholder: 'VD: 3' }
+        ],
+        chips: ['Ước tính', 'Không bón phân hóa học', 'Không nhớ']
+    },
+    C11: {
+        target: 'answer',
+        fields: [
+            { key: 'insecticide', label: 'Thuốc sâu', unit: 'lần', type: 'number', placeholder: 'Số lần' },
+            { key: 'fungicide', label: 'Thuốc bệnh', unit: 'lần', type: 'number', placeholder: 'Số lần' },
+            { key: 'herbicide', label: 'Thuốc diệt cỏ', unit: 'lần', type: 'number', placeholder: 'Số lần' }
+        ],
+        chips: ['Không phun thuốc', 'Không nhớ']
+    },
+    C12: {
+        target: 'note',
+        fields: [
+            { key: 'work_days', label: 'Số ngày công thuê', unit: 'ngày', type: 'number', placeholder: 'VD: 15' },
+            { key: 'total_wage', label: 'Tổng tiền công đã trả khoảng', unit: 'đồng', type: 'number', placeholder: 'VD: 4500000' }
+        ]
+    },
+    C14: {
+        target: 'answer',
+        rows: [
+            { key: 't1', label: 'Cây 1', cols: [{ sub: 'name', label: 'Tên cây', placeholder: 'VD: Sầu riêng' }, { sub: 'qty', label: 'Số cây', type: 'number', unit: 'cây' }] },
+            { key: 't2', label: 'Cây 2', cols: [{ sub: 'name', label: 'Tên cây', placeholder: 'VD: Bơ' }, { sub: 'qty', label: 'Số cây', type: 'number', unit: 'cây' }] },
+            { key: 't3', label: 'Cây 3', cols: [{ sub: 'name', label: 'Tên cây', placeholder: 'Tên cây' }, { sub: 'qty', label: 'Số cây', type: 'number', unit: 'cây' }] },
+            { key: 't4', label: 'Cây 4', cols: [{ sub: 'name', label: 'Tên cây', placeholder: 'Tên cây' }, { sub: 'qty', label: 'Số cây', type: 'number', unit: 'cây' }] },
+            { key: 't5', label: 'Cây 5', cols: [{ sub: 'name', label: 'Tên cây', placeholder: 'Tên cây' }, { sub: 'qty', label: 'Số cây', type: 'number', unit: 'cây' }] },
+            { key: 't6', label: 'Cây 6', cols: [{ sub: 'name', label: 'Tên cây', placeholder: 'Tên cây' }, { sub: 'qty', label: 'Số cây', type: 'number', unit: 'cây' }] }
+        ],
+        chips: ['Thường xuyên', 'Thỉnh thoảng', 'Không']
+    },
+    C19: {
+        target: 'answer',
+        fields: [
+            { key: 'hours_per_time', label: 'Số giờ mỗi lần tưới', unit: 'giờ', type: 'number', placeholder: 'VD: 8' },
+            { key: 'times_dry', label: 'Số lần tưới mùa khô vừa qua', unit: 'lần', type: 'number', placeholder: 'VD: 3' },
+            { key: 'm3_per_time', label: 'Lượng nước (nếu có đồng hồ/ước lượng)', unit: 'm³/lần', type: 'number', placeholder: 'VD: 30' }
+        ],
+        chips: ['Không đo/không nhớ']
+    },
+    D02: {
+        target: 'answer',
+        fields: [
+            { key: 'y24_25', label: 'Vụ 2024–2025', unit: 'tấn nhân', type: 'number', placeholder: 'VD: 3.5' },
+            { key: 'y25_26', label: 'Vụ 2025–2026 (dự kiến)', unit: 'tấn nhân', type: 'number', placeholder: 'VD: 3.8' },
+            { key: 'fresh_dry_note', label: 'Nếu chỉ nhớ tươi/quả khô (ghi rõ dạng & số lượng)', unit: '', type: 'text', placeholder: 'VD: 15 tấn tươi' }
+        ],
+        chips: ['Không nhớ/không rõ']
+    },
+    D04: {
+        target: 'answer',
+        fields: [
+            { key: 'price_kg', label: 'Giá bán bình quân', unit: 'đồng/kg cà phê nhân', type: 'number', placeholder: 'VD: 115000' }
+        ],
+        chips: ['Không bán cà phê nhân/không rõ giá']
+    },
+    D06: {
+        target: 'answer',
+        rows: [
+            { key: 'c1', label: 'Cây 1', cols: [{ sub: 'name', label: 'Tên cây', placeholder: 'VD: Sầu riêng' }, { sub: 'qty', label: 'Sản lượng', type: 'number', placeholder: 'Số lượng' }, { sub: 'unit', label: 'Đơn vị', placeholder: 'kg / tấn' }, { sub: 'money', label: 'Số tiền (đồng)', type: 'number', placeholder: 'VD: 50000000' }] },
+            { key: 'c2', label: 'Cây 2', cols: [{ sub: 'name', label: 'Tên cây', placeholder: 'VD: Tiêu' }, { sub: 'qty', label: 'Sản lượng', type: 'number', placeholder: 'Số lượng' }, { sub: 'unit', label: 'Đơn vị', placeholder: 'kg / tấn' }, { sub: 'money', label: 'Số tiền (đồng)', type: 'number', placeholder: 'VD: 15000000' }] },
+            { key: 'c3', label: 'Cây 3', cols: [{ sub: 'name', label: 'Tên cây', placeholder: 'Tên cây khác' }, { sub: 'qty', label: 'Sản lượng', type: 'number', placeholder: 'Số lượng' }, { sub: 'unit', label: 'Đơn vị', placeholder: 'kg / tấn' }, { sub: 'money', label: 'Số tiền (đồng)', type: 'number', placeholder: 'Số tiền' }] }
+        ],
+        chips: ['Không có thu nhập từ cây trồng xen', 'Không nhớ']
+    },
+    D07: {
+        target: 'answer',
+        fields: [
+            { key: 'fertilizer', label: '1. Phân bón', unit: 'đồng', type: 'number', placeholder: 'VD: 25000000' },
+            { key: 'pesticide', label: '2. Thuốc BVTV / thuốc cỏ', unit: 'đồng', type: 'number', placeholder: 'VD: 3000000' },
+            { key: 'irrigation', label: '3. Tưới nước / điện / dầu', unit: 'đồng', type: 'number', placeholder: 'VD: 4000000' },
+            { key: 'care_labor', label: '4. Thuê nhân công chăm sóc', unit: 'đồng', type: 'number', placeholder: 'VD: 8000000' },
+            { key: 'harvest_transport', label: '5. Thu hoạch & vận chuyển', unit: 'đồng', type: 'number', placeholder: 'VD: 12000000' },
+            { key: 'other_cost', label: '6. Khoản chi khác', unit: 'đồng', type: 'number', placeholder: 'VD: 1000000' }
+        ],
+        chips: ['Không nhớ từng khoản']
+    },
+    D08: {
+        target: 'note',
+        fields: [
+            { key: 'workers', label: 'Số người thuê', unit: 'người', type: 'number', placeholder: 'VD: 5' },
+            { key: 'work_days', label: 'Số ngày công', unit: 'ngày', type: 'number', placeholder: 'VD: 20' },
+            { key: 'total_wage', label: 'Tổng tiền công thu hoạch', unit: 'đồng', type: 'number', placeholder: 'VD: 10000000' }
+        ]
+    },
+    F06: {
+        target: 'note',
+        useOptionDatalist: true,
+        fields: [
+            { key: 'p1', label: 'Ưu tiên số 1', unit: '', type: 'text', placeholder: 'Chọn hoặc nhập ưu tiên 1...' },
+            { key: 'p2', label: 'Ưu tiên số 2', unit: '', type: 'text', placeholder: 'Chọn hoặc nhập ưu tiên 2...' },
+            { key: 'p3', label: 'Ưu tiên số 3', unit: '', type: 'text', placeholder: 'Chọn hoặc nhập ưu tiên 3...' }
+        ]
+    }
+};
+
+function getStructuredSpec(code, targetType) {
+    const spec = STRUCTURED_FIELD_SPECS[code];
+    if (!spec) return null;
+    if (targetType && spec.target !== targetType) return null;
+    return spec;
+}
+
+function isTxChipSelected(curVal, chipLabel) {
+    const cur = String(curVal || '').trim();
+    if (!cur || !chipLabel) return false;
+    return cur.split(/[;\n]+/).map(s => s.trim().toLowerCase()).includes(chipLabel.trim().toLowerCase()) ||
+           cur.toLowerCase() === chipLabel.trim().toLowerCase();
+}
+
+function getTxChipStyle(active) {
+    return active
+        ? 'background: #15803d; color: #ffffff; border: 1.5px solid #166534; border-radius: 999px; padding: 4px 11px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;'
+        : 'background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 999px; padding: 4px 11px; font-size: 0.78rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;';
+}
+
+function formatQuestionHintText(q) {
+    const raw = String(q.options_raw || '').trim();
+    if (!raw || (q.options && q.options.length > 0)) return '';
+    const spec = getStructuredSpec(q.code, 'answer');
+    if (!spec) {
+        return raw ? `Gợi ý: ${raw}` : '';
+    }
+    const cleanLines = raw
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => {
+            if (!line) return false;
+            if (/_{3,}/.test(line)) return false;
+            if (/^☐/.test(line)) return false;
+            return true;
+        });
+    const noteSentences = [];
+    raw.split(/\r?\n/).forEach(line => {
+        if (/_{3,}/.test(line)) {
+            line.split(/(?<=\.)\s+/).forEach(sent => {
+                const s = sent.trim();
+                if (s && !/_{3,}/.test(s) && !s.includes('☐')) noteSentences.push(s);
+            });
+        }
+    });
+    const merged = Array.from(new Set([...noteSentences, ...cleanLines]));
+    return merged.length ? merged.join(' ') : '';
+}
+
+function renderStructuredFieldsHtml(q, targetType, isViewer) {
+    const code = q.code;
+    const spec = getStructuredSpec(code, targetType);
+    if (!spec) return '';
+    const stateKey = targetType === 'note' ? `${code}_note_fields` : `${code}_fields`;
+    const savedObj = (currentDraftAnswers[stateKey] && typeof currentDraftAnswers[stateKey] === 'object')
+        ? currentDraftAnswers[stateKey]
+        : {};
+    const dlId = spec.useOptionDatalist ? `dl_${code}_opts` : '';
+    const datalistHtml = (spec.useOptionDatalist && Array.isArray(q.options))
+        ? `<datalist id="${dlId}">${q.options.map(o => `<option value="${escapeHtml(o.label)}">`).join('')}</datalist>`
+        : '';
+
+    let rowsHtml = '';
+    if (Array.isArray(spec.rows) && spec.rows.length > 0) {
+        rowsHtml = `
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: ${spec.fields?.length ? '8px' : '0'};">
+                ${spec.rows.map(r => `
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px;">
+                        <span style="min-width: 52px; font-weight: 700; font-size: 0.78rem; color: #002060;">${escapeHtml(r.label)}</span>
+                        ${r.cols.map(col => {
+                            const fKey = `${r.key}_${col.sub}`;
+                            const v = savedObj[fKey] ?? '';
+                            return `
+                                <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem; color: #334155;">
+                                    <span>${escapeHtml(col.label)}:</span>
+                                    <input type="${escapeHtml(col.type || 'text')}"
+                                           step="any"
+                                           data-sf-code="${escapeHtml(code)}"
+                                           data-sf-target="${escapeHtml(targetType)}"
+                                           data-sf-key="${escapeHtml(fKey)}"
+                                           value="${escapeHtml(v)}"
+                                           ${isViewer ? 'disabled' : ''}
+                                           placeholder="${escapeHtml(col.placeholder || '')}"
+                                           oninput="onStructuredFieldChange('${escapeQuotes(code)}', '${escapeQuotes(targetType)}', '${escapeQuotes(fKey)}', this.value)"
+                                           class="form-control"
+                                           style="width: ${col.type === 'number' ? '105px' : '135px'}; padding: 4px 7px; font-size: 0.80rem;">
+                                    ${col.unit ? `<span style="color:#64748b;">${escapeHtml(col.unit)}</span>` : ''}
+                                </label>
+                            `;
+                        }).join('')}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    let fieldsHtml = '';
+    if (Array.isArray(spec.fields) && spec.fields.length > 0) {
+        fieldsHtml = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px;">
+                ${spec.fields.map(f => {
+                    const v = savedObj[f.key] ?? '';
+                    return `
+                        <label style="display: flex; flex-direction: column; gap: 3px; font-size: 0.78rem; color: #1e293b; font-weight: 600;">
+                            <span>${escapeHtml(f.label)}${f.unit ? ` <span style="color:#64748b; font-weight:500;">(${escapeHtml(f.unit)})</span>` : ''}:</span>
+                            <input type="${escapeHtml(f.type || 'text')}"
+                                   step="any"
+                                   ${dlId ? `list="${dlId}"` : ''}
+                                   data-sf-code="${escapeHtml(code)}"
+                                   data-sf-target="${escapeHtml(targetType)}"
+                                   data-sf-key="${escapeHtml(f.key)}"
+                                   value="${escapeHtml(v)}"
+                                   ${isViewer ? 'disabled' : ''}
+                                   placeholder="${escapeHtml(f.placeholder || '')}"
+                                   oninput="onStructuredFieldChange('${escapeQuotes(code)}', '${escapeQuotes(targetType)}', '${escapeQuotes(f.key)}', this.value)"
+                                   class="form-control"
+                                   style="padding: 5px 8px; font-size: 0.82rem; background: #ffffff;">
+                        </label>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    return `
+        ${datalistHtml}
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 5px; padding: 9px 10px; margin-bottom: 8px;">
+            ${rowsHtml}
+            ${fieldsHtml}
+        </div>
+    `;
+}
+
+function buildStructuredSummary(code, targetType, fieldsObj, existingChips = []) {
+    const spec = getStructuredSpec(code, targetType);
+    if (!spec) return '';
+    const parts = [];
+
+    if (Array.isArray(spec.rows)) {
+        spec.rows.forEach(r => {
+            const subParts = [];
+            r.cols.forEach(col => {
+                const val = String(fieldsObj[`${r.key}_${col.sub}`] ?? '').trim();
+                if (val) {
+                    subParts.push(`${col.label}: ${val}${col.unit ? ' ' + col.unit : ''}`);
+                }
+            });
+            if (subParts.length > 0) {
+                parts.push(`${r.label} (${subParts.join(', ')})`);
+            }
+        });
+    }
+
+    if (Array.isArray(spec.fields)) {
+        spec.fields.forEach(f => {
+            const val = String(fieldsObj[f.key] ?? '').trim();
+            if (val) {
+                parts.push(`${f.label}: ${val}${f.unit ? ' ' + f.unit : ''}`);
+            }
+        });
+    }
+
+    existingChips.forEach(ch => {
+        if (!parts.includes(ch)) parts.push(ch);
+    });
+    return parts.join('; ');
+}
+
+function onStructuredFieldChange(code, targetType, fieldKey, fieldVal) {
+    if (currentUser?.role === 'viewer') return;
+    const stateKey = targetType === 'note' ? `${code}_note_fields` : `${code}_fields`;
+    const answerKey = targetType === 'note' ? `${code}_note` : code;
+    if (!currentDraftAnswers[stateKey] || typeof currentDraftAnswers[stateKey] !== 'object') {
+        currentDraftAnswers[stateKey] = {};
+    }
+    if (fieldVal !== undefined && String(fieldVal).trim() !== '') {
+        currentDraftAnswers[stateKey][fieldKey] = String(fieldVal).trim();
+    } else {
+        delete currentDraftAnswers[stateKey][fieldKey];
+    }
+
+    const spec = getStructuredSpec(code, targetType);
+    const activeChips = [];
+    if (spec && Array.isArray(spec.chips)) {
+        const curText = String(currentDraftAnswers[answerKey] || '');
+        spec.chips.forEach(ch => {
+            const lower = ch.toLowerCase();
+            const isNeg = lower.includes('không nhớ') || lower.includes('không có') || lower.includes('không bón') || lower.includes('không phun') || lower.includes('không đo') || lower.includes('không bán');
+            if (!isNeg && isTxChipSelected(curText, ch)) {
+                activeChips.push(ch);
+            }
+        });
+    }
+
+    const summary = buildStructuredSummary(code, targetType, currentDraftAnswers[stateKey], activeChips);
+    currentDraftAnswers[answerKey] = summary;
+
+    const ta = document.getElementById(targetType === 'note' ? `followUpNote_${code}` : `txInput_${code}`);
+    if (ta) ta.value = summary;
+    refreshTxChipButtons(code, summary);
+    evaluateQuestionConditions();
+    saveDraftLocal(false);
+    updateAnsweredSummaryBadge();
+}
+
+function refreshTxChipButtons(code, curText) {
+    document.querySelectorAll(`button[data-chip-for="${code}"]`).forEach(btn => {
+        const lbl = btn.getAttribute('data-chip-label') || '';
+        const active = isTxChipSelected(curText, lbl);
+        btn.setAttribute('style', getTxChipStyle(active));
+        const ic = btn.querySelector('i');
+        if (ic) {
+            ic.className = `${active ? 'fa-solid' : 'fa-regular'} fa-square-check`;
+            ic.style.color = active ? '#ffffff' : '#15803d';
+        }
+    });
+}
+
 function onTxChipClick(code, label) {
     if (currentUser?.role === 'viewer') return;
     const ta = document.getElementById(`txInput_${code}`);
     const cur = String(currentDraftAnswers[code] || '').trim();
-    let nextVal = label;
-    if (cur && cur !== label) {
-        if (cur.includes(label)) {
-            nextVal = cur;
-        } else if (label.toLowerCase().includes('không nhớ') || label.toLowerCase().includes('không có')) {
-            nextVal = label;
-        } else {
-            nextVal = `${cur}; ${label}`;
-        }
+    const lowerLbl = label.toLowerCase();
+    const isExclusiveNeg = lowerLbl.includes('không nhớ') || lowerLbl.includes('không có') ||
+                           lowerLbl.includes('không bón') || lowerLbl.includes('không phun') ||
+                           lowerLbl.includes('không đo') || lowerLbl.includes('không bán') ||
+                           lowerLbl === 'không';
+
+    const alreadyActive = isTxChipSelected(cur, label);
+    let nextVal = '';
+    if (alreadyActive) {
+        nextVal = cur.split(/[;\n]+/).map(s => s.trim()).filter(s => s && s.toLowerCase() !== lowerLbl).join('; ');
+    } else if (isExclusiveNeg) {
+        nextVal = label;
+        delete currentDraftAnswers[`${code}_fields`];
+        document.querySelectorAll(`input[data-sf-code="${code}"][data-sf-target="answer"]`).forEach(inp => {
+            inp.value = '';
+        });
+    } else {
+        const cleanedParts = cur.split(/[;\n]+/).map(s => s.trim()).filter(s => {
+            if (!s) return false;
+            const sl = s.toLowerCase();
+            return !(sl.includes('không nhớ') || sl.includes('không có') || sl.includes('không bón') || sl.includes('không phun') || sl.includes('không đo') || sl.includes('không bán') || sl === 'không');
+        });
+        cleanedParts.push(label);
+        nextVal = cleanedParts.join('; ');
     }
+
     currentDraftAnswers[code] = nextVal;
     if (ta) ta.value = nextVal;
+    refreshTxChipButtons(code, nextVal);
     evaluateQuestionConditions();
     saveDraftLocal(false);
     updateAnsweredSummaryBadge();
@@ -1807,6 +2220,7 @@ function onAnswerChange(code, el, isMulti) {
             });
             if (el.parentElement) el.parentElement.classList.add('selected');
         }
+        refreshTxChipButtons(code, el.value);
     }
 
     const fuBox = document.getElementById(`followUp_${code}`);
@@ -3024,9 +3438,13 @@ async function refreshDashboardData() {
         if (!res.ok) return;
         const data = await res.json();
 
+        const counts = data.tool_counts || {};
         const totalComp = data.total_completed || 0;
-        const p1Comp = (data.tool_counts && data.tool_counts['P1']) || 0;
-        const totalPct = ((totalComp / 312) * 100).toFixed(1);
+        const totalUniqueComp = (data.total_unique_completed !== undefined)
+            ? data.total_unique_completed
+            : ((counts['P1'] || 0) + (counts['NT'] || 0) + (counts['CQ'] || 0) + (counts['HTX'] || 0) + (counts['TT'] || 0));
+        const p1Comp = counts['P1'] || 0;
+        const totalPct = Math.min(100, (totalUniqueComp / 238) * 100).toFixed(1);
 
         const elTotal = document.getElementById('statDashCompleted');
         const elP1 = document.getElementById('statDashP1');
@@ -3048,43 +3466,54 @@ function renderGroupProgressTable(data) {
     if (!tbody) return;
 
     const counts = data.tool_counts || {};
-    const groups = [
+    const rows = [
         {
-            name: 'Nhóm 1: Hộ Nông Dân & Thôn Buôn',
-            code: 'P1, KIP, MH',
-            type: 'Phỏng vấn trực tiếp & Thảo luận nhóm',
-            target: 268,
-            actual: (counts['P1'] || 0) + (counts['KIP'] || 0) + (counts['MH'] || 0)
+            name: '1. Hộ nông dân',
+            code: 'P1',
+            type: 'Phỏng vấn trực tiếp hộ nông dân (đã bao gồm 2 chủ mô hình)',
+            target: 220,
+            actual: counts['P1'] || 0
         },
         {
-            name: 'Nhóm 2: Nhóm Trưởng ToT, Tổ Dịch Vụ, HTX',
-            code: 'NT, SDM, HTX',
-            type: 'Phỏng vấn sâu bán cấu trúc',
-            target: 36,
-            actual: (counts['NT'] || 0) + (counts['SDM'] || 0) + (counts['HTX'] || 0)
+            name: '2. Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (gộp chung)',
+            code: 'NT',
+            type: 'Phỏng vấn sâu / thảo luận gộp nhóm đối tượng',
+            target: 10,
+            actual: counts['NT'] || 0
         },
         {
-            name: 'Nhóm 3: Chính Quyền & Cơ Quan Nhà Nước',
+            name: '3. Chính quyền địa phương – đại diện 3 xã',
             code: 'CQ',
-            type: 'Tham vấn chính sách & Báo cáo cấp xã/huyện',
-            target: 6,
-            actual: (counts['CQ'] || 0)
+            type: 'Tham vấn chính quyền cấp xã',
+            target: 3,
+            actual: counts['CQ'] || 0
         },
         {
-            name: 'Nhóm 4: Nhà Tài Trợ & Chuyên Gia Dự Án',
+            name: '4. Ban quản lý 3 HTX',
+            code: 'HTX',
+            type: 'Phỏng vấn sâu ban quản lý HTX',
+            target: 3,
+            actual: counts['HTX'] || 0
+        },
+        {
+            name: "5. Nhà tài trợ (IDH và JDE Peet's)",
             code: 'TT',
-            type: 'Phỏng vấn chuyên sâu chiến lược',
+            type: 'Phỏng vấn chuyên sâu đối tác tài trợ',
             target: 2,
-            actual: (counts['TT'] || 0)
+            actual: counts['TT'] || 0
         }
     ];
 
-    tbody.innerHTML = groups.map(g => {
+    const totalActual = rows.reduce((s, r) => s + r.actual, 0);
+    const totalPct = Math.min(100, (totalActual / 238) * 100).toFixed(1);
+    const mhActual = counts['MH'] || 0;
+    const mhPct = Math.min(100, (mhActual / 2) * 100).toFixed(1);
+
+    tbody.innerHTML = rows.map(g => {
         const pct = Math.min(100, ((g.actual / g.target) * 100)).toFixed(1);
-        let badge = '<span class="stat-badge pending">Đang thực hiện</span>';
-        if (g.actual >= g.target) {
-            badge = '<span class="stat-badge pass">Đạt chỉ tiêu</span>';
-        }
+        const badge = g.actual >= g.target
+            ? '<span class="stat-badge pass">Đạt chỉ tiêu</span>'
+            : '<span class="stat-badge pending">Đang thực hiện</span>';
 
         return `
             <tr>
@@ -3097,7 +3526,26 @@ function renderGroupProgressTable(data) {
                 <td style="text-align: center;">${badge}</td>
             </tr>
         `;
-    }).join('');
+    }).join('') + `
+        <tr style="background: #f8fafc;">
+            <td><em>6. Chủ mô hình trình diễn <span style="color:#64748b;">(chọn trong 220 hộ, không tính trùng tổng)</span></em></td>
+            <td><span style="font-family: monospace; font-weight: 700; color: #b45309;">MH</span></td>
+            <td><em>Phỏng vấn sâu chủ mô hình trình diễn</em></td>
+            <td style="text-align: center; font-weight: 700; color: #64748b;">2 <span style="font-size:0.72rem;">(không cộng)</span></td>
+            <td style="text-align: center; font-weight: 700; color: #b45309;">${mhActual}</td>
+            <td style="text-align: center; font-weight: 700; color: #64748b;">${mhPct}%</td>
+            <td style="text-align: center;">${mhActual >= 2 ? '<span class="stat-badge pass">Đạt chỉ tiêu</span>' : '<span class="stat-badge pending">Theo dõi riêng</span>'}</td>
+        </tr>
+        <tr style="background: #eff6ff; font-weight: 800; border-top: 2px solid #93c5fd;">
+            <td>TỔNG ĐỐI TƯỢNG THAM VẤN (không tính trùng 2 MH)</td>
+            <td style="font-family: monospace; color: #002060;">P1, NT, CQ, HTX, TT</td>
+            <td>Tổng hợp sau điều chỉnh (gồm ${totalActual + mhActual} phiếu nếu tính cả MH)</td>
+            <td style="text-align: center; color: #002060;">238</td>
+            <td style="text-align: center; color: #15803d;">${totalActual}</td>
+            <td style="text-align: center; color: #002060;">${totalPct}%</td>
+            <td style="text-align: center;">${totalActual >= 238 ? '<span class="stat-badge pass">Hoàn thành</span>' : '<span class="stat-badge pending">Đang thực hiện</span>'}</td>
+        </tr>
+    `;
 }
 
 function renderCommuneProgressTable(data) {
@@ -3106,29 +3554,29 @@ function renderCommuneProgressTable(data) {
 
     const commCounts = data.commune_counts || {};
     const eakiet = commCounts['Ea Kiết'] || 0;
-    const eatar = commCounts['Ea Tar'] || 0;
+    const eatul = commCounts['Ea Tul'] || 0;
     const cdmn = commCounts["Cư Dliê M'nông"] || 0;
 
     const list = [
         {
             name: 'Xã Ea Kiết',
-            schedule: '05/11 – 11/11/2026',
-            team: 'Tổ 1 (4 ĐTV) + Giám sát viên',
-            target: 84,
+            schedule: 'Theo phân công thực địa',
+            team: 'Lê Đình Duy (TCN07) & Phan Doãn Vọng (TCN02)',
+            target: 72,
             actual: eakiet
         },
         {
-            name: 'Xã Ea Tar',
-            schedule: '12/11 – 15/11/2026',
-            team: 'Tổ 2 (3 ĐTV) + Giám sát viên',
-            target: 51,
-            actual: eatar
+            name: 'Xã Ea Tul',
+            schedule: 'Theo phân công thực địa',
+            team: 'Nguyễn Viết Trụ (TCN04), Cao Thị Phúc (TCN05), Hoàng Trường Sinh (TCN06), Phạm Văn Thao (TCN03)',
+            target: 139,
+            actual: eatul
         },
         {
             name: "Xã Cư Dliê M'nông",
-            schedule: '16/11 – 21/11/2026',
-            team: 'Tổ 1 & Tổ 2 (7 ĐTV) tập trung',
-            target: 85,
+            schedule: 'Theo phân công thực địa',
+            team: 'Phạm Văn Thao (TCN03)',
+            target: 9,
             actual: cdmn
         }
     ];

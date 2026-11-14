@@ -818,7 +818,7 @@ def send_daily_excel_report(recipients=None):
         target_list = DAILY_REPORT_RECIPIENTS
 
     smtp_sender = (get_setting("smtp_sender", DAILY_REPORT_SENDER) or DAILY_REPORT_SENDER).strip()
-    smtp_password = (get_setting("smtp_password", "maytinh123@TCN") or "").strip()
+    smtp_password = (get_setting("smtp_password", "mvsszzzqwuhhpmxq") or "").strip()
 
     today_str = datetime.datetime.now().strftime("%Y-%m-%d")
     export_path = os.path.join(BASE_DIR, "export_surveys_latest.xlsx")
@@ -981,7 +981,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 'pass_viewer': get_setting('pass_viewer', PASS_VIEWER),
                 'admin_name': get_setting('admin_name', 'Quản Trị Viên (Admin)'),
                 'smtp_sender': get_setting('smtp_sender', DAILY_REPORT_SENDER),
-                'smtp_password': get_setting('smtp_password', 'maytinh123@TCN'),
+                'smtp_password': get_setting('smtp_password', 'mvsszzzqwuhhpmxq'),
                 'report_recipients': get_setting('report_recipients', ', '.join(DAILY_REPORT_RECIPIENTS))
             })
             return
@@ -1080,58 +1080,64 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             cur.execute('SELECT tool_code, COUNT(*) FROM surveys GROUP BY tool_code')
             tool_counts = dict(cur.fetchall())
 
-            cur.execute('SELECT commune, COUNT(*) FROM surveys GROUP BY commune')
+            cur.execute("SELECT commune, COUNT(*) FROM surveys WHERE tool_code = 'P1' GROUP BY commune")
             commune_counts = dict(cur.fetchall())
 
             cur.execute('SELECT COUNT(*) FROM surveys')
             total_surveys = cur.fetchone()[0]
 
+            total_unique_completed = (
+                tool_counts.get('P1', 0) + tool_counts.get('NT', 0) +
+                tool_counts.get('CQ', 0) + tool_counts.get('HTX', 0) +
+                tool_counts.get('TT', 0)
+            )
+
             targets = {
-                'total_respondents': 312,
+                'total_respondents': 238,
+                'total_forms': 240,
                 'groups': {
                     'group1_farmers': {
-                        'target': 268,
-                        'completed': (tool_counts.get('P1', 0) + tool_counts.get('KIP', 0) + tool_counts.get('MH', 0)),
+                        'target': 220,
+                        'completed': tool_counts.get('P1', 0),
                         'details': {
-                            'P1': {'name': 'Phiếu nông dân', 'target': 220, 'completed': tool_counts.get('P1', 0)},
-                            'KIP': {'name': 'Thảo luận cấp thôn', 'target': 12, 'completed': tool_counts.get('KIP', 0)},
-                            'MH': {'name': 'Phỏng vấn sâu mô hình', 'target': 9, 'completed': tool_counts.get('MH', 0)}
+                            'P1': {'name': 'Hộ nông dân', 'target': 220, 'completed': tool_counts.get('P1', 0)},
+                            'MH': {'name': 'Chủ mô hình trình diễn (trong 220 hộ, không tính trùng)', 'target': 2, 'completed': tool_counts.get('MH', 0)}
                         }
                     },
                     'group2_leaders_coops': {
-                        'target': 36,
-                        'completed': (tool_counts.get('NT', 0) + tool_counts.get('SDM', 0) + tool_counts.get('HTX', 0)),
+                        'target': 13,
+                        'completed': (tool_counts.get('NT', 0) + tool_counts.get('HTX', 0)),
                         'details': {
-                            'NT': {'name': 'Thảo luận ToT', 'target': 3, 'completed': tool_counts.get('NT', 0)},
-                            'SDM': {'name': 'Thảo luận tổ SDM', 'target': 1, 'completed': tool_counts.get('SDM', 0)},
-                            'HTX': {'name': 'Phỏng vấn HTX', 'target': 3, 'completed': tool_counts.get('HTX', 0)}
+                            'NT': {'name': 'Nhóm trưởng, đại diện nhóm hộ & trưởng thôn', 'target': 10, 'completed': tool_counts.get('NT', 0)},
+                            'HTX': {'name': 'Ban quản lý 3 HTX', 'target': 3, 'completed': tool_counts.get('HTX', 0)}
                         }
                     },
                     'group3_local_gov': {
-                        'target': 6,
+                        'target': 3,
                         'completed': tool_counts.get('CQ', 0),
                         'details': {
-                            'CQ': {'name': 'Chính quyền & ban ngành', 'target': 6, 'completed': tool_counts.get('CQ', 0)}
+                            'CQ': {'name': 'Chính quyền địa phương - đại diện 3 xã', 'target': 3, 'completed': tool_counts.get('CQ', 0)}
                         }
                     },
                     'group4_donors': {
                         'target': 2,
                         'completed': tool_counts.get('TT', 0),
                         'details': {
-                            'TT': {'name': "Nhà tài trợ (IDH, JDE Peet's)", 'target': 2, 'completed': tool_counts.get('TT', 0)}
+                            'TT': {'name': "Nhà tài trợ (IDH và JDE Peet's)", 'target': 2, 'completed': tool_counts.get('TT', 0)}
                         }
                     }
                 },
                 'communes_p1': {
-                    'Ea Kiết': {'target': 84, 'completed': commune_counts.get('Ea Kiết', 0)},
-                    'Ea Tar': {'target': 51, 'completed': commune_counts.get('Ea Tar', 0)},
-                    "Cư Dliê M'nông": {'target': 85, 'completed': commune_counts.get("Cư Dliê M'nông", 0)}
+                    'Ea Kiết': {'target': 72, 'completed': commune_counts.get('Ea Kiết', 0)},
+                    'Ea Tul': {'target': 139, 'completed': commune_counts.get('Ea Tul', 0)},
+                    "Cư Dliê M'nông": {'target': 9, 'completed': commune_counts.get("Cư Dliê M'nông", 0)}
                 }
             }
 
             conn.close()
             self._send_json({
                 'total_completed': total_surveys,
+                'total_unique_completed': total_unique_completed,
                 'tool_counts': tool_counts,
                 'commune_counts': commune_counts,
                 'targets': targets
@@ -1651,7 +1657,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                         'pass_viewer': get_setting('pass_viewer', PASS_VIEWER),
                         'admin_name': get_setting('admin_name', 'Quản Trị Viên (Admin)'),
                         'smtp_sender': get_setting('smtp_sender', DAILY_REPORT_SENDER),
-                        'smtp_password': get_setting('smtp_password', 'maytinh123@TCN'),
+                        'smtp_password': get_setting('smtp_password', 'mvsszzzqwuhhpmxq'),
                         'report_recipients': get_setting('report_recipients', ', '.join(DAILY_REPORT_RECIPIENTS))
                     }
                 })
