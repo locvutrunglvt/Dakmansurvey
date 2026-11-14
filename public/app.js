@@ -198,7 +198,26 @@ async function installPwaApp() {
     }, true);
 })();
 
-let allQuestionsData = {};
+const QUESTIONS_CACHE_KEY = 'dakman_questions_cache_v1';
+
+function getInitialQuestionsFallback() {
+    if (window.__DEFAULT_QUESTIONS_DATA__ && typeof window.__DEFAULT_QUESTIONS_DATA__ === 'object' && Object.keys(window.__DEFAULT_QUESTIONS_DATA__).length > 0) {
+        return window.__DEFAULT_QUESTIONS_DATA__;
+    }
+    try {
+        const cached = localStorage.getItem(QUESTIONS_CACHE_KEY);
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+                return parsed;
+            }
+        }
+    } catch (_) {}
+    return {};
+}
+
+let allQuestionsData = getInitialQuestionsFallback();
+let questionsSyncedFromServer = false;
 let allScheduleData = [];
 let currentTool = 'P1';
 let currentSection = null;
@@ -709,32 +728,73 @@ function isHouseholdLockedByOther(lock) {
 
 let questionsLoadingPromise = null;
 
+async function fetchQuestionsWithTimeout(timeoutMs = 6000) {
+    const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+    try {
+        const res = await fetch(apiUrl('/api/questions'), {
+            cache: 'no-store',
+            signal: ctrl ? ctrl.signal : undefined
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+                const prevSnapshot = JSON.stringify(allQuestionsData[currentTool] || null);
+                allQuestionsData = data;
+                questionsSyncedFromServer = true;
+                try {
+                    localStorage.setItem(QUESTIONS_CACHE_KEY, JSON.stringify(data));
+                } catch (_) {}
+                const nextSnapshot = JSON.stringify(allQuestionsData[currentTool] || null);
+                const qBox = document.getElementById('surveyQuestionsBox');
+                const needsRender = qBox && (qBox.innerHTML.includes('fa-spinner') || qBox.innerHTML.includes('Không thể tải bộ câu hỏi') || prevSnapshot !== nextSnapshot);
+                if (needsRender && currentMainView === 'survey' && allQuestionsData[currentTool]) {
+                    const toolObj = allQuestionsData[currentTool];
+                    const sections = [];
+                    (toolObj.questions || []).forEach(q => {
+                        const s = q.section || 'Thông tin chung';
+                        if (!sections.includes(s)) sections.push(s);
+                    });
+                    renderSectionJumpNav(sections);
+                    if (!currentSection) currentSection = sections.length > 1 ? '__ALL__' : (sections[0] || null);
+                    renderQuestionsForSection(currentSection);
+                    updateSectionStepButtons(sections);
+                    updateAnsweredSummaryBadge();
+                }
+                return allQuestionsData;
+            }
+        }
+    } catch (e) {
+        console.warn('Không tải được câu hỏi từ API (dùng bộ câu hỏi dự phòng cục bộ):', e);
+    } finally {
+        if (timer) clearTimeout(timer);
+    }
+    if (!allQuestionsData || Object.keys(allQuestionsData).length === 0) {
+        allQuestionsData = getInitialQuestionsFallback();
+    }
+    return allQuestionsData;
+}
+
 async function loadQuestions(force = false) {
     // Tải song song danh sách hộ mẫu, không chặn luồng tải bộ câu hỏi
     loadSampleHouseholds().catch(() => {});
+    if (!allQuestionsData || Object.keys(allQuestionsData).length === 0) {
+        allQuestionsData = getInitialQuestionsFallback();
+    }
     if (!force && allQuestionsData && Object.keys(allQuestionsData).length > 0) {
+        if (!questionsSyncedFromServer && !questionsLoadingPromise) {
+            questionsLoadingPromise = fetchQuestionsWithTimeout(6000).finally(() => {
+                questionsLoadingPromise = null;
+            });
+        }
         return allQuestionsData;
     }
     if (!force && questionsLoadingPromise) {
         return questionsLoadingPromise;
     }
-    questionsLoadingPromise = (async () => {
-        try {
-            const res = await fetch(apiUrl('/api/questions'), { cache: 'no-store' });
-            if (res.ok) {
-                const data = await res.json();
-                if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-                    allQuestionsData = data;
-                    return allQuestionsData;
-                }
-            }
-        } catch (e) {
-            console.warn('Không tải được câu hỏi từ API:', e);
-        } finally {
-            questionsLoadingPromise = null;
-        }
-        return allQuestionsData;
-    })();
+    questionsLoadingPromise = fetchQuestionsWithTimeout(6000).finally(() => {
+        questionsLoadingPromise = null;
+    });
     return questionsLoadingPromise;
 }
 

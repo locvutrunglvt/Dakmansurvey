@@ -42,7 +42,17 @@ def append_audit_event(event_type, payload):
     except Exception as e:
         print(f"Audit log error: {e}")
 QUESTIONS_FILE = os.path.join(BASE_DIR, "questions_data.json")
+QUESTIONS_BUNDLE_FILE = os.path.join(PUBLIC_DIR, "questions_bundle.js")
 SCHEDULE_FILE = os.path.join(BASE_DIR, "schedule_data.json")
+
+
+def sync_questions_bundle(all_q):
+    try:
+        js_content = "window.__DEFAULT_QUESTIONS_DATA__ = " + json.dumps(all_q, ensure_ascii=False, separators=(",", ":")) + ";\n"
+        with open(QUESTIONS_BUNDLE_FILE, "w", encoding="utf-8") as bf:
+            bf.write(js_content)
+    except Exception as e:
+        print(f"Sync questions bundle error: {e}")
 
 # 03 Tầng quyền đăng nhập mặc định (có thể đổi qua giao diện Admin)
 PASS_ADMIN = "AAdmin123"
@@ -1710,6 +1720,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
                 with open(QUESTIONS_FILE, 'w', encoding='utf-8') as f:
                     json.dump(all_q, f, ensure_ascii=False, indent=2)
+                sync_questions_bundle(all_q)
 
                 self._send_json({'success': True, 'message': msg, 'all_questions': all_q})
                 return
