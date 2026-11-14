@@ -1555,12 +1555,14 @@
                                 </div>
                                 <div class="form-group">
                                     <input type="text" id="sampleSearchInput" class="form-control"
-                                           placeholder="Tìm ID (EK-JV-001), Tên, SĐT, Thôn, RA..."
+                                           placeholder="Tìm thông minh tên Chủ hộ, Mã hộ (EK-JV-001), SĐT, Thôn..."
+                                           onfocus="showPendingHouseholdsList()"
                                            oninput="filterSampleHouseholds()"
                                            style="font-size: 0.82rem;">
                                 </div>
                             </div>
-                            <div id="sampleResultList" style="max-height: 170px; overflow-y: auto; background: #ffffff; border: 1px solid #d1d5db; border-radius: 3px; display: none;"></div>
+                            <div id="sampleScopeNote" style="display: none; font-size: 0.76rem; color: #0369a1; font-weight: 600; margin-bottom: 6px;"></div>
+                            <div id="sampleResultList" style="max-height: 190px; overflow-y: auto; background: #ffffff; border: 1px solid #d1d5db; border-radius: 3px; display: none;"></div>
                             <div id="sampleSelectedBanner" style="display: none; margin-top: 6px; padding: 6px 10px; background: #dcfce7; border: 1px solid #86efac; border-radius: 3px; font-size: 0.80rem; color: #14532d;"></div>
                         </div>
 
@@ -1588,7 +1590,14 @@
                             <div class="form-group">
                                 <label>Họ Tên Người Được Phỏng Vấn <span class="req">*</span></label>
                                 <input type="text" class="form-control" id="respondentNameInput" required
+                                    oninput="onRespondentTyping(this.value)"
                                     placeholder="Họ và tên chủ hộ/đại diện">
+                            </div>
+                            <div class="form-group">
+                                <label>Người Dẫn Đường</label>
+                                <input type="text" class="form-control" id="guideNameInput"
+                                    oninput="currentDraftAnswers['_guide'] = this.value; saveDraftLocal(false);"
+                                    placeholder="Tự hiện theo chủ hộ hoặc nhập...">
                             </div>
                             <div class="form-group">
                                 <label>Số Điện Thoại</label>
@@ -1719,7 +1728,7 @@
                     <!-- Bottom Submit Bar -->
                     <div class="submit-bar">
                         <button type="submit" class="btn-bottom-primary" id="btnSubmitForm">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> GỬI KẾT QUẢ LÊN HỆ THỐNG DAKMAN
+                            <i class="fa-solid fa-circle-check"></i> LƯU VÀ HOÀN THÀNH PHIẾU
                         </button>
                         <button type="button" class="btn-bottom-secondary" onclick="manualSaveDraft()">
                             <i class="fa-solid fa-floppy-disk"></i> LƯU TẠM BẢN NHÁP TRÊN THIẾT BỊ
@@ -1735,10 +1744,16 @@
                 <div class="form-section">
                     <div class="section-header">
                         <span>TỔNG HỢP TIẾN ĐỘ THU THẬP THÔNG TIN CUỐI KỲ</span>
-                        <a href="/api/export/excel" class="summary-link"
-                            style="background: #15803d; color: #fff; padding: 5px 12px; border-radius: var(--radius-sm); text-decoration: none;">
-                            <i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo Excel Tổng Hợp (3 Sheet)
-                        </a>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                            <a href="/api/export/excel" class="summary-link"
+                                style="background: #15803d; color: #fff; padding: 5px 12px; border-radius: var(--radius-sm); text-decoration: none;">
+                                <i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo Excel Tổng Hợp (Nhiều Sheet)
+                            </a>
+                            <button type="button" id="btnSendDailyEmail" onclick="triggerDailyEmailReport()" class="summary-link admin-only-el"
+                                style="display: none; background: #002060; color: #fff; padding: 5px 12px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-weight: 700;">
+                                <i class="fa-solid fa-envelope"></i> Gửi Email Tổng Hợp Cuối Ngày
+                            </button>
+                        </div>
                     </div>
 
                     <!-- 4 KPI Summary Cards -->
@@ -2510,8 +2525,48 @@
         </div>
     </div>
 
+    <!-- Modal Cảm Ơn & Xem Lại Phiếu Sau Khi Hoàn Thành -->
+    <div id="surveyCompletionModal" class="modal-overlay">
+        <div class="modal-card qgis-dialog-card" style="max-width: 560px; display: flex; flex-direction: column;">
+            <div class="qgis-dialog-titlebar" style="background: #15803d;">
+                <span><i class="fa-solid fa-circle-check"></i> HOÀN THÀNH &amp; LƯU PHIẾU THÀNH CÔNG</span>
+                <button type="button" class="qgis-close-btn" onclick="finishAfterCompletion()">✕</button>
+            </div>
+            <div style="padding: 18px; background: #ffffff;">
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #15803d; padding: 12px 14px; border-radius: 4px; margin-bottom: 14px;">
+                    <div style="font-size: 1rem; font-weight: 700; color: #166534; margin-bottom: 4px;">
+                        Xin trân trọng cảm ơn Anh/Chị <span id="completionRespondentName">—</span>!
+                    </div>
+                    <div style="font-size: 0.86rem; color: #14532d; line-height: 1.5;">
+                        Phiếu khảo sát mã <strong id="completionSurveyCode">—</strong> đã được lưu chính thức và sao lưu an toàn trên máy chủ VPS của dự án Dakman.
+                    </div>
+                </div>
+                <div id="completionMetaSummary" style="font-size: 0.83rem; color: #334155; background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 12px; border-radius: 4px; margin-bottom: 14px; line-height: 1.6;"></div>
+                <div style="font-size: 0.82rem; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; padding: 8px 10px; border-radius: 4px; margin-bottom: 14px;">
+                    <i class="fa-solid fa-lightbulb"></i> <strong>Gợi ý trước khi rời điểm phỏng vấn:</strong> Anh/Chị có thể bấm xem lại toàn bộ phiếu 1 lượt; nếu phát hiện thiếu hoặc chưa chính xác, bấm <strong>Quay lại sửa &amp; Cập nhật</strong> ngay.
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button type="button" id="btnCompletionReview" class="qgis-btn-primary" style="width: 100%; padding: 10px; font-size: 0.9rem; font-weight: 700; background: #002060;">
+                        <i class="fa-solid fa-eye"></i> Xem lại phiếu đã phỏng vấn 1 lượt
+                    </button>
+                    <button type="button" id="btnCompletionEdit" class="qgis-btn-secondary" style="width: 100%; padding: 9px; font-size: 0.88rem; font-weight: 700; background: #fef3c7; color: #92400e; border-color: #fcd34d;">
+                        <i class="fa-solid fa-pen-to-square"></i> Quay lại sửa &amp; Cập nhật đầy đủ
+                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <a id="btnCompletionPdf" href="#" target="_blank" class="qgis-btn-secondary" style="flex: 1; text-align: center; text-decoration: none; padding: 8px; font-size: 0.84rem; background: #fee2e2; color: #991b1b; border-color: #fecaca;">
+                            <i class="fa-solid fa-file-pdf"></i> Xuất PDF
+                        </a>
+                        <button type="button" onclick="finishAfterCompletion()" class="qgis-btn-primary" style="flex: 1.4; padding: 8px; font-size: 0.84rem; background: #15803d;">
+                            <i class="fa-solid fa-forward"></i> Phỏng vấn hộ tiếp theo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Application Logic -->
-    <script src="app.js?v=2.27"></script>
+    <script src="app.js?v=2.28"></script>
 
 </body>
 

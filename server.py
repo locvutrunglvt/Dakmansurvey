@@ -481,6 +481,341 @@ def build_survey_pdf(survey_row):
     doc.build(story, canvasmaker=NumberedCanvas)
     return buf.getvalue()
 
+DAILY_REPORT_RECIPIENTS = ["dothanhduy21vn@gmail.com", "locvutrung@gmail.com"]
+DAILY_REPORT_SENDER = "impact@slowforest.vn"
+
+def _excel_safe_val(val, q_type="TX"):
+    if isinstance(val, list):
+        return "; ".join(str(v) for v in val)
+    if val is None or val == "":
+        return ""
+    if str(q_type).upper() in ("SO", "NUM", "LK"):
+        try:
+            fval = float(val)
+            return int(fval) if fval.is_integer() else fval
+        except Exception:
+            return str(val)
+    return str(val)
+
+def build_multisheet_excel(export_file=None):
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM surveys ORDER BY id ASC')
+    cols = [c[0] for c in cur.description]
+    db_rows = cur.fetchall()
+    cur.execute('SELECT surveyor_id, full_name, commune_assigned FROM users ORDER BY id ASC')
+    users_rows = cur.fetchall()
+    conn.close()
+
+    surveys_list = []
+    for r in db_rows:
+        item = dict(zip(cols, r))
+        try:
+            item['answers'] = json.loads(item.get('answers_json') or '{}')
+        except Exception:
+            item['answers'] = {}
+        surveys_list.append(item)
+
+    q_data = {}
+    if os.path.exists(QUESTIONS_FILE):
+        with open(QUESTIONS_FILE, 'r', encoding='utf-8') as f:
+            q_data = json.load(f)
+
+    if not export_file:
+        export_file = os.path.join(BASE_DIR, "export_surveys_latest.xlsx")
+
+    wb = openpyxl.Workbook()
+    wb.properties.creator = "Lộc Vũ Trung"
+    wb.properties.lastModifiedBy = "Lộc Vũ Trung"
+
+    font_title = Font(name="Arial", size=12, bold=True, color="002060")
+    font_header = Font(name="Arial", size=10, bold=True, color="FFFFFF")
+    font_bold = Font(name="Arial", size=9, bold=True)
+    font_normal = Font(name="Arial", size=9)
+    fill_header = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+    fill_sub = PatternFill(start_color="E2E8F0", end_color="E2E8F0", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin', color='D0D7DE'),
+        right=Side(style='thin', color='D0D7DE'),
+        top=Side(style='thin', color='D0D7DE'),
+        bottom=Side(style='thin', color='D0D7DE')
+    )
+
+    def style_header_row(ws, row_num, ncols):
+        ws.row_dimensions[row_num].height = 24
+        for c_i in range(1, ncols + 1):
+            c = ws.cell(row_num, c_i)
+            c.font = font_header
+            c.fill = fill_header
+            c.border = thin_border
+            c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    # Sheet 1: Danh_Sach_Phieu
+    ws1 = wb.active
+    ws1.title = "Danh_Sach_Phieu"
+    ws1.views.sheetView[0].showGridLines = True
+    headers_s1 = [
+        "STT", "Mã Phiếu", "Mã Công Cụ", "Tên Công Cụ", "Địa Bàn Xã", "Thôn/Buôn",
+        "Người Được Phỏng Vấn", "Số Điện Thoại", "Người Dẫn Đường",
+        "Mã ĐTV", "Tên Điều Tra Viên", "Ngày Khảo Sát",
+        "Bắt Đầu", "Kết Thúc", "Vĩ Độ", "Kinh Độ", "Ảnh Watermark", "Thời Gian Gửi"
+    ]
+    ws1.append(headers_s1)
+    style_header_row(ws1, 1, len(headers_s1))
+
+    for idx, s in enumerate(surveys_list, 1):
+        ans = s.get('answers') or {}
+        p_name = s.get('photo_path') or ''
+        row_vals = [
+            idx, s.get('survey_code', ''), s.get('tool_code', ''), s.get('tool_name', ''),
+            s.get('commune', ''), s.get('hamlet', ''), s.get('respondent_name', ''),
+            s.get('respondent_phone') or ans.get('_phone', ''),
+            ans.get('_guide', ''),
+            s.get('surveyor_id', ''), s.get('surveyor_name', ''), s.get('survey_date', ''),
+            ans.get('_started_at', '') or s.get('start_time', ''),
+            ans.get('_completed_at', '') or s.get('end_time', ''),
+            s.get('gps_lat', 0.0), s.get('gps_lng', 0.0),
+            p_name if p_name else 'Chưa có', s.get('created_at', '')
+        ]
+        ws1.append(row_vals)
+        for c_idx in range(1, len(row_vals) + 1):
+            cell = ws1.cell(idx + 1, c_idx)
+            cell.font = font_normal
+            cell.border = thin_border
+            cell.alignment = Alignment(
+                horizontal="center" if c_idx in (1, 2, 3, 10, 12) else ("right" if c_idx in (15, 16) else "left"),
+                vertical="center"
+            )
+
+    # Sheet 2: Tong_Hop_Tien_Do (dùng công thức COUNTIF / SUM liên kết Danh_Sach_Phieu)
+    ws_sum = wb.create_sheet(title="Tong_Hop_Tien_Do", index=0)
+    ws_sum.views.sheetView[0].showGridLines = True
+    ws_sum["A1"] = "BÁO CÁO TỔNG HỢP PHỎNG VẤN ĐÁNH GIÁ CUỐI KỲ DAKMAN CƯ M'GAR"
+    ws_sum["A1"].font = font_title
+    ws_sum["A2"] = f"Thời điểm xuất: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
+    ws_sum["A2"].font = font_normal
+
+    ws_sum.cell(4, 1, "Mã Công Cụ")
+    ws_sum.cell(4, 2, "Đối Tượng / Công Cụ")
+    ws_sum.cell(4, 3, "Chỉ Tiêu")
+    ws_sum.cell(4, 4, "Đã Thu Thập")
+    ws_sum.cell(4, 5, "% Hoàn Thành")
+    style_header_row(ws_sum, 4, 5)
+    tool_targets = [
+        ("P1", "Hộ nông dân", 220),
+        ("NT", "Nhóm trưởng, đại diện nhóm hộ & trưởng thôn", 10),
+        ("CQ", "Chính quyền địa phương - 3 xã", 3),
+        ("HTX", "Ban quản lý 3 HTX", 3),
+        ("TT", "Nhà tài trợ (IDH & JDE Peet's)", 2),
+        ("MH", "Chủ mô hình trình diễn", 2),
+    ]
+    r_idx = 5
+    for t_code, t_name, t_target in tool_targets:
+        ws_sum.cell(r_idx, 1, t_code)
+        ws_sum.cell(r_idx, 2, t_name)
+        ws_sum.cell(r_idx, 3, t_target)
+        ws_sum.cell(r_idx, 4, f'=COUNTIF(Danh_Sach_Phieu!C:C, A{r_idx})')
+        ws_sum.cell(r_idx, 5, f'=IF(C{r_idx}>0, D{r_idx}/C{r_idx}, 0)')
+        for c_i in range(1, 6):
+            cell = ws_sum.cell(r_idx, c_i)
+            cell.font = font_normal
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal="center" if c_i == 1 else ("right" if c_i >= 3 else "left"), vertical="center")
+        ws_sum.cell(r_idx, 5).number_format = "0.0%"
+        r_idx += 1
+    ws_sum.cell(r_idx, 1, "TỔNG")
+    ws_sum.cell(r_idx, 2, "Tổng cộng toàn bộ công cụ")
+    ws_sum.cell(r_idx, 3, f"=SUM(C5:C{r_idx-1})")
+    ws_sum.cell(r_idx, 4, f"=SUM(D5:D{r_idx-1})")
+    ws_sum.cell(r_idx, 5, f"=IF(C{r_idx}>0, D{r_idx}/C{r_idx}, 0)")
+    for c_i in range(1, 6):
+        cell = ws_sum.cell(r_idx, c_i)
+        cell.font = font_bold
+        cell.fill = fill_sub
+        cell.border = thin_border
+        cell.alignment = Alignment(horizontal="center" if c_i == 1 else ("right" if c_i >= 3 else "left"), vertical="center")
+    ws_sum.cell(r_idx, 5).number_format = "0.0%"
+
+    r_idx += 2
+    ws_sum.cell(r_idx, 1, "Mã ĐTV")
+    ws_sum.cell(r_idx, 2, "Họ Tên Điều Tra Viên")
+    ws_sum.cell(r_idx, 3, "Địa Bàn Phân Công")
+    ws_sum.cell(r_idx, 4, "Số Phiếu Đã Gửi")
+    ws_sum.cell(r_idx, 5, "Tỷ Trọng")
+    style_header_row(ws_sum, r_idx, 5)
+    u_start = r_idx + 1
+    r_idx = u_start
+    for u_sid, u_name, u_comm in users_rows:
+        ws_sum.cell(r_idx, 1, u_sid)
+        ws_sum.cell(r_idx, 2, u_name)
+        ws_sum.cell(r_idx, 3, u_comm)
+        ws_sum.cell(r_idx, 4, f'=COUNTIF(Danh_Sach_Phieu!J:J, A{r_idx})')
+        ws_sum.cell(r_idx, 5, f'=IF($D${u_start + len(users_rows)}>0, D{r_idx}/$D${u_start + len(users_rows)}, 0)')
+        for c_i in range(1, 6):
+            cell = ws_sum.cell(r_idx, c_i)
+            cell.font = font_normal
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal="center" if c_i == 1 else ("right" if c_i >= 4 else "left"), vertical="center")
+        ws_sum.cell(r_idx, 5).number_format = "0.0%"
+        r_idx += 1
+    if users_rows:
+        ws_sum.cell(r_idx, 1, "TỔNG")
+        ws_sum.cell(r_idx, 2, "Tổng theo ĐTV")
+        ws_sum.cell(r_idx, 3, "")
+        ws_sum.cell(r_idx, 4, f"=SUM(D{u_start}:D{r_idx-1})")
+        ws_sum.cell(r_idx, 5, f"=SUM(E{u_start}:E{r_idx-1})")
+        for c_i in range(1, 6):
+            cell = ws_sum.cell(r_idx, c_i)
+            cell.font = font_bold
+            cell.fill = fill_sub
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal="center" if c_i == 1 else ("right" if c_i >= 4 else "left"), vertical="center")
+        ws_sum.cell(r_idx, 5).number_format = "0.0%"
+
+    # Sheets tách theo từng Phần câu hỏi P1 + từng Công cụ khác
+    def build_tool_sheet(sheet_title, target_tool_code, qs_subset):
+        ws_t = wb.create_sheet(title=sheet_title[:31])
+        ws_t.views.sheetView[0].showGridLines = True
+        fixed = ["Mã Phiếu", "Xã", "Thôn/Buôn", "Chủ Hộ / Đối Tượng", "Người Dẫn Đường", "Mã ĐTV", "Ngày Khảo Sát"]
+        q_cols = []
+        for q in qs_subset:
+            c_code = q.get('code', '')
+            q_txt = q.get('text', '')
+            short_t = q_txt[:38] + ("..." if len(q_txt) > 38 else "")
+            q_cols.append({'code': c_code, 'type': q.get('type', 'TX'), 'header': f"[{c_code}] {short_t}", 'is_note': False})
+            if q.get('options') or q.get('follow_up_on'):
+                q_cols.append({'code': f"{c_code}_note", 'type': 'TX', 'header': f"[{c_code}_note] Ghi chú/Khác", 'is_note': True})
+        hdrs = fixed + [qc['header'] for qc in q_cols]
+        ws_t.append(hdrs)
+        style_header_row(ws_t, 1, len(hdrs))
+        filtered = [s for s in surveys_list if s.get('tool_code') == target_tool_code]
+        for r_i, s in enumerate(filtered, 2):
+            ans = s.get('answers') or {}
+            vals = [
+                s.get('survey_code', ''), s.get('commune', ''), s.get('hamlet', ''),
+                s.get('respondent_name', ''), ans.get('_guide', ''), s.get('surveyor_id', ''), s.get('survey_date', '')
+            ]
+            for qc in q_cols:
+                vals.append(_excel_safe_val(ans.get(qc['code'], ''), qc['type']))
+            ws_t.append(vals)
+            for c_i in range(1, len(vals) + 1):
+                cell = ws_t.cell(r_i, c_i)
+                cell.font = font_normal
+                cell.border = thin_border
+                cell.alignment = Alignment(vertical="center", wrap_text=True)
+
+    p1_qs = (q_data.get('P1') or {}).get('questions') or []
+    p1_sections = []
+    for q in p1_qs:
+        sec = q.get('section') or 'Chung'
+        if sec not in p1_sections:
+            p1_sections.append(sec)
+    sec_sheet_names = {
+        'PHẦN A': 'P1_A_HanhChinh',
+        'PHẦN B': 'P1_B_TapHuan_HoTro',
+        'PHẦN C': 'P1_C_KyThuatVuon',
+        'PHẦN D': 'P1_D_TaiChinh_BanHang',
+        'PHẦN E': 'P1_E_AnToan_Gioi',
+        'PHẦN F': 'P1_F_KhoKhan_DeXuat',
+        'PHẦN G': 'P1_G_ThongTinThem',
+    }
+    for idx_sec, sec_name in enumerate(p1_sections, 1):
+        prefix = sec_name.split('.')[0].strip().upper()
+        stitle = sec_sheet_names.get(prefix, f"P1_Phan_{idx_sec}")
+        sub_qs = [q for q in p1_qs if (q.get('section') or 'Chung') == sec_name]
+        build_tool_sheet(stitle, 'P1', sub_qs)
+
+    other_tools = [
+        ('NT', 'NT_NhomTruong'),
+        ('CQ', 'CQ_ChinhQuyen'),
+        ('HTX', 'HTX_HopTacXa'),
+        ('TT', 'TT_NhaTaiTro'),
+        ('MH', 'MH_MoHinh'),
+    ]
+    for tc, stitle in other_tools:
+        t_qs = (q_data.get(tc) or {}).get('questions') or []
+        build_tool_sheet(stitle, tc, t_qs)
+
+    # Sheet Tu_Dien_Cau_Hoi
+    ws_dict = wb.create_sheet(title="Tu_Dien_Cau_Hoi")
+    ws_dict.views.sheetView[0].showGridLines = True
+    dict_headers = ["Công Cụ", "Mã Câu Hỏi", "Phần / Mục", "Nội Dung Câu Hỏi Đầy Đủ", "Kiểu Dữ Liệu", "Đáp Án Lựa Chọn", "Điều Kiện Hiển Thị"]
+    ws_dict.append(dict_headers)
+    style_header_row(ws_dict, 1, len(dict_headers))
+    dict_r = 2
+    for t_code, t_obj in q_data.items():
+        for q in (t_obj.get('questions') or []):
+            opts = q.get('options') or []
+            opts_str = "; ".join(f"{o.get('value')}" for o in opts) if opts else (q.get('options_raw') or '')
+            ws_dict.append([
+                t_code, q.get('code', ''), q.get('section', ''),
+                q.get('text', ''), q.get('type', 'TX'), opts_str, q.get('condition', '')
+            ])
+            for c_i in range(1, 8):
+                cell = ws_dict.cell(dict_r, c_i)
+                cell.font = font_normal
+                cell.border = thin_border
+                cell.alignment = Alignment(horizontal="center" if c_i in (1, 2, 5) else "left", vertical="center", wrap_text=True)
+            dict_r += 1
+
+    for ws in wb.worksheets:
+        for col in ws.columns:
+            max_len = max((len(str(cell.value or '')) for cell in col), default=10)
+            col_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = min(max(max_len + 3, 12), 42)
+
+    wb.save(export_file)
+    with open(export_file, 'rb') as f:
+        return export_file, f.read(), len(surveys_list)
+
+def send_daily_excel_report(recipients=None):
+    import subprocess
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.base import MIMEBase
+    from email.mime.text import MIMEText
+    from email import encoders
+
+    target_list = recipients or DAILY_REPORT_RECIPIENTS
+    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    export_path = os.path.join(BASE_DIR, "export_surveys_latest.xlsx")
+    _, file_bytes, total_count = build_multisheet_excel(export_path)
+
+    msg = MIMEMultipart()
+    msg["From"] = f"Dakman Survey System <{DAILY_REPORT_SENDER}>"
+    msg["To"] = ", ".join(target_list)
+    msg["Subject"] = f"[Dakman Cu M'gar] Bao cao tong hop phong van ngay {today_str} ({total_count} phieu)"
+
+    body = (
+        f"Kính gửi Ban Quản Lý Dự Án (Đỗ Thành Duy & Lộc Vũ Trung),\n\n"
+        f"Hệ thống Khảo Sát Dakman Cư M'gar gửi đính kèm file Excel tổng hợp kết quả phỏng vấn cuối ngày {today_str}.\n"
+        f"- Tổng số phiếu hiện có trên VPS: {total_count} phiếu\n"
+        f"- Cấu trúc file: Gồm sheet Tổng Hợp Tiến Độ, Danh Sách Phiếu, các sheet tách theo từng phần câu hỏi (P1 Phần A–G) và các công cụ (NT, CQ, HTX, TT, MH), cùng Từ Điển Câu Hỏi.\n\n"
+        f"Trân trọng,\nHệ thống Dakman Survey (https://dakmansurvey.coffeedata.it.com)"
+    )
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+
+    part = MIMEBase("application", "vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    part.set_payload(file_bytes)
+    encoders.encode_base64(part)
+    attach_name = f"Dakman_Survey_KetQua_{today_str}.xlsx"
+    part.add_header("Content-Disposition", f'attachment; filename="{attach_name}"')
+    msg.attach(part)
+
+    proc = subprocess.run(
+        ["msmtp", "--"] + target_list,
+        input=msg.as_string().encode("utf-8"),
+        capture_output=True,
+        timeout=60,
+    )
+    if proc.returncode != 0:
+        err_msg = proc.stderr.decode("utf-8", errors="replace")
+        raise RuntimeError(f"msmtp failed: {err_msg}")
+    return True, total_count, target_list
+
 class SurveyRequestHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=PUBLIC_DIR, **kwargs)
@@ -822,210 +1157,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 return
 
             try:
-                import openpyxl
-                from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-                from openpyxl.utils import get_column_letter
-
-                conn = sqlite3.connect(DB_PATH)
-                cur = conn.cursor()
-                cur.execute('SELECT * FROM surveys ORDER BY id ASC')
-                cols = [c[0] for c in cur.description]
-                db_rows = cur.fetchall()
-                conn.close()
-
-                surveys_list = []
-                for r in db_rows:
-                    item = dict(zip(cols, r))
-                    if item.get('answers_json'):
-                        try:
-                            item['answers'] = json.loads(item['answers_json'])
-                        except Exception:
-                            item['answers'] = {}
-                    else:
-                        item['answers'] = {}
-                    surveys_list.append(item)
-
-                q_data = {}
-                if os.path.exists(QUESTIONS_FILE):
-                    with open(QUESTIONS_FILE, 'r', encoding='utf-8') as f:
-                        q_data = json.load(f)
-
-                export_file = os.path.join(BASE_DIR, "export_surveys_latest.xlsx")
-                wb = openpyxl.Workbook()
-                wb.properties.creator = "Lộc Vũ Trung"
-                wb.properties.lastModifiedBy = "Lộc Vũ Trung"
-
-                font_header = Font(name="Arial", size=10, bold=True, color="FFFFFF")
-                font_normal = Font(name="Arial", size=9)
-                fill_header = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
-                thin_border = Border(
-                    left=Side(style='thin', color='D0D7DE'),
-                    right=Side(style='thin', color='D0D7DE'),
-                    top=Side(style='thin', color='D0D7DE'),
-                    bottom=Side(style='thin', color='D0D7DE')
-                )
-
-                # Sheet 1: Danh_sach_phieu
-                ws1 = wb.active
-                ws1.title = "Danh_sach_phieu"
-                ws1.views.sheetView[0].showGridLines = True
-                headers_s1 = ["STT", "Mã Phiếu", "Mã Công Cụ", "Tên Công Cụ", "Địa Bàn Xã", "Thôn/Buôn", "Người Được Phỏng Vấn", "Mã Điều Tra Viên", "Tên Điều Tra Viên", "Ngày Khảo Sát", "Tọa Độ Vĩ Độ", "Tọa Độ Kinh Độ", "Ảnh Hiện Trường (Watermark)", "Thời Gian Gửi"]
-                ws1.append(headers_s1)
-                for col_idx in range(1, len(headers_s1) + 1):
-                    c = ws1.cell(1, col_idx)
-                    c.font = font_header
-                    c.fill = fill_header
-                    c.alignment = Alignment(horizontal="center", vertical="center")
-
-                for idx, s in enumerate(surveys_list, 1):
-                    p_name = s.get('photo_path') or ''
-                    row_vals = [
-                        idx, s.get('survey_code', ''), s.get('tool_code', ''), s.get('tool_name', ''),
-                        s.get('commune', ''), s.get('hamlet', ''), s.get('respondent_name', ''),
-                        s.get('surveyor_id', ''), s.get('surveyor_name', ''), s.get('survey_date', ''),
-                        s.get('gps_lat', 0.0), s.get('gps_lng', 0.0), p_name if p_name else 'Chưa có', s.get('created_at', '')
-                    ]
-                    ws1.append(row_vals)
-                    for c_idx in range(1, len(row_vals) + 1):
-                        cell = ws1.cell(idx + 1, c_idx)
-                        cell.font = font_normal
-                        cell.border = thin_border
-                        if c_idx in (1, 2, 3, 10):
-                            cell.alignment = Alignment(horizontal="center", vertical="center")
-
-                # Sheet 2: Du_lieu_chi_tiet (384 cột câu hỏi)
-                ws2 = wb.create_sheet(title="Du_lieu_chi_tiet")
-                ws2.views.sheetView[0].showGridLines = True
-                all_q_cols = []
-                for tool_code in ['P1', 'KIP', 'MH', 'NT', 'SDM', 'HTX', 'CQ', 'TT']:
-                    t_obj = q_data.get(tool_code)
-                    if t_obj and t_obj.get('questions'):
-                        for q in t_obj['questions']:
-                            code = q['code']
-                            short_text = q['text'][:40] + ("..." if len(q['text']) > 40 else "")
-                            all_q_cols.append({
-                                'tool': tool_code,
-                                'code': code,
-                                'type': str(q.get('type') or 'TX').upper(),
-                                'header': f"[{code}] {short_text}"
-                            })
-
-                fixed_headers = ["Mã Phiếu", "Công Cụ", "Xã", "Thôn/Buôn", "Người Được Hỏi", "Mã ĐTV", "Ngày Khảo Sát"]
-                detail_headers = fixed_headers + [col['header'] for col in all_q_cols]
-                ws2.append(detail_headers)
-                for col_idx in range(1, len(detail_headers) + 1):
-                    c = ws2.cell(1, col_idx)
-                    c.font = font_header
-                    c.fill = fill_header
-                    c.alignment = Alignment(horizontal="center", vertical="center")
-
-                for idx, s in enumerate(surveys_list, 1):
-                    ans = s.get('answers') or {}
-                    row_vals = [s.get('survey_code', ''), s.get('tool_code', ''), s.get('commune', ''), s.get('hamlet', ''), s.get('respondent_name', ''), s.get('surveyor_id', ''), s.get('survey_date', '')]
-                    for col in all_q_cols:
-                        val = ans.get(col['code'], '')
-                        if isinstance(val, list):
-                            row_vals.append("; ".join(str(v) for v in val))
-                        elif val is not None and val != '':
-                            if col['type'] in ('SO', 'NUM', 'LK'):
-                                try:
-                                    fval = float(val)
-                                    row_vals.append(int(fval) if fval.is_integer() else fval)
-                                except Exception:
-                                    row_vals.append(str(val))
-                            else:
-                                row_vals.append(str(val))
-                        else:
-                            row_vals.append("")
-                    ws2.append(row_vals)
-                    for c_idx in range(1, len(row_vals) + 1):
-                        cell = ws2.cell(idx + 1, c_idx)
-                        cell.font = font_normal
-                        cell.border = thin_border
-
-                # Sheet 3: Ma_tran_KPI
-                ws3 = wb.create_sheet(title="Ma_tran_KPI")
-                ws3.views.sheetView[0].showGridLines = True
-                kpi_headers = ["Mã KPI", "Tên Chỉ Số Kết Quả", "Đơn Vị", "Mục Tiêu 2025", "Báo Cáo 2021-2025", "% Đạt (Kế hoạch)", "Số Phiếu Khảo Sát Đã Thu", "Câu Hỏi Đo Tương Ứng"]
-                ws3.append(kpi_headers)
-                for col_idx in range(1, len(kpi_headers) + 1):
-                    c = ws3.cell(1, col_idx)
-                    c.font = font_header
-                    c.fill = fill_header
-                    c.alignment = Alignment(horizontal="center", vertical="center")
-
-                orig_kpi_path = os.path.join(BASE_DIR, '..', 'Draft_Ke hoach_V5', '04_HeThongBangHoi_DGCK_Dakman_F1_VN.xlsx')
-                if os.path.exists(orig_kpi_path):
-                    wb_orig = openpyxl.load_workbook(orig_kpi_path, data_only=True)
-                    ws_orig_kpi = wb_orig['Ma_tran_KPI']
-                    r_target = 2
-                    for r in range(5, 36):
-                        kpi_code = ws_orig_kpi.cell(r, 1).value
-                        kpi_name = ws_orig_kpi.cell(r, 2).value
-                        kpi_unit = ws_orig_kpi.cell(r, 3).value
-                        kpi_target = ws_orig_kpi.cell(r, 5).value
-                        kpi_rep = ws_orig_kpi.cell(r, 6).value
-                        kpi_q = ws_orig_kpi.cell(r, 9).value
-                        if kpi_code and kpi_name:
-                            ws3.append([
-                                kpi_code, kpi_name, kpi_unit or '', kpi_target or 0, kpi_rep or 0,
-                                f"=IF(D{r_target}>0, E{r_target}/D{r_target}, 0)",
-                                f"=COUNTA(Du_lieu_chi_tiet!A:A)-1",
-                                kpi_q or ''
-                            ])
-                            for c_idx in range(1, 9):
-                                cell = ws3.cell(r_target, c_idx)
-                                cell.font = font_normal
-                                cell.border = thin_border
-                                align_h = "center" if c_idx in (1, 3, 6, 7) else ("right" if c_idx in (4, 5) else "left")
-                                cell.alignment = Alignment(horizontal=align_h, vertical="center")
-                                if c_idx == 6:
-                                    cell.number_format = '0.0%'
-                            r_target += 1
-
-                # Sheet 4: Tu_dien_ma_hoa (Data Dictionary để matching mã câu hỏi & mã đáp án khi phân tích)
-                ws4 = wb.create_sheet(title="Tu_dien_ma_hoa")
-                ws4.views.sheetView[0].showGridLines = True
-                dict_headers = ["Công Cụ", "Mã Câu Hỏi", "Phần / Mục", "Nội Dung Câu Hỏi Đầy Đủ", "Kiểu Dữ Liệu", "Bảng Mã Hóa Đáp Án (Value = Label)", "Điều Kiện Hiển Thị"]
-                ws4.append(dict_headers)
-                for col_idx in range(1, len(dict_headers) + 1):
-                    c = ws4.cell(1, col_idx)
-                    c.font = font_header
-                    c.fill = fill_header
-                    c.alignment = Alignment(horizontal="center", vertical="center")
-
-                dict_row_idx = 2
-                for t_code, t_obj in q_data.items():
-                    for q in (t_obj.get('questions') or []):
-                        opts = q.get('options') or []
-                        opts_str = "; ".join(f"{o.get('value')}={o.get('label')}" for o in opts) if opts else (q.get('options_raw') or '')
-                        ws4.append([
-                            t_code,
-                            q.get('code', ''),
-                            q.get('section', ''),
-                            q.get('text', ''),
-                            q.get('type', 'TX'),
-                            opts_str,
-                            q.get('condition', '')
-                        ])
-                        for c_idx in range(1, 8):
-                            cell = ws4.cell(dict_row_idx, c_idx)
-                            cell.font = font_normal
-                            cell.border = thin_border
-                            cell.alignment = Alignment(horizontal="center" if c_idx in (1, 2, 5) else "left", vertical="center", wrap_text=True)
-                        dict_row_idx += 1
-
-                for ws in [ws1, ws2, ws3, ws4]:
-                    for col in ws.columns:
-                        max_len = max(len(str(cell.value or '')) for cell in col)
-                        col_letter = get_column_letter(col[0].column)
-                        ws.column_dimensions[col_letter].width = min(max(max_len + 2, 10), 45)
-
-                wb.save(export_file)
-
-                with open(export_file, 'rb') as f:
-                    file_bytes = f.read()
-
+                _, file_bytes, _ = build_multisheet_excel()
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
                 self.send_header('Content-Disposition', 'attachment; filename="Dakman_Survey_FinalEvaluation.xlsx"')
@@ -1138,6 +1270,22 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 })
             except Exception as e:
                 self._send_json({'error': str(e)}, 400)
+            return
+
+        elif path == '/api/admin/send-daily-report':
+            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if auth_key != cur_admin_pass and auth_key != PASS_ADMIN:
+                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền gửi báo cáo email!'}, 403)
+                return
+            try:
+                _, total_count, rcpts = send_daily_excel_report()
+                self._send_json({
+                    'success': True,
+                    'message': f'Đã tạo file Excel nhiều sheet ({total_count} phiếu) và gửi thành công tới: {", ".join(rcpts)}'
+                })
+            except Exception as e:
+                self._send_json({'error': f'Lỗi gửi email báo cáo: {str(e)}'}, 500)
             return
 
         elif path == '/api/admin/questions':
@@ -1471,6 +1619,10 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             cur.execute('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE surveyor_id = ?', (surveyor_id,))
             conn.commit()
             conn.close()
+            append_audit_event('SUBMIT_SURVEY', {
+                'id': survey_id, 'survey_code': survey_code, 'tool_code': tool_code,
+                'surveyor_id': surveyor_id, 'respondent_name': respondent_name
+            })
 
             self._send_json({
                 'success': True,
@@ -1725,4 +1877,8 @@ def run():
         server.server_close()
 
 if __name__ == '__main__':
-    run()
+    if '--send-daily-report' in sys.argv:
+        ok, total, rcpts = send_daily_excel_report()
+        print(f"Daily Excel report ({total} surveys) sent to {', '.join(rcpts)}")
+    else:
+        run()

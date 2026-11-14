@@ -180,12 +180,57 @@
         "orig_code": "b03",
         "section": "PHẦN B. THAM GIA CÁC HOẠT ĐỘNG CỦA DỰ ÁN",
         "text": "Nếu có, gia đình đã tham gia những nội dung nào? (Có thể chọn nhiều)",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Chăm sóc, bón phân và cải tạo đất\n☐ Ủ và sử dụng phân hữu cơ\n☐ Quản lý cỏ trong vườn\n☐ Trồng xen, trồng cây che bóng\n☐ Tưới nước tiết kiệm\n☐ Phòng trừ sâu bệnh, sử dụng thuốc an toàn\n☐ Thu hoạch và sơ chế cà phê\n☐ Tái canh, ghép cải tạo\n☐ An toàn lao động\n☐ Truy xuất nguồn gốc, yêu cầu chống mất rừng\n☐ Nội dung khác: __________________",
-        "options": [],
+        "options": [
+          {
+            "value": "Chăm sóc, bón phân và cải tạo đất",
+            "label": "Chăm sóc, bón phân và cải tạo đất"
+          },
+          {
+            "value": "Ủ và sử dụng phân hữu cơ",
+            "label": "Ủ và sử dụng phân hữu cơ"
+          },
+          {
+            "value": "Quản lý cỏ trong vườn",
+            "label": "Quản lý cỏ trong vườn"
+          },
+          {
+            "value": "Trồng xen, trồng cây che bóng",
+            "label": "Trồng xen, trồng cây che bóng"
+          },
+          {
+            "value": "Tưới nước tiết kiệm",
+            "label": "Tưới nước tiết kiệm"
+          },
+          {
+            "value": "Phòng trừ sâu bệnh, sử dụng thuốc an toàn",
+            "label": "Phòng trừ sâu bệnh, sử dụng thuốc an toàn"
+          },
+          {
+            "value": "Thu hoạch và sơ chế cà phê",
+            "label": "Thu hoạch và sơ chế cà phê"
+          },
+          {
+            "value": "Tái canh, ghép cải tạo",
+            "label": "Tái canh, ghép cải tạo"
+          },
+          {
+            "value": "An toàn lao động",
+            "label": "An toàn lao động"
+          },
+          {
+            "value": "Truy xuất nguồn gốc, yêu cầu chống mất rừng",
+            "label": "Truy xuất nguồn gốc, yêu cầu chống mất rừng"
+          },
+          {
+            "value": "Nội dung khác",
+            "label": "Nội dung khác"
+          }
+        ],
         "condition": "A01=1 and B01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Nội dung khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -197,12 +242,49 @@
         "orig_code": "b04",
         "section": "PHẦN B. THAM GIA CÁC HOẠT ĐỘNG CỦA DỰ ÁN",
         "text": "Gia đình có nhận được hỗ trợ nào từ dự án không?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Cây giống cà phê\n☐ Cây che bóng/cây trồng xen/cây gỗ\n☐ Bộ đồ bảo hộ lao động\n☐ Thùng hoặc dụng cụ thu gom rác\n☐ Phân tích mẫu đất\n☐ Chế phẩm sinh học/vật tư khác\n☐ Không nhận hỗ trợ\n☐ Không nhớ\n☐ Khác: __________________",
-        "options": [],
+        "options": [
+          {
+            "value": "Cây giống cà phê",
+            "label": "Cây giống cà phê"
+          },
+          {
+            "value": "Cây che bóng/cây trồng xen/cây gỗ",
+            "label": "Cây che bóng/cây trồng xen/cây gỗ"
+          },
+          {
+            "value": "Bộ đồ bảo hộ lao động",
+            "label": "Bộ đồ bảo hộ lao động"
+          },
+          {
+            "value": "Thùng hoặc dụng cụ thu gom rác",
+            "label": "Thùng hoặc dụng cụ thu gom rác"
+          },
+          {
+            "value": "Phân tích mẫu đất",
+            "label": "Phân tích mẫu đất"
+          },
+          {
+            "value": "Chế phẩm sinh học/vật tư khác",
+            "label": "Chế phẩm sinh học/vật tư khác"
+          },
+          {
+            "value": "Không nhận hỗ trợ",
+            "label": "Không nhận hỗ trợ"
+          },
+          {
+            "value": "Không nhớ",
+            "label": "Không nhớ"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -244,12 +326,29 @@
         "orig_code": "b06",
         "section": "PHẦN B. THAM GIA CÁC HOẠT ĐỘNG CỦA DỰ ÁN",
         "text": "Nếu có, gia đình đã nhận được những loại cây giống nào? (Có thể chọn nhiều đáp án)",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Cây giống cà phê  ☐ Cây ăn quả/cây trồng xen: __________  ☐ Cây che bóng/cây lâm nghiệp: __________  ☐ Loại cây khác: __________",
-        "options": [],
+        "options": [
+          {
+            "value": "Cây giống cà phê",
+            "label": "Cây giống cà phê"
+          },
+          {
+            "value": "Cây ăn quả/cây trồng xen",
+            "label": "Cây ăn quả/cây trồng xen"
+          },
+          {
+            "value": "Cây che bóng/cây lâm nghiệp",
+            "label": "Cây che bóng/cây lâm nghiệp"
+          },
+          {
+            "value": "Loại cây khác",
+            "label": "Loại cây khác"
+          }
+        ],
         "condition": "A01=1 and B05=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Loại cây khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -295,12 +394,53 @@
         "orig_code": "b09",
         "section": "PHẦN B. THAM GIA CÁC HOẠT ĐỘNG CỦA DỰ ÁN",
         "text": "Hiện nay, tình trạng sinh trưởng của số cây giống được hỗ trợ như thế nào?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "Cây cà phê: ☐ Sinh trưởng tốt  ☐ Trung bình  ☐ Kém  ☐ Đã chết/không còn  ☐ Chưa trồng.  Cây trồng xen/che bóng: ☐ Sinh trưởng tốt  ☐ Trung bình  ☐ Kém  ☐ Đã chết/không còn  ☐ Chưa trồng. Số cây còn sống ước tính: __________",
-        "options": [],
+        "options": [
+          {
+            "value": "Cà phê: Sinh trưởng tốt",
+            "label": "Cà phê: Sinh trưởng tốt"
+          },
+          {
+            "value": "Cà phê: Trung bình",
+            "label": "Cà phê: Trung bình"
+          },
+          {
+            "value": "Cà phê: Kém",
+            "label": "Cà phê: Kém"
+          },
+          {
+            "value": "Cà phê: Đã chết/không còn",
+            "label": "Cà phê: Đã chết/không còn"
+          },
+          {
+            "value": "Cà phê: Chưa trồng",
+            "label": "Cà phê: Chưa trồng"
+          },
+          {
+            "value": "Cây xen/che bóng: Sinh trưởng tốt",
+            "label": "Cây xen/che bóng: Sinh trưởng tốt"
+          },
+          {
+            "value": "Cây xen/che bóng: Trung bình",
+            "label": "Cây xen/che bóng: Trung bình"
+          },
+          {
+            "value": "Cây xen/che bóng: Kém",
+            "label": "Cây xen/che bóng: Kém"
+          },
+          {
+            "value": "Cây xen/che bóng: Đã chết/không còn",
+            "label": "Cây xen/che bóng: Đã chết/không còn"
+          },
+          {
+            "value": "Cây xen/che bóng: Chưa trồng",
+            "label": "Cây xen/che bóng: Chưa trồng"
+          }
+        ],
         "condition": "A01=1 and B05=1",
         "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_placeholder": "Ghi thêm số cây còn sống ước tính hoặc nhận xét...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -312,12 +452,37 @@
         "orig_code": "b10",
         "section": "PHẦN B. THAM GIA CÁC HOẠT ĐỘNG CỦA DỰ ÁN",
         "text": "Ngoài dự án, gia đình có nhận cây giống từ đơn vị hoặc chương trình nào khác không?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Công ty thu mua  ☐ Hợp tác xã/tổ nhóm  ☐ Chương trình/dự án khác  ☐ Tự mua/tự nhân giống  ☐ Không  ☐ Khác: __________",
-        "options": [],
+        "options": [
+          {
+            "value": "Công ty thu mua",
+            "label": "Công ty thu mua"
+          },
+          {
+            "value": "Hợp tác xã/tổ nhóm",
+            "label": "Hợp tác xã/tổ nhóm"
+          },
+          {
+            "value": "Chương trình/dự án khác",
+            "label": "Chương trình/dự án khác"
+          },
+          {
+            "value": "Tự mua/tự nhân giống",
+            "label": "Tự mua/tự nhân giống"
+          },
+          {
+            "value": "Không",
+            "label": "Không"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -393,12 +558,45 @@
         "orig_code": "b14",
         "section": "PHẦN B. THAM GIA CÁC HOẠT ĐỘNG CỦA DỰ ÁN",
         "text": "Hiện nay, gia đình có tham gia chương trình hoặc nhóm sản xuất cà phê theo tiêu chuẩn/chứng nhận nào không? (Có thể chọn nhiều đáp án)",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Rainforest Alliance (RA)  ☐ 4C  ☐ Fairtrade  ☐ Hữu cơ (Organic)  ☐ C.A.F.E. Practices  ☐ Tiêu chuẩn/chương trình khác: __________  ☐ Không tham gia  ☐ Không rõ tên tiêu chuẩn/chứng nhận",
-        "options": [],
+        "options": [
+          {
+            "value": "Rainforest Alliance (RA)",
+            "label": "Rainforest Alliance (RA)"
+          },
+          {
+            "value": "4C",
+            "label": "4C"
+          },
+          {
+            "value": "Fairtrade",
+            "label": "Fairtrade"
+          },
+          {
+            "value": "Hữu cơ (Organic)",
+            "label": "Hữu cơ (Organic)"
+          },
+          {
+            "value": "C.A.F.E. Practices",
+            "label": "C.A.F.E. Practices"
+          },
+          {
+            "value": "Tiêu chuẩn/chương trình khác",
+            "label": "Tiêu chuẩn/chương trình khác"
+          },
+          {
+            "value": "Không tham gia",
+            "label": "Không tham gia"
+          },
+          {
+            "value": "Không rõ tên tiêu chuẩn/chứng nhận",
+            "label": "Không rõ tên tiêu chuẩn/chứng nhận"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Tiêu chuẩn/chương trình khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -410,12 +608,37 @@
         "orig_code": "b15",
         "section": "PHẦN B. THAM GIA CÁC HOẠT ĐỘNG CỦA DỰ ÁN",
         "text": "Nếu có tham gia, gia đình tham gia thông qua đơn vị hoặc tổ chức nào?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Công ty thu mua/xuất khẩu cà phê  ☐ Hợp tác xã/tổ hợp tác  ☐ Đại lý/đơn vị cung ứng vật tư  ☐ Chương trình/dự án hỗ trợ  ☐ Khác: __________  ☐ Không rõ",
-        "options": [],
+        "options": [
+          {
+            "value": "Công ty thu mua/xuất khẩu cà phê",
+            "label": "Công ty thu mua/xuất khẩu cà phê"
+          },
+          {
+            "value": "Hợp tác xã/tổ hợp tác",
+            "label": "Hợp tác xã/tổ hợp tác"
+          },
+          {
+            "value": "Đại lý/đơn vị cung ứng vật tư",
+            "label": "Đại lý/đơn vị cung ứng vật tư"
+          },
+          {
+            "value": "Chương trình/dự án hỗ trợ",
+            "label": "Chương trình/dự án hỗ trợ"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
+          },
+          {
+            "value": "Không rõ",
+            "label": "Không rõ"
+          }
+        ],
         "condition": "A01=1 and B14!=7",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -547,12 +770,45 @@
         "orig_code": "b20",
         "section": "PHẦN B. THAM GIA CÁC HOẠT ĐỘNG CỦA DỰ ÁN",
         "text": "Theo anh/chị biết, đơn vị hoặc cá nhân nào đã từng đo/vẽ ranh giới (polygon) vườn cà phê của gia đình?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Dự án Compact Cư M’gar  ☐ Công ty thu mua/xuất khẩu  ☐ Hợp tác xã/tổ nhóm  ☐ Cơ quan nhà nước/chính quyền địa phương  ☐ Đơn vị đo đạc/GIS thuê ngoài  ☐ Gia đình tự thực hiện  ☐ Đơn vị khác: __________  ☐ Không biết/chưa từng được vẽ",
-        "options": [],
+        "options": [
+          {
+            "value": "Dự án Compact Cư M’gar",
+            "label": "Dự án Compact Cư M’gar"
+          },
+          {
+            "value": "Công ty thu mua/xuất khẩu",
+            "label": "Công ty thu mua/xuất khẩu"
+          },
+          {
+            "value": "Hợp tác xã/tổ nhóm",
+            "label": "Hợp tác xã/tổ nhóm"
+          },
+          {
+            "value": "Cơ quan nhà nước/chính quyền địa phương",
+            "label": "Cơ quan nhà nước/chính quyền địa phương"
+          },
+          {
+            "value": "Đơn vị đo đạc/GIS thuê ngoài",
+            "label": "Đơn vị đo đạc/GIS thuê ngoài"
+          },
+          {
+            "value": "Gia đình tự thực hiện",
+            "label": "Gia đình tự thực hiện"
+          },
+          {
+            "value": "Đơn vị khác",
+            "label": "Đơn vị khác"
+          },
+          {
+            "value": "Không biết/chưa từng được vẽ",
+            "label": "Không biết/chưa từng được vẽ"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Đơn vị khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -624,12 +880,33 @@
         "orig_code": "c02",
         "section": "PHẦN C. CÁCH GIA ĐÌNH ĐANG CHĂM SÓC VƯỜN CÀ PHÊ",
         "text": "Nếu có, gia đình thường dùng loại phân hữu cơ nào?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Phân chuồng hoai mục  ☐ Phân compost/tự ủ  ☐ Phân hữu cơ mua ngoài  ☐ Phân hữu cơ vi sinh  ☐ Khác: __________",
-        "options": [],
+        "options": [
+          {
+            "value": "Phân chuồng hoai mục",
+            "label": "Phân chuồng hoai mục"
+          },
+          {
+            "value": "Phân compost/tự ủ",
+            "label": "Phân compost/tự ủ"
+          },
+          {
+            "value": "Phân hữu cơ mua ngoài",
+            "label": "Phân hữu cơ mua ngoài"
+          },
+          {
+            "value": "Phân hữu cơ vi sinh",
+            "label": "Phân hữu cơ vi sinh"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
+          }
+        ],
         "condition": "A01=1 and C01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -641,12 +918,49 @@
         "orig_code": "c03",
         "section": "PHẦN C. CÁCH GIA ĐÌNH ĐANG CHĂM SÓC VƯỜN CÀ PHÊ",
         "text": "Trong 12 tháng vừa qua, gia đình đã bón những loại phân nào cho vườn cà phê?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Phân chuồng/phân hữu cơ tự ủ  ☐ Phân hữu cơ mua ngoài  ☐ Phân vi sinh  ☐ Phân hóa học NPK  ☐ Urê  ☐ DAP  ☐ Kali  ☐ Loại khác: ________  ☐ Không bón",
-        "options": [],
+        "options": [
+          {
+            "value": "Phân chuồng/phân hữu cơ tự ủ",
+            "label": "Phân chuồng/phân hữu cơ tự ủ"
+          },
+          {
+            "value": "Phân hữu cơ mua ngoài",
+            "label": "Phân hữu cơ mua ngoài"
+          },
+          {
+            "value": "Phân vi sinh",
+            "label": "Phân vi sinh"
+          },
+          {
+            "value": "Phân hóa học NPK",
+            "label": "Phân hóa học NPK"
+          },
+          {
+            "value": "Urê",
+            "label": "Urê"
+          },
+          {
+            "value": "DAP",
+            "label": "DAP"
+          },
+          {
+            "value": "Kali",
+            "label": "Kali"
+          },
+          {
+            "value": "Loại khác",
+            "label": "Loại khác"
+          },
+          {
+            "value": "Không bón",
+            "label": "Không bón"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Loại khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -777,12 +1091,37 @@
         "orig_code": "c09",
         "section": "PHẦN C. CÁCH GIA ĐÌNH ĐANG CHĂM SÓC VƯỜN CÀ PHÊ",
         "text": "Khi cỏ mọc trong vườn, gia đình thường xử lý bằng cách nào?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Phát/cắt cỏ  ☐ Làm cỏ bằng tay/cuốc  ☐ Dùng thuốc diệt cỏ  ☐ Kết hợp nhiều cách  ☐ Để cỏ mọc có kiểm soát  ☐ Cách khác: ______",
-        "options": [],
+        "options": [
+          {
+            "value": "Phát/cắt cỏ",
+            "label": "Phát/cắt cỏ"
+          },
+          {
+            "value": "Làm cỏ bằng tay/cuốc",
+            "label": "Làm cỏ bằng tay/cuốc"
+          },
+          {
+            "value": "Dùng thuốc diệt cỏ",
+            "label": "Dùng thuốc diệt cỏ"
+          },
+          {
+            "value": "Kết hợp nhiều cách",
+            "label": "Kết hợp nhiều cách"
+          },
+          {
+            "value": "Để cỏ mọc có kiểm soát",
+            "label": "Để cỏ mọc có kiểm soát"
+          },
+          {
+            "value": "Cách khác",
+            "label": "Cách khác"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Cách khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -841,12 +1180,21 @@
         "orig_code": "c12",
         "section": "PHẦN C. CÁCH GIA ĐÌNH ĐANG CHĂM SÓC VƯỜN CÀ PHÊ",
         "text": "Trong 12 tháng vừa qua, gia đình có thuê người làm cỏ hoặc chăm sóc vườn không?",
-        "type": "TX",
+        "type": "SC",
         "options_raw": "☐ Không  ☐ Có. Số ngày công thuê: ____ ngày; tổng tiền công đã trả khoảng: __________ đồng.",
-        "options": [],
+        "options": [
+          {
+            "value": "Không",
+            "label": "Không"
+          },
+          {
+            "value": "Có",
+            "label": "Có"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Có",
+        "follow_up_placeholder": "Số ngày công thuê: ____ ngày; tổng tiền công đã trả khoảng: __________ đồng.",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1020,12 +1368,37 @@
         "orig_code": "c20",
         "section": "PHẦN C. CÁCH GIA ĐÌNH ĐANG CHĂM SÓC VƯỜN CÀ PHÊ",
         "text": "Nguồn nước gia đình thường dùng để tưới là gì?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Giếng đào  ☐ Giếng khoan  ☐ Ao/hồ  ☐ Suối/sông  ☐ Hồ/đập thủy lợi  ☐ Nguồn khác: __________\nGợi mở nếu cần: phân bón, thuốc, cỏ, che phủ, cây trồng xen, tưới nước. Ghi theo lời chủ hộ.",
-        "options": [],
+        "options": [
+          {
+            "value": "Giếng đào",
+            "label": "Giếng đào"
+          },
+          {
+            "value": "Giếng khoan",
+            "label": "Giếng khoan"
+          },
+          {
+            "value": "Ao/hồ",
+            "label": "Ao/hồ"
+          },
+          {
+            "value": "Suối/sông",
+            "label": "Suối/sông"
+          },
+          {
+            "value": "Hồ/đập thủy lợi",
+            "label": "Hồ/đập thủy lợi"
+          },
+          {
+            "value": "Nguồn khác",
+            "label": "Nguồn khác"
+          }
+        ],
         "condition": "A01=1 and C15!=5",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Nguồn khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1037,12 +1410,29 @@
         "orig_code": "d01",
         "section": "PHẦN D. THU HOẠCH, SẢN LƯỢNG VÀ THU NHẬP TỪ VƯỜN",
         "text": "Vụ gần nhất, gia đình thu hoạch cà phê bằng cách nào?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Hái tuốt  ☐ Hái chọn quả chín  ☐ Kết hợp cả hai  ☐ Cách khác: ______",
-        "options": [],
+        "options": [
+          {
+            "value": "Hái tuốt",
+            "label": "Hái tuốt"
+          },
+          {
+            "value": "Hái chọn quả chín",
+            "label": "Hái chọn quả chín"
+          },
+          {
+            "value": "Kết hợp cả hai",
+            "label": "Kết hợp cả hai"
+          },
+          {
+            "value": "Cách khác",
+            "label": "Cách khác"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Cách khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1122,12 +1512,29 @@
         "orig_code": "d05",
         "section": "PHẦN D. THU HOẠCH, SẢN LƯỢNG VÀ THU NHẬP TỪ VƯỜN",
         "text": "Gia đình thường bán cà phê cho ai?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Thương lái  ☐ Hợp tác xã/tổ nhóm  ☐ Công ty/đơn vị thu mua  ☐ Khác: ______",
-        "options": [],
+        "options": [
+          {
+            "value": "Thương lái",
+            "label": "Thương lái"
+          },
+          {
+            "value": "Hợp tác xã/tổ nhóm",
+            "label": "Hợp tác xã/tổ nhóm"
+          },
+          {
+            "value": "Công ty/đơn vị thu mua",
+            "label": "Công ty/đơn vị thu mua"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1173,12 +1580,21 @@
         "orig_code": "d08",
         "section": "PHẦN D. THU HOẠCH, SẢN LƯỢNG VÀ THU NHẬP TỪ VƯỜN",
         "text": "Gia đình có thuê nhân công thu hoạch không?",
-        "type": "TX",
+        "type": "SC",
         "options_raw": "☐ Không  ☐ Có. Số người thuê: ____ người; số ngày công: ____ ngày; tổng tiền công thu hoạch: __________ đồng.",
-        "options": [],
+        "options": [
+          {
+            "value": "Không",
+            "label": "Không"
+          },
+          {
+            "value": "Có",
+            "label": "Có"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Có",
+        "follow_up_placeholder": "Số người thuê: ____ người; số ngày công: ____ ngày; tổng tiền công thu hoạch: __________ đồng.",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1224,12 +1640,37 @@
         "orig_code": "d10",
         "section": "PHẦN D. THU HOẠCH, SẢN LƯỢNG VÀ THU NHẬP TỪ VƯỜN",
         "text": "Theo ông/bà, lý do chính khiến thu nhập thay đổi là gì?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Giá cà phê  ☐ Sản lượng/năng suất  ☐ Chi phí đầu vào  ☐ Thời tiết/nước tưới  ☐ Cây trồng xen  ☐ Khác: ______",
-        "options": [],
+        "options": [
+          {
+            "value": "Giá cà phê",
+            "label": "Giá cà phê"
+          },
+          {
+            "value": "Sản lượng/năng suất",
+            "label": "Sản lượng/năng suất"
+          },
+          {
+            "value": "Chi phí đầu vào",
+            "label": "Chi phí đầu vào"
+          },
+          {
+            "value": "Thời tiết/nước tưới",
+            "label": "Thời tiết/nước tưới"
+          },
+          {
+            "value": "Cây trồng xen",
+            "label": "Cây trồng xen"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
+          }
+        ],
         "condition": "A01=1 and D09!=2",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1258,12 +1699,45 @@
         "orig_code": "e01",
         "section": "PHẦN E. AN TOÀN LAO ĐỘNG VÀ VAI TRÒ CỦA CÁC THÀNH VIÊN",
         "text": "Khi phun thuốc sâu bệnh hoặc thuốc cỏ, người trực tiếp phun thường sử dụng những đồ bảo hộ nào?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Khẩu trang phù hợp  ☐ Kính  ☐ Găng tay  ☐ Quần áo dài  ☐ Ủng/giày  ☐ Mặt nạ/đồ bảo hộ chuyên dụng  ☐ Không sử dụng  ☐ Khác: ______",
-        "options": [],
+        "options": [
+          {
+            "value": "Khẩu trang phù hợp",
+            "label": "Khẩu trang phù hợp"
+          },
+          {
+            "value": "Kính",
+            "label": "Kính"
+          },
+          {
+            "value": "Găng tay",
+            "label": "Găng tay"
+          },
+          {
+            "value": "Quần áo dài",
+            "label": "Quần áo dài"
+          },
+          {
+            "value": "Ủng/giày",
+            "label": "Ủng/giày"
+          },
+          {
+            "value": "Mặt nạ/đồ bảo hộ chuyên dụng",
+            "label": "Mặt nạ/đồ bảo hộ chuyên dụng"
+          },
+          {
+            "value": "Không sử dụng",
+            "label": "Không sử dụng"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1275,12 +1749,37 @@
         "orig_code": "e02",
         "section": "PHẦN E. AN TOÀN LAO ĐỘNG VÀ VAI TRÒ CỦA CÁC THÀNH VIÊN",
         "text": "Bao bì thuốc sau khi sử dụng, gia đình thường xử lý thế nào?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Thu gom và bỏ đúng nơi quy định  ☐ Đưa đến bể/thùng thu gom  ☐ Mang về nhà lưu giữ  ☐ Chôn/đốt  ☐ Vứt tại vườn/nguồn nước  ☐ Cách khác: ______",
-        "options": [],
+        "options": [
+          {
+            "value": "Thu gom và bỏ đúng nơi quy định",
+            "label": "Thu gom và bỏ đúng nơi quy định"
+          },
+          {
+            "value": "Đưa đến bể/thùng thu gom",
+            "label": "Đưa đến bể/thùng thu gom"
+          },
+          {
+            "value": "Mang về nhà lưu giữ",
+            "label": "Mang về nhà lưu giữ"
+          },
+          {
+            "value": "Chôn/đốt",
+            "label": "Chôn/đốt"
+          },
+          {
+            "value": "Vứt tại vườn/nguồn nước",
+            "label": "Vứt tại vườn/nguồn nước"
+          },
+          {
+            "value": "Cách khác",
+            "label": "Cách khác"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Cách khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1292,12 +1791,29 @@
         "orig_code": "e03",
         "section": "PHẦN E. AN TOÀN LAO ĐỘNG VÀ VAI TRÒ CỦA CÁC THÀNH VIÊN",
         "text": "Trong gia đình, ai thường cùng quyết định việc mua vật tư và cách chăm sóc vườn?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Chủ hộ  ☐ Vợ/chồng cùng quyết định  ☐ Các thành viên cùng bàn bạc  ☐ Người khác: ______",
-        "options": [],
+        "options": [
+          {
+            "value": "Chủ hộ",
+            "label": "Chủ hộ"
+          },
+          {
+            "value": "Vợ/chồng cùng quyết định",
+            "label": "Vợ/chồng cùng quyết định"
+          },
+          {
+            "value": "Các thành viên cùng bàn bạc",
+            "label": "Các thành viên cùng bàn bạc"
+          },
+          {
+            "value": "Người khác",
+            "label": "Người khác"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Người khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1309,12 +1825,29 @@
         "orig_code": "e04",
         "section": "PHẦN E. AN TOÀN LAO ĐỘNG VÀ VAI TRÒ CỦA CÁC THÀNH VIÊN",
         "text": "Trong gia đình, ai thường quyết định việc bán cà phê và sử dụng tiền bán cà phê?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Chủ hộ  ☐ Vợ/chồng cùng quyết định  ☐ Các thành viên cùng bàn bạc  ☐ Người khác: ______",
-        "options": [],
+        "options": [
+          {
+            "value": "Chủ hộ",
+            "label": "Chủ hộ"
+          },
+          {
+            "value": "Vợ/chồng cùng quyết định",
+            "label": "Vợ/chồng cùng quyết định"
+          },
+          {
+            "value": "Các thành viên cùng bàn bạc",
+            "label": "Các thành viên cùng bàn bạc"
+          },
+          {
+            "value": "Người khác",
+            "label": "Người khác"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Người khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1412,12 +1945,49 @@
         "orig_code": "f01",
         "section": "PHẦN F. NHỮNG THAY ĐỔI CÒN DUY TRÌ SAU KHI DỰ ÁN KẾT THÚC",
         "text": "Đến nay, gia đình còn tiếp tục làm những việc nào đã học hoặc biết đến trong thời gian dự án?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Bón phân hữu cơ/ủ phân  ☐ Giữ cỏ, che phủ đất  ☐ Trồng và chăm cây che bóng/cây xen  ☐ Tưới tiết kiệm  ☐ Sử dụng bảo hộ khi phun thuốc  ☐ Thu gom bao bì thuốc  ☐ Ghi chép sản xuất  ☐ Cách khác: ______  ☐ Không còn áp dụng",
-        "options": [],
+        "options": [
+          {
+            "value": "Bón phân hữu cơ/ủ phân",
+            "label": "Bón phân hữu cơ/ủ phân"
+          },
+          {
+            "value": "Giữ cỏ, che phủ đất",
+            "label": "Giữ cỏ, che phủ đất"
+          },
+          {
+            "value": "Trồng và chăm cây che bóng/cây xen",
+            "label": "Trồng và chăm cây che bóng/cây xen"
+          },
+          {
+            "value": "Tưới tiết kiệm",
+            "label": "Tưới tiết kiệm"
+          },
+          {
+            "value": "Sử dụng bảo hộ khi phun thuốc",
+            "label": "Sử dụng bảo hộ khi phun thuốc"
+          },
+          {
+            "value": "Thu gom bao bì thuốc",
+            "label": "Thu gom bao bì thuốc"
+          },
+          {
+            "value": "Ghi chép sản xuất",
+            "label": "Ghi chép sản xuất"
+          },
+          {
+            "value": "Cách khác",
+            "label": "Cách khác"
+          },
+          {
+            "value": "Không còn áp dụng",
+            "label": "Không còn áp dụng"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Cách khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1446,12 +2016,41 @@
         "orig_code": "f03",
         "section": "PHẦN F. NHỮNG THAY ĐỔI CÒN DUY TRÌ SAU KHI DỰ ÁN KẾT THÚC",
         "text": "Điều gì khiến gia đình khó tiếp tục áp dụng những cách làm tốt cho vườn?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Tốn chi phí  ☐ Thiếu lao động/thời gian  ☐ Thiếu vật tư/nguyên liệu  ☐ Chưa nắm rõ kỹ thuật  ☐ Lo ảnh hưởng năng suất  ☐ Chưa thấy lợi ích rõ  ☐ Khác: ______",
-        "options": [],
+        "options": [
+          {
+            "value": "Tốn chi phí",
+            "label": "Tốn chi phí"
+          },
+          {
+            "value": "Thiếu lao động/thời gian",
+            "label": "Thiếu lao động/thời gian"
+          },
+          {
+            "value": "Thiếu vật tư/nguyên liệu",
+            "label": "Thiếu vật tư/nguyên liệu"
+          },
+          {
+            "value": "Chưa nắm rõ kỹ thuật",
+            "label": "Chưa nắm rõ kỹ thuật"
+          },
+          {
+            "value": "Lo ảnh hưởng năng suất",
+            "label": "Lo ảnh hưởng năng suất"
+          },
+          {
+            "value": "Chưa thấy lợi ích rõ",
+            "label": "Chưa thấy lợi ích rõ"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1463,12 +2062,45 @@
         "orig_code": "f04",
         "section": "PHẦN F. NHỮNG THAY ĐỔI CÒN DUY TRÌ SAU KHI DỰ ÁN KẾT THÚC",
         "text": "Nếu được hỗ trợ thêm, gia đình mong muốn được hỗ trợ điều gì nhất để làm vườn tốt hơn?",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Hướng dẫn kỹ thuật tại vườn  ☐ Cây giống/cây che bóng  ☐ Tưới tiết kiệm  ☐ Phân hữu cơ/chế phẩm  ☐ Bảo hộ lao động  ☐ Kết nối nơi thu mua/giá tốt  ☐ Vốn  ☐ Khác: ______",
-        "options": [],
+        "options": [
+          {
+            "value": "Hướng dẫn kỹ thuật tại vườn",
+            "label": "Hướng dẫn kỹ thuật tại vườn"
+          },
+          {
+            "value": "Cây giống/cây che bóng",
+            "label": "Cây giống/cây che bóng"
+          },
+          {
+            "value": "Tưới tiết kiệm",
+            "label": "Tưới tiết kiệm"
+          },
+          {
+            "value": "Phân hữu cơ/chế phẩm",
+            "label": "Phân hữu cơ/chế phẩm"
+          },
+          {
+            "value": "Bảo hộ lao động",
+            "label": "Bảo hộ lao động"
+          },
+          {
+            "value": "Kết nối nơi thu mua/giá tốt",
+            "label": "Kết nối nơi thu mua/giá tốt"
+          },
+          {
+            "value": "Vốn",
+            "label": "Vốn"
+          },
+          {
+            "value": "Khác",
+            "label": "Khác"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Khác",
+        "follow_up_placeholder": "Ghi rõ nội dung / phương án khác...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },
@@ -1497,12 +2129,73 @@
         "orig_code": "f06",
         "section": "PHẦN F. NHỮNG THAY ĐỔI CÒN DUY TRÌ SAU KHI DỰ ÁN KẾT THÚC",
         "text": "Nếu dự án được mở rộng hoặc triển khai giai đoạn tiếp theo, gia đình mong muốn dự án ưu tiên những hoạt động nào? (Có thể chọn tối đa 3 hoạt động)",
-        "type": "TX",
+        "type": "MO",
         "options_raw": "☐ Tập huấn và hướng dẫn kỹ thuật trực tiếp tại vườn  ☐ Hỗ trợ ủ và sử dụng phân hữu cơ  ☐ Trồng cây che bóng/cây trồng xen  ☐ Quản lý cỏ và che phủ đất  ☐ Tưới tiết kiệm và quản lý nguồn nước  ☐ Quản lý sâu bệnh và sử dụng thuốc an toàn  ☐ Thu hoạch, sơ chế và nâng cao chất lượng cà phê  ☐ Hỗ trợ tham gia chứng nhận (RA, 4C, Fairtrade...)  ☐ GPS, bản đồ vườn và truy xuất nguồn gốc  ☐ Kết nối doanh nghiệp/đầu ra và thông tin giá  ☐ Tổ nhóm/hợp tác xã và liên kết nông dân  ☐ Vốn hoặc hỗ trợ đầu tư  ☐ An toàn lao động và bảo hộ  ☐ Ghi chép sản xuất/chuyển đổi số  ☐ Hoạt động khác: __________\nƯu tiên số 1: ____________________  Ưu tiên số 2: ____________________  Ưu tiên số 3: ____________________",
-        "options": [],
+        "options": [
+          {
+            "value": "Tập huấn và hướng dẫn kỹ thuật trực tiếp tại vườn",
+            "label": "Tập huấn và hướng dẫn kỹ thuật trực tiếp tại vườn"
+          },
+          {
+            "value": "Hỗ trợ ủ và sử dụng phân hữu cơ",
+            "label": "Hỗ trợ ủ và sử dụng phân hữu cơ"
+          },
+          {
+            "value": "Trồng cây che bóng/cây trồng xen",
+            "label": "Trồng cây che bóng/cây trồng xen"
+          },
+          {
+            "value": "Quản lý cỏ và che phủ đất",
+            "label": "Quản lý cỏ và che phủ đất"
+          },
+          {
+            "value": "Tưới tiết kiệm và quản lý nguồn nước",
+            "label": "Tưới tiết kiệm và quản lý nguồn nước"
+          },
+          {
+            "value": "Quản lý sâu bệnh và sử dụng thuốc an toàn",
+            "label": "Quản lý sâu bệnh và sử dụng thuốc an toàn"
+          },
+          {
+            "value": "Thu hoạch, sơ chế và nâng cao chất lượng cà phê",
+            "label": "Thu hoạch, sơ chế và nâng cao chất lượng cà phê"
+          },
+          {
+            "value": "Hỗ trợ tham gia chứng nhận (RA, 4C, Fairtrade...)",
+            "label": "Hỗ trợ tham gia chứng nhận (RA, 4C, Fairtrade...)"
+          },
+          {
+            "value": "GPS, bản đồ vườn và truy xuất nguồn gốc",
+            "label": "GPS, bản đồ vườn và truy xuất nguồn gốc"
+          },
+          {
+            "value": "Kết nối doanh nghiệp/đầu ra và thông tin giá",
+            "label": "Kết nối doanh nghiệp/đầu ra và thông tin giá"
+          },
+          {
+            "value": "Tổ nhóm/hợp tác xã và liên kết nông dân",
+            "label": "Tổ nhóm/hợp tác xã và liên kết nông dân"
+          },
+          {
+            "value": "Vốn hoặc hỗ trợ đầu tư",
+            "label": "Vốn hoặc hỗ trợ đầu tư"
+          },
+          {
+            "value": "An toàn lao động và bảo hộ",
+            "label": "An toàn lao động và bảo hộ"
+          },
+          {
+            "value": "Ghi chép sản xuất/chuyển đổi số",
+            "label": "Ghi chép sản xuất/chuyển đổi số"
+          },
+          {
+            "value": "Hoạt động khác",
+            "label": "Hoạt động khác"
+          }
+        ],
         "condition": "A01=1",
-        "follow_up_on": "",
-        "follow_up_placeholder": "",
+        "follow_up_on": "Hoạt động khác",
+        "follow_up_placeholder": "Ghi rõ hoạt động khác & Ưu tiên 1, 2, 3...",
         "indicator": "Compact Cư M’gar (2021–2025)",
         "dac": "Hiệu quả"
       },

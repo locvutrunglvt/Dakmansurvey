@@ -137,12 +137,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     initUserSession();
     await loadQuestions();
     await loadSchedule();
+    await syncOfflineQueue(true);
     await refreshDashboardData();
     await loadSurveysList();
     selectTool('P1');
 
-    // Kiểm tra kết nối mạng
-    window.addEventListener('online', updateNetworkStatus);
+    // Kiểm tra kết nối mạng & tự động đẩy hàng đợi offline khi có mạng lại
+    window.addEventListener('online', () => {
+        updateNetworkStatus();
+        syncOfflineQueue(true);
+    });
     window.addEventListener('offline', updateNetworkStatus);
     updateNetworkStatus();
 });
@@ -487,24 +491,63 @@ async function loadSampleHouseholds() {
     }
 }
 
-function autoSelectSampleFilterForUser() {
-    if (!currentUser || currentUser.role === 'admin') return;
-    const nvSelect = document.getElementById('sampleFilterNV');
-    if (!nvSelect) return;
-    const fullName = String(currentUser.full_name || '').trim();
-    if (!fullName) return;
+function normVn(str) {
+    return String(str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/gi, 'd')
+        .toLowerCase()
+        .trim();
+}
 
-    const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
-    const words = norm(fullName).split(/\s+/);
+function getUserAssignedScope() {
+    if (!currentUser || currentUser.role === 'admin') return '';
+    const sid = String(currentUser.surveyor_id || '').trim().toUpperCase();
+    if (sid === 'TCN11' || sid === 'VIEWER' || sid === 'ADMIN') return '';
+    const idMap = {
+        TCN01: 'Duy',
+        TCN02: 'Vọng',
+        TCN03: 'Thao',
+        TCN04: 'Trụ',
+        TCN05: 'Phuc',
+        TCN06: 'Sinh'
+    };
+    if (idMap[sid]) return idMap[sid];
+    const fullName = normVn(currentUser.full_name || '');
+    if (!fullName) return '';
+    const words = fullName.split(/\s+/);
     const nvKeys = ['Duy', 'Vọng', 'Trụ', 'Thao', 'Phuc', 'Sinh'];
-    const matched = nvKeys.find(k => words.includes(norm(k)) || norm(fullName).endsWith(' ' + norm(k)));
-    if (matched) {
-        nvSelect.value = matched;
-        const opt = Array.from(nvSelect.options).find(o => o.value === matched);
-        if (opt && !opt.textContent.includes(fullName)) {
+    return nvKeys.find(k => words.includes(normVn(k)) || fullName.endsWith(' ' + normVn(k))) || '';
+}
+
+function autoSelectSampleFilterForUser() {
+    const nvSelect = document.getElementById('sampleFilterNV');
+    const scopeNote = document.getElementById('sampleScopeNote');
+    if (!nvSelect) return;
+
+    const assignedScope = getUserAssignedScope();
+    if (assignedScope) {
+        nvSelect.value = assignedScope;
+        nvSelect.disabled = true;
+        nvSelect.style.background = '#e2e8f0';
+        nvSelect.title = 'Phạm vi được khóa theo tài khoản Điều tra viên';
+        const opt = Array.from(nvSelect.options).find(o => o.value === assignedScope);
+        const fullName = String(currentUser?.full_name || '').trim();
+        if (opt && fullName && !opt.textContent.includes(fullName)) {
             opt.textContent = `${fullName} (${opt.textContent})`;
         }
+        if (scopeNote) {
+            const totalAssigned = sampleHouseholds.filter(h => h.interviewer === assignedScope).length;
+            scopeNote.style.display = 'block';
+            scopeNote.innerHTML = `<i class="fa-solid fa-shield-halved"></i> Phạm vi nhiệm vụ của <strong>${escapeHtml(fullName || currentUser.surveyor_id)} (${escapeHtml(currentUser.surveyor_id)})</strong>: Tìm kiếm giới hạn trong <strong>${totalAssigned} hộ</strong> được phân công.`;
+        }
         onSampleNVFilterChange();
+    } else {
+        nvSelect.disabled = false;
+        nvSelect.style.background = '#ffffff';
+        if (scopeNote) scopeNote.style.display = 'none';
+        populateSampleGuideFilter(nvSelect.value || '');
+        filterSampleHouseholds();
     }
 }
 
@@ -512,60 +555,66 @@ function populateSampleGuideFilter(nvVal) {
     const sel = document.getElementById('sampleFilterGuide');
     if (!sel) return;
     const prev = sel.value;
-    const guides = Array.from(new Set(
-        sampleHouseholds
-            .filter(h => !nvVal || h.interviewer === nvVal)
-            .map(h => h.guide)
-            .filter(Boolean)
-    ));
-    sel.innerHTML = `<option value="">-- Tất cả Người Dẫn Đường (${guides.length}) --</option>` +
-        guides.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+    const pendingPool = sampleHouseholds.filter(h =>
+        (!nvVal || h.interviewer === nvVal) &&
+        !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())
+    );
+    const allInScope = sampleHouseholds.filter(h => !nvVal || h.interviewer === nvVal);
+    const guides = Array.from(new Set(allInScope.map(h => h.guide).filter(Boolean)));
+    sel.innerHTML = `<option value="">-- Chọn Người Dẫn Đường (${guides.length} người, ${pendingPool.length} hộ chờ) --</option>` +
+        guides.map(g => {
+            const pendCnt = pendingPool.filter(h => h.guide === g).length;
+            return `<option value="${escapeHtml(g)}">${escapeHtml(g)} (còn ${pendCnt} hộ chờ)</option>`;
+        }).join('');
     if (guides.includes(prev)) sel.value = prev;
 }
 
 function onSampleNVFilterChange() {
-    const nv = document.getElementById('sampleFilterNV')?.value || '';
+    const assignedScope = getUserAssignedScope();
+    const nvEl = document.getElementById('sampleFilterNV');
+    if (assignedScope && nvEl && nvEl.value !== assignedScope) {
+        nvEl.value = assignedScope;
+    }
+    const nv = nvEl?.value || '';
     populateSampleGuideFilter(nv);
     filterSampleHouseholds();
 }
 
-function filterSampleHouseholds() {
-    const nv = document.getElementById('sampleFilterNV')?.value || '';
-    const guide = document.getElementById('sampleFilterGuide')?.value || '';
-    const kw = (document.getElementById('sampleSearchInput')?.value || '').trim().toLowerCase();
+function showPendingHouseholdsList() {
+    filterSampleHouseholds(true);
+}
 
-    const pendingPool = sampleHouseholds.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase()));
-    const matched = pendingPool.filter(h => {
-        if (nv && h.interviewer !== nv) return false;
-        if (guide && h.guide !== guide) return false;
-        if (kw) {
-            const hay = `${h.id} ${h.name} ${h.phone} ${h.hamlet} ${h.commune} ${h.guide} ${h.clb} ${h.ra || ''}`.toLowerCase();
-            if (!hay.includes(kw)) return false;
-        }
-        return true;
-    });
-
-    const cnt = document.getElementById('sampleFilterCount');
-    const doneCnt = sampleHouseholds.length - pendingPool.length;
-    if (cnt) {
-        cnt.textContent = (!nv && !guide && !kw)
-            ? `Còn ${pendingPool.length} / ${sampleHouseholds.length} hộ chưa phỏng vấn` + (doneCnt ? ` (đã ẩn ${doneCnt} hộ xong)` : '')
-            : `Tìm thấy ${matched.length} hộ chưa phỏng vấn` + (doneCnt ? ` (đã ẩn ${doneCnt} hộ xong)` : '');
+function onRespondentTyping(val) {
+    const clean = normVn(val);
+    if (!clean || clean.length < 2) return;
+    const assignedScope = getUserAssignedScope();
+    const pendingPool = sampleHouseholds.filter(h =>
+        (!assignedScope || h.interviewer === assignedScope) &&
+        !interviewedSurveyCodes.has(String(h.id || '').toUpperCase())
+    );
+    const exactMatch = pendingPool.find(h => normVn(h.name) === clean);
+    if (exactMatch) {
+        selectSampleHousehold(exactMatch.id);
+        return;
     }
+    const searchEl = document.getElementById('sampleSearchInput');
+    if (searchEl && document.activeElement?.id === 'respondentNameInput') {
+        const matches = pendingPool.filter(h => normVn(h.name).includes(clean));
+        if (matches.length > 0 && matches.length <= 15) {
+            renderSampleResultItems(matches);
+        }
+    }
+}
 
+function renderSampleResultItems(matched) {
     const box = document.getElementById('sampleResultList');
     if (!box) return;
-    if (!nv && !guide && !kw) {
-        box.style.display = 'none';
-        box.innerHTML = '';
-        return;
-    }
     box.style.display = 'block';
     if (matched.length === 0) {
-        box.innerHTML = '<div style="padding: 8px 10px; font-size: 0.80rem; color: #64748b;">Không tìm thấy nông hộ nào khớp bộ lọc.</div>';
+        box.innerHTML = '<div style="padding: 8px 10px; font-size: 0.80rem; color: #64748b;">Không tìm thấy nông hộ nào đang chờ khớp bộ lọc trong phạm vi nhiệm vụ.</div>';
         return;
     }
-    box.innerHTML = matched.slice(0, 60).map(h => {
+    box.innerHTML = matched.slice(0, 80).map(h => {
         const isExtra = Boolean(h.status && h.status.includes('Hộ mới'));
         const bgNormal = isExtra ? '#fef2f2' : '#ffffff';
         const bgHover = isExtra ? '#fee2e2' : '#f0fdf4';
@@ -581,7 +630,7 @@ function filterSampleHouseholds() {
                 ${extraBadge}
                 ${h.ra ? '<span style="background:#dcfce7; color:#166534; border:1px solid #86efac; padding:1px 5px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:4px;">RA</span>' : ''}
                 <span style="color:#475569;"> — ${escapeHtml(h.address)}</span>
-                <div style="font-size:0.74rem; color:#64748b;">SĐT: ${escapeHtml(h.phone || '—')} • CLB: ${escapeHtml(h.clb || '—')} • Dẫn đường: <b>${escapeHtml(h.guide)}</b></div>
+                <div style="font-size:0.74rem; color:#64748b;">SĐT: ${escapeHtml(h.phone || '—')} • CLB: ${escapeHtml(h.clb || '—')} • Dẫn đường: <b style="color:#0f172a;">${escapeHtml(h.guide)}</b></div>
             </div>
             <span style="background:#dbeafe; color:#1e40af; padding:2px 7px; border-radius:3px; font-weight:700; font-size:0.72rem; white-space:nowrap;">NV: ${escapeHtml(h.interviewer)}</span>
         </div>
@@ -589,15 +638,61 @@ function filterSampleHouseholds() {
     }).join('');
 }
 
+function filterSampleHouseholds(forceShow = false) {
+    const assignedScope = getUserAssignedScope();
+    const nv = assignedScope || (document.getElementById('sampleFilterNV')?.value || '');
+    const guide = document.getElementById('sampleFilterGuide')?.value || '';
+    const kwRaw = (document.getElementById('sampleSearchInput')?.value || '').trim();
+    const kwNorm = normVn(kwRaw);
+    const kwTokens = kwNorm ? kwNorm.split(/\s+/).filter(Boolean) : [];
+
+    const scopePool = sampleHouseholds.filter(h => !nv || h.interviewer === nv);
+    const pendingPool = scopePool.filter(h => !interviewedSurveyCodes.has(String(h.id || '').toUpperCase()));
+    const matched = pendingPool.filter(h => {
+        if (guide && h.guide !== guide) return false;
+        if (kwTokens.length) {
+            const hay = normVn(`${h.id} ${h.name} ${h.phone} ${h.hamlet} ${h.commune} ${h.guide} ${h.clb} ${h.ra || ''}`);
+            if (!kwTokens.every(tok => hay.includes(tok))) return false;
+        }
+        return true;
+    });
+
+    const cnt = document.getElementById('sampleFilterCount');
+    const doneCnt = scopePool.length - pendingPool.length;
+    if (cnt) {
+        cnt.textContent = (!guide && !kwRaw)
+            ? `Còn ${pendingPool.length} / ${scopePool.length} hộ chưa phỏng vấn` + (doneCnt ? ` (đã xong ${doneCnt})` : '')
+            : `Tìm thấy ${matched.length} hộ chờ` + (doneCnt ? ` (đã xong ${doneCnt})` : '');
+    }
+
+    const box = document.getElementById('sampleResultList');
+    if (!box) return;
+    const isSearchFocused = (document.activeElement && document.activeElement.id === 'sampleSearchInput');
+    if (!forceShow && !isSearchFocused && !guide && !kwRaw) {
+        box.style.display = 'none';
+        box.innerHTML = '';
+        return;
+    }
+    renderSampleResultItems(matched);
+}
+
 function selectSampleHousehold(id) {
     const h = sampleHouseholds.find(item => item.id.toUpperCase() === String(id || '').trim().toUpperCase());
     if (!h) return;
+
+    const assignedScope = getUserAssignedScope();
+    if (assignedScope && h.interviewer && h.interviewer !== assignedScope) {
+        alert(`Hộ [${h.id}] ${h.name} thuộc phạm vi nhiệm vụ của điều tra viên [${h.interviewer}], không nằm trong danh sách được giao cho bạn.`);
+        return;
+    }
 
     const codeEl = document.getElementById('surveyCodeInput');
     const commEl = document.getElementById('communeSelect');
     const hamEl = document.getElementById('hamletInput');
     const respEl = document.getElementById('respondentNameInput');
     const phoneEl = document.getElementById('phoneInput');
+    const guideEl = document.getElementById('guideNameInput');
+    const guideFilterEl = document.getElementById('sampleFilterGuide');
     const isNew = Boolean(h.status && h.status.includes('Hộ mới'));
 
     if (codeEl) codeEl.value = h.id;
@@ -605,6 +700,11 @@ function selectSampleHousehold(id) {
     if (hamEl) hamEl.value = h.hamlet || '';
     if (respEl) respEl.value = isNew ? '' : (h.name || '');
     if (phoneEl) phoneEl.value = isNew ? '' : (h.phone || '');
+    if (guideEl) guideEl.value = h.guide || '';
+    if (guideFilterEl && h.guide) {
+        const hasOpt = Array.from(guideFilterEl.options).some(o => o.value === h.guide);
+        if (hasOpt) guideFilterEl.value = h.guide;
+    }
 
     // Tự động điền các câu hỏi thông tin phiếu A01, A03, A04
     currentDraftAnswers['A01'] = h.id;
@@ -790,6 +890,8 @@ function selectTool(toolCode) {
             if (parsed.commune) document.getElementById('communeSelect').value = parsed.commune;
             if (parsed.hamlet) document.getElementById('hamletInput').value = parsed.hamlet;
             if (parsed.respondent_name) document.getElementById('respondentNameInput').value = parsed.respondent_name;
+            if (parsed.phone && document.getElementById('phoneInput')) document.getElementById('phoneInput').value = parsed.phone;
+            if (parsed.guide && document.getElementById('guideNameInput')) document.getElementById('guideNameInput').value = parsed.guide;
             if (parsed.gps) document.getElementById('gpsInput').value = parsed.gps;
             if (parsed.photo_data) {
                 setHouseholdPhotoPreview(parsed.photo_data, parsed.photo_meta || 'Đã khôi phục ảnh nháp có watermark');
@@ -807,6 +909,8 @@ function selectTool(toolCode) {
         document.getElementById('surveyCodeInput').value = `${toolCode}_${currentUser?.surveyor_id || 'DTV'}_${todayNum}_01`;
         document.getElementById('respondentNameInput').value = '';
         document.getElementById('hamletInput').value = '';
+        if (document.getElementById('phoneInput')) document.getElementById('phoneInput').value = '';
+        if (document.getElementById('guideNameInput')) document.getElementById('guideNameInput').value = '';
         document.getElementById('gpsInput').value = '';
         clearHouseholdPhoto(true);
         updateDraftTimeDisplay(null);
@@ -1046,21 +1150,30 @@ function renderQuestionsForSection(secName) {
                         `;
                     }).join('')}
                 </div>
-                ${q.follow_up_on ? (() => {
-                    const showFollowUp = isMulti
+                ${(() => {
+                    const showFollowUp = q.follow_up_on && (isMulti
                         ? (Array.isArray(val) && val.includes(q.follow_up_on))
-                        : (String(val || '') === String(q.follow_up_on));
+                        : (String(val || '') === String(q.follow_up_on)));
                     const noteVal = currentDraftAnswers[code + '_note'] || '';
+                    const noteLabel = showFollowUp
+                        ? 'Ghi rõ phương án khác / chi tiết:'
+                        : 'Ghi chú / Bổ sung phương án khác (nếu có):';
+                    const boxStyle = showFollowUp
+                        ? 'margin-top: 8px; padding: 8px 10px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 4px;'
+                        : 'margin-top: 8px;';
                     return `
-                        <div id="followUp_${code}" data-follow-on="${escapeHtml(q.follow_up_on)}" style="margin-top: 8px; display: ${showFollowUp ? 'block' : 'none'};">
+                        <div id="followUp_${code}" data-follow-on="${escapeHtml(q.follow_up_on || '')}" style="${boxStyle}">
+                            <div id="followUpLabel_${code}" style="font-size: 0.78rem; font-weight: 600; color: ${showFollowUp ? '#92400e' : '#64748b'}; margin-bottom: 4px;">
+                                <i class="fa-solid fa-pen-nib"></i> ${noteLabel}
+                            </div>
                             <textarea class="form-control"
                                       rows="2"
                                       ${isViewer ? 'disabled' : ''}
-                                      placeholder="${escapeHtml(q.follow_up_placeholder || 'Ghi rõ nội dung chi tiết...')}"
+                                      placeholder="${escapeHtml(q.follow_up_placeholder || 'Nhập bổ sung thêm hoặc ghi rõ phương án khác (nếu có)...')}"
                                       oninput="onFollowUpChange('${code}', this.value)">${escapeHtml(noteVal)}</textarea>
                         </div>
                     `;
-                })() : ''}
+                })()}
                 ${q.per_option_details ? `<div id="optionDetails_${code}" style="margin-top: 10px;">${renderOptionDetailsHtml(q, val, isViewer)}</div>` : ''}
             `;
         } else if (qType.includes('LK')) {
@@ -1131,13 +1244,37 @@ function renderQuestionsForSection(secName) {
                 </div>
             `;
         } else {
+            const rawHint = String(q.options_raw || '');
+            let chipHtml = '';
+            if (rawHint.includes('☐')) {
+                const chipItems = rawHint.split('☐').slice(1).map(s => {
+                    const cut = s.split(/[\n\r.]/)[0].trim();
+                    return cut.replace(/:\s*_+$/, '').trim();
+                }).filter(Boolean);
+                const uniqueChips = Array.from(new Set(chipItems));
+                if (uniqueChips.length > 0) {
+                    chipHtml = `
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px;">
+                            ${uniqueChips.map(ch => `
+                                <button type="button"
+                                        ${isViewer ? 'disabled' : ''}
+                                        onclick="onTxChipClick('${escapeQuotes(code)}', '${escapeQuotes(ch)}')"
+                                        style="background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 999px; padding: 3px 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">
+                                    <i class="fa-regular fa-square-check" style="color: #15803d;"></i> ${escapeHtml(ch)}
+                                </button>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+            }
             inputHtml = `
                 <div style="margin-top: 8px;">
-                    <textarea class="form-control" 
+                    ${chipHtml}
+                    <textarea id="txInput_${code}" class="form-control" 
                               rows="2" 
                               ${isViewer ? 'disabled' : ''}
                               oninput="onAnswerChange('${code}', this, false)" 
-                              placeholder="Ghi chép câu trả lời của đối tượng...">${val}</textarea>
+                              placeholder="Ghi chép câu trả lời của đối tượng...">${escapeHtml(val)}</textarea>
                 </div>
             `;
         }
@@ -1242,7 +1379,7 @@ function checkConditionMet(condStr, answers) {
         const qCode = ineqMatch[1];
         const expVal = ineqMatch[3].trim();
         const actualVal = answers[qCode];
-        if (actualVal === undefined || actualVal === null || actualVal === '') return false;
+        if (actualVal === undefined || actualVal === null || actualVal === '' || (Array.isArray(actualVal) && actualVal.length === 0)) return false;
         return !matchesConditionValue(qCode, actualVal, expVal);
     }
 
@@ -1423,6 +1560,33 @@ function setLikertAnswer(code, val) {
     updateAnsweredSummaryBadge();
 }
 
+const EXCLUSIVE_NEG_OPTIONS = new Set([
+    'Không trồng xen', 'Không nhận hỗ trợ', 'Không tham gia', 'Không sử dụng',
+    'Không còn áp dụng', 'Không bón', 'Không', 'Không nhớ', 'Không rõ',
+    'Không biết/chưa từng được vẽ', 'Không rõ tên tiêu chuẩn/chứng nhận'
+]);
+
+function onTxChipClick(code, label) {
+    if (currentUser?.role === 'viewer') return;
+    const ta = document.getElementById(`txInput_${code}`);
+    const cur = String(currentDraftAnswers[code] || '').trim();
+    let nextVal = label;
+    if (cur && cur !== label) {
+        if (cur.includes(label)) {
+            nextVal = cur;
+        } else if (label.toLowerCase().includes('không nhớ') || label.toLowerCase().includes('không có')) {
+            nextVal = label;
+        } else {
+            nextVal = `${cur}; ${label}`;
+        }
+    }
+    currentDraftAnswers[code] = nextVal;
+    if (ta) ta.value = nextVal;
+    evaluateQuestionConditions();
+    saveDraftLocal(false);
+    updateAnsweredSummaryBadge();
+}
+
 function onAnswerChange(code, el, isMulti) {
     if (currentUser?.role === 'viewer') return;
 
@@ -1431,18 +1595,18 @@ function onAnswerChange(code, el, isMulti) {
             currentDraftAnswers[code] = [];
         }
         if (el.checked) {
-            if (el.value === 'Không trồng xen') {
-                currentDraftAnswers[code] = ['Không trồng xen'];
+            if (EXCLUSIVE_NEG_OPTIONS.has(el.value)) {
+                currentDraftAnswers[code] = [el.value];
                 document.querySelectorAll(`input[name="q_${code}"]`).forEach(cb => {
-                    if (cb.value !== 'Không trồng xen') {
+                    if (cb.value !== el.value) {
                         cb.checked = false;
                         if (cb.parentElement) cb.parentElement.classList.remove('selected');
                     }
                 });
             } else {
-                currentDraftAnswers[code] = currentDraftAnswers[code].filter(v => v !== 'Không trồng xen');
+                currentDraftAnswers[code] = currentDraftAnswers[code].filter(v => !EXCLUSIVE_NEG_OPTIONS.has(v));
                 document.querySelectorAll(`input[name="q_${code}"]`).forEach(cb => {
-                    if (cb.value === 'Không trồng xen') {
+                    if (EXCLUSIVE_NEG_OPTIONS.has(cb.value)) {
                         cb.checked = false;
                         if (cb.parentElement) cb.parentElement.classList.remove('selected');
                     }
@@ -1472,10 +1636,25 @@ function onAnswerChange(code, el, isMulti) {
     if (fuBox) {
         const target = fuBox.dataset.followOn || '';
         const curVal = currentDraftAnswers[code];
-        const active = Array.isArray(curVal) ? curVal.includes(target) : (String(curVal || '') === target);
-        fuBox.style.display = active ? 'block' : 'none';
-        if (!active && currentDraftAnswers[code + '_note'] !== undefined) {
-            delete currentDraftAnswers[code + '_note'];
+        const active = Boolean(target) && (Array.isArray(curVal) ? curVal.includes(target) : (String(curVal || '') === target));
+        const fuLbl = document.getElementById(`followUpLabel_${code}`);
+        if (active) {
+            fuBox.style.padding = '8px 10px';
+            fuBox.style.background = '#fffbeb';
+            fuBox.style.border = '1px solid #fcd34d';
+            fuBox.style.borderRadius = '4px';
+            if (fuLbl) {
+                fuLbl.style.color = '#92400e';
+                fuLbl.innerHTML = '<i class="fa-solid fa-pen-nib"></i> Ghi rõ phương án khác / chi tiết:';
+            }
+        } else {
+            fuBox.style.padding = '0';
+            fuBox.style.background = 'transparent';
+            fuBox.style.border = 'none';
+            if (fuLbl) {
+                fuLbl.style.color = '#64748b';
+                fuLbl.innerHTML = '<i class="fa-solid fa-pen-nib"></i> Ghi chú / Bổ sung phương án khác (nếu có):';
+            }
         }
     }
 
@@ -1639,6 +1818,8 @@ function saveDraftLocal(isManual) {
         commune: document.getElementById('communeSelect').value,
         hamlet: document.getElementById('hamletInput').value,
         respondent_name: document.getElementById('respondentNameInput').value,
+        phone: document.getElementById('phoneInput')?.value || '',
+        guide: document.getElementById('guideNameInput')?.value || '',
         gps: document.getElementById('gpsInput').value,
         photo_data: currentHouseholdPhotoData || '',
         photo_meta: currentHouseholdPhotoMeta || '',
@@ -2089,14 +2270,19 @@ async function handleSurveySubmit(e) {
 
     const btn = document.getElementById('btnSubmitForm');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG GỬI KẾT QUẢ...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG LƯU VÀ HOÀN THÀNH PHIẾU...';
 
     const surveyCode = document.getElementById('surveyCodeInput').value.trim();
     const commune = document.getElementById('communeSelect').value;
     const hamlet = document.getElementById('hamletInput').value.trim();
     const respondentName = document.getElementById('respondentNameInput').value.trim();
     const phoneInputVal = (document.getElementById('phoneInput')?.value || '').trim();
+    const guideInputVal = (document.getElementById('guideNameInput')?.value || '').trim();
     if (phoneInputVal) currentDraftAnswers['_phone'] = phoneInputVal;
+    if (guideInputVal) currentDraftAnswers['_guide'] = guideInputVal;
+    const nowIso = new Date().toISOString();
+    if (!currentDraftAnswers['_started_at']) currentDraftAnswers['_started_at'] = nowIso;
+    currentDraftAnswers['_completed_at'] = nowIso;
     const gpsStr = document.getElementById('gpsInput').value.trim();
     let gpsLat = 0.0, gpsLng = 0.0;
     const coordMatch = gpsStr.match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
@@ -2124,6 +2310,7 @@ async function handleSurveySubmit(e) {
         hamlet: hamlet,
         target_group: toolObj.group || 'Chung',
         respondent_name: respondentName,
+        respondent_phone: phoneInputVal,
         gps_lat: gpsLat,
         gps_lng: gpsLng,
         photo_data: currentHouseholdPhotoData || '',
@@ -2142,40 +2329,169 @@ async function handleSurveySubmit(e) {
         if (res.ok) {
             const data = await res.json();
             const savedId = isEditing ? editingSurveyId : data.survey_id;
-            const msg = isEditing
-                ? `THÀNH CÔNG!\nĐã cập nhật lại toàn bộ nội dung phiếu ${surveyCode} trên hệ thống.`
-                : `THÀNH CÔNG!\nPhiếu phỏng vấn ${surveyCode} đã được lưu an toàn lên hệ thống.`;
-            if (savedId && (currentUser?.role === 'admin' || currentUser?.role === 'editor') && confirm(`${msg}\n\nBạn có muốn XUẤT BÁO CÁO PDF của hộ vừa phỏng vấn ngay bây giờ không?`)) {
-                window.open(getPdfExportUrl(savedId), '_blank');
-            } else {
-                alert(msg);
-            }
 
             localStorage.removeItem(`dakman_draft_${currentTool}`);
-            currentDraftAnswers = {};
-            editingSurveyId = null;
-            clearHouseholdPhoto(true);
-
             await refreshDashboardData();
             await loadSurveysList();
-            switchMainView('history');
+
+            showCompletionModal({
+                id: savedId,
+                survey_code: surveyCode,
+                respondent_name: respondentName,
+                commune,
+                hamlet,
+                guide: guideInputVal || currentDraftAnswers['_guide'] || '',
+                gps: gpsStr,
+                isEditing
+            });
         } else {
             const err = await res.json();
             alert('Lỗi từ máy chủ: ' + (err.error || 'Không thể lưu phiếu'));
         }
     } catch (err) {
         saveToOfflineQueue(payload);
-        alert('Máy chủ không phản hồi hoặc mất kết nối mạng. Phiếu đã được lưu an toàn vào HÀNG ĐỢI OFFLINE của thiết bị.');
+        alert('Máy chủ tạm thời chưa phản hồi hoặc mất kết nối mạng.\n\nPhiếu của bạn ĐÃ ĐƯỢC LƯU AN TOÀN vào HÀNG ĐỢI OFFLINE trên thiết bị và sẽ tự động đồng bộ lên VPS ngay khi có mạng!');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> GỬI KẾT QUẢ LÊN HỆ THỐNG DAKMAN';
+        btn.innerHTML = editingSurveyId
+            ? `<i class="fa-solid fa-floppy-disk"></i> CẬP NHẬT LẠI PHIẾU [${escapeHtml(surveyCode)}]`
+            : '<i class="fa-solid fa-circle-check"></i> LƯU VÀ HOÀN THÀNH PHIẾU';
     }
+}
+
+function showCompletionModal(info) {
+    const modal = document.getElementById('surveyCompletionModal');
+    if (!modal) return;
+    const nameEl = document.getElementById('completionRespondentName');
+    const codeEl = document.getElementById('completionSurveyCode');
+    const metaEl = document.getElementById('completionMetaSummary');
+    const btnRev = document.getElementById('btnCompletionReview');
+    const btnEdit = document.getElementById('btnCompletionEdit');
+    const btnPdf = document.getElementById('btnCompletionPdf');
+
+    if (nameEl) nameEl.textContent = info.respondent_name || 'Quý hộ gia đình';
+    if (codeEl) codeEl.textContent = info.survey_code || '—';
+    if (metaEl) {
+        metaEl.innerHTML = `
+            <div><strong>Địa bàn:</strong> ${escapeHtml(info.commune || '')}${info.hamlet ? ` (${escapeHtml(info.hamlet)})` : ''}</div>
+            <div><strong>Người dẫn đường:</strong> ${escapeHtml(info.guide || '—')}</div>
+            <div><strong>Tọa độ GPS lưu ngầm:</strong> ${escapeHtml(info.gps || 'Đã ghi nhận theo phiên')}</div>
+            <div><strong>Trạng thái:</strong> <span style="color:#15803d; font-weight:700;">${info.isEditing ? 'Đã cập nhật bổ sung thành công' : 'Đã lưu chính thức & sao lưu trên VPS'}</span></div>
+        `;
+    }
+    if (btnRev) {
+        btnRev.onclick = () => {
+            modal.classList.remove('active');
+            viewSurveyDetail(info.id);
+        };
+    }
+    if (btnEdit) {
+        btnEdit.onclick = () => {
+            modal.classList.remove('active');
+            reloadSurveyIntoForm(info.id);
+        };
+    }
+    if (btnPdf) {
+        btnPdf.href = getPdfExportUrl(info.id);
+    }
+    modal.classList.add('active');
+}
+
+function finishAfterCompletion() {
+    const modal = document.getElementById('surveyCompletionModal');
+    if (modal) modal.classList.remove('active');
+
+    currentDraftAnswers = {};
+    editingSurveyId = null;
+    stopBackgroundGpsTracker();
+    stopRealtimeInterviewClock();
+    clearHouseholdPhoto(true);
+
+    ['surveyCodeInput', 'hamletInput', 'respondentNameInput', 'phoneInput', 'guideNameInput', 'gpsInput'].forEach(fid => {
+        const el = document.getElementById(fid);
+        if (el) el.value = '';
+    });
+    const banner = document.getElementById('sampleSelectedBanner');
+    if (banner) banner.style.display = 'none';
+    const btn = document.getElementById('btnSubmitForm');
+    if (btn) btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> LƯU VÀ HOÀN THÀNH PHIẾU';
+
+    selectTool(currentTool);
+    filterSampleHouseholds();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function saveToOfflineQueue(surveyData) {
     const queue = JSON.parse(localStorage.getItem('dakman_offline_queue') || '[]');
     queue.push(surveyData);
     localStorage.setItem('dakman_offline_queue', JSON.stringify(queue));
+}
+
+async function syncOfflineQueue(silent = false) {
+    const raw = localStorage.getItem('dakman_offline_queue');
+    if (!raw) return;
+    let queue = [];
+    try { queue = JSON.parse(raw) || []; } catch (_) { return; }
+    if (!queue.length || !navigator.onLine) return;
+
+    const remaining = [];
+    let syncedCount = 0;
+    for (const item of queue) {
+        try {
+            const res = await fetch(apiUrl('/api/surveys'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item)
+            });
+            if (res.ok) syncedCount++;
+            else remaining.push(item);
+        } catch (_) {
+            remaining.push(item);
+        }
+    }
+    localStorage.setItem('dakman_offline_queue', JSON.stringify(remaining));
+    if (syncedCount > 0) {
+        await refreshDashboardData();
+        await loadSurveysList();
+        if (!silent) {
+            alert(`Đã tự động đồng bộ thành công ${syncedCount} phiếu từ hàng đợi Offline lên máy chủ VPS!`);
+        }
+    }
+}
+
+async function triggerDailyEmailReport() {
+    if (currentUser?.role !== 'admin') {
+        alert('Chỉ Quản trị viên (Admin) mới được phép gửi báo cáo email tổng hợp!');
+        return;
+    }
+    const btn = document.getElementById('btnSendDailyEmail');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo Excel & gửi email...';
+    }
+    try {
+        const res = await fetch(apiUrl('/api/admin/send-daily-report'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Key': getAdminKey()
+            },
+            body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            alert(`THÀNH CÔNG!\n${data.message}`);
+        } else {
+            alert('Không gửi được email: ' + (data.error || 'Lỗi máy chủ'));
+        }
+    } catch (e) {
+        alert('Lỗi kết nối khi gửi email: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-envelope"></i> Gửi Email Tổng Hợp Cuối Ngày';
+        }
+    }
 }
 
 // ========================================================
@@ -2402,7 +2718,10 @@ async function viewSurveyDetail(id) {
 
         const body = document.getElementById('detailModalBody');
         const answers = item.answers || {};
-        const keys = Object.keys(answers);
+        const qList = (allQuestionsData[item.tool_code]?.questions) || [];
+        const qMap = {};
+        qList.forEach(q => { qMap[q.code] = q.text; });
+        const keys = Object.keys(answers).filter(k => !k.startsWith('_'));
 
         let photoHtml = '';
         if (item.photo_url) {
@@ -2426,17 +2745,26 @@ async function viewSurveyDetail(id) {
                 <table class="report-table" style="margin-top: 8px;">
                     <thead>
                         <tr>
-                            <th style="width: 100px;">Mã Câu</th>
-                            <th>Nội Dung Câu Trả Lời Thu Thập Được</th>
+                            <th style="width: 90px;">Mã Câu</th>
+                            <th>Câu Hỏi &amp; Câu Trả Lời Thu Thập Được</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${keys.map(k => `
+                        ${keys.map(k => {
+                            const baseCode = k.replace(/(_note|_details)$/, '');
+                            const qLabel = k.endsWith('_note')
+                                ? `<em>Ghi chú/Phương án khác (${baseCode})</em>`
+                                : (qMap[k] ? escapeHtml(qMap[k]) : '');
+                            return `
                             <tr>
-                                <td style="font-family: monospace; font-weight: 700; color: var(--primary);">${k}</td>
-                                <td style="white-space: pre-wrap;">${formatAnswerDisplay(answers[k])}</td>
+                                <td style="font-family: monospace; font-weight: 700; color: var(--primary);">${escapeHtml(k)}</td>
+                                <td>
+                                    ${qLabel ? `<div style="font-size: 0.78rem; color: #475569; margin-bottom: 3px;">${qLabel}</div>` : ''}
+                                    <div style="white-space: pre-wrap; font-weight: 600; color: #0f172a;">${formatAnswerDisplay(answers[k])}</div>
+                                </td>
                             </tr>
-                        `).join('')}
+                        `;
+                        }).join('')}
                     </tbody>
                 </table>
             `;
@@ -2447,20 +2775,21 @@ async function viewSurveyDetail(id) {
         body.innerHTML = `
             <div style="background: var(--slate-50); padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px;">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; font-size: 0.84rem;">
-                    <div><strong>Đối tượng phỏng vấn:</strong> ${item.respondent_name || '—'}</div>
-                    <div><strong>Địa bàn:</strong> ${item.commune} ${item.hamlet ? `(${item.hamlet})` : ''}</div>
-                    <div><strong>Điều tra viên:</strong> ${item.surveyor_name} (${item.surveyor_id})</div>
+                    <div><strong>Đối tượng phỏng vấn:</strong> ${escapeHtml(item.respondent_name || '—')}</div>
+                    <div><strong>Người dẫn đường:</strong> ${escapeHtml(answers._guide || '—')}</div>
+                    <div><strong>Địa bàn:</strong> ${escapeHtml(item.commune || '')} ${item.hamlet ? `(${escapeHtml(item.hamlet)})` : ''}</div>
+                    <div><strong>Điều tra viên:</strong> ${escapeHtml(item.surveyor_name || '')} (${escapeHtml(item.surveyor_id || '')})</div>
                     <div><strong>Ngày phỏng vấn:</strong> ${formatDateVN(item.survey_date)}</div>
                     <div><strong>Tọa độ GPS:</strong> ${item.gps_lat && item.gps_lng ? `${item.gps_lat}, ${item.gps_lng}` : 'Chưa ghi nhận'}</div>
-                    <div><strong>Công cụ:</strong> ${item.tool_code} — ${item.tool_name}</div>
+                    <div><strong>Công cụ:</strong> ${escapeHtml(item.tool_code || '')} — ${escapeHtml(item.tool_name || '')}</div>
                 </div>
             </div>
             <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <span>Dữ liệu chi tiết từng câu hỏi (${keys.length} câu đã trả lời):</span>
+                <span>Xem lại dữ liệu từng câu hỏi (${keys.length} mục đã ghi):</span>
                 ${canExportItem ? `
                 <span style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <a href="${getPdfExportUrl(item.id)}" target="_blank" style="background:#b91c1c;color:#fff;border:none;padding:5px 10px;border-radius:3px;font-size:0.78rem;text-decoration:none;font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Xuất Báo Cáo PDF</a>
-                    <button type="button" onclick="reloadSurveyIntoForm(${item.id})" style="background:#002060;color:#fff;border:none;padding:5px 10px;border-radius:3px;font-size:0.78rem;cursor:pointer;font-weight:600;"><i class="fa-solid fa-pen-to-square"></i> Mở lên Form để nhập liệu lại</button>
+                    <a href="${getPdfExportUrl(item.id)}" target="_blank" style="background:#b91c1c;color:#fff;border:none;padding:6px 10px;border-radius:3px;font-size:0.78rem;text-decoration:none;font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Xuất Báo Cáo PDF</a>
+                    <button type="button" onclick="reloadSurveyIntoForm(${item.id})" style="background:#d97706;color:#fff;border:none;padding:6px 12px;border-radius:3px;font-size:0.80rem;cursor:pointer;font-weight:700;"><i class="fa-solid fa-pen-to-square"></i> Quay lại sửa &amp; Cập nhật đầy đủ</button>
                 </span>` : ''}
             </h4>
             ${photoHtml}
@@ -2493,7 +2822,9 @@ async function reloadSurveyIntoForm(id) {
         document.getElementById('hamletInput').value = item.hamlet || '';
         document.getElementById('respondentNameInput').value = item.respondent_name || '';
         const pEl = document.getElementById('phoneInput');
-        if (pEl) pEl.value = (item.answers && item.answers._phone) ? item.answers._phone : '';
+        if (pEl) pEl.value = item.respondent_phone || (item.answers && item.answers._phone) || '';
+        const gEl = document.getElementById('guideNameInput');
+        if (gEl) gEl.value = (item.answers && item.answers._guide) ? item.answers._guide : '';
         if (item.survey_date) document.getElementById('surveyDateInput').value = item.survey_date;
         document.getElementById('gpsInput').value = (item.answers && item.answers._gps_text)
             ? item.answers._gps_text
