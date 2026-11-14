@@ -1,6 +1,6 @@
 """
 Dakman Final Evaluation Webapp Server
-Domain: dakmansurvey.slowforest.vn
+Domain: dakmansurvey.coffeedata.it.com
 Port: 8080 (or PORT env var)
 Zero external dependencies required (Python 3 standard library + sqlite3)
 Supports openpyxl for Excel export if installed.
@@ -164,15 +164,16 @@ def init_db():
     except Exception:
         pass
 
-    # Seed initial surveyors with standard format TCN-XX-hhmmss
+    # Seed 06 official surveyors + 1 supervisor from sample assignment plan
     cur.execute('SELECT COUNT(*) FROM users')
     if cur.fetchone()[0] == 0:
         seed_users = [
-            ('TCN-01-080000', 'Nguyễn Văn An', '0912345678', 'Điều tra viên', 'Ea Kiết', 'Edit123a#'),
-            ('TCN-02-080000', 'Lê Thị Bình', '0912345679', 'Điều tra viên', 'Ea Tar', 'Edit123a#'),
-            ('TCN-03-080000', 'Trần Văn Cường', '0912345680', 'Điều tra viên', "Cư Dliê M'nông", 'Edit123a#'),
-            ('TCN-04-080000', 'H\'Hen Niê', '0912345681', 'Điều tra viên', 'Ea Kiết', 'Edit123a#'),
-            ('TCN-05-080000', 'Lộc Vũ Trung', '0908889999', 'Giám sát viên & Trưởng nhóm', 'Toàn vùng', 'Edit123a#')
+            ('TCN01', 'Lê Đình Duy', '0988 669 112', 'Điều tra viên', 'Ea Kiết', 'Edit123a#'),
+            ('TCN02', 'Phan Doãn Vọng', '0946 371 871', 'Điều tra viên', 'Ea Tar', 'Edit123a#1'),
+            ('TCN03', 'Phạm Văn Thao', '0914787479', 'Điều tra viên', 'Ea Kiết', 'Thao12345#x'),
+            ('TCN04', 'Nguyễn Viết Trụ', '0988049504', 'Điều tra viên', 'Ea Kiết', 'GsTru1237#c'),
+            ('TCN05', 'Cao Thị Phúc', '0815287782', 'Điều tra viên', 'Ea Kiết', 'Phuc165m#'),
+            ('TCN06', 'Hoàng Trường Sinh', '0935284943', 'Điều tra viên', 'Ea Kiết', 'hPsestXh')
         ]
         cur.executemany('''
             INSERT OR REPLACE INTO users (surveyor_id, full_name, phone, role, commune_assigned, password, last_login)
@@ -521,7 +522,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             self._send_json({
                 'status': 'online',
                 'service': 'Dakman Final Evaluation Survey VPS Service',
-                'domain': 'dakmansurvey.slowforest.vn',
+                'domain': 'dakmansurvey.coffeedata.it.com',
                 'time': datetime.datetime.now().isoformat()
             })
             return
@@ -1087,7 +1088,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
                     conn = sqlite3.connect(DB_PATH)
                     cur = conn.cursor()
-                    cur.execute('SELECT password, full_name, commune_assigned FROM users WHERE surveyor_id = ?', (surveyor_id,))
+                    cur.execute('SELECT password, full_name, commune_assigned, surveyor_id FROM users WHERE UPPER(surveyor_id) = UPPER(?) OR UPPER(full_name) = UPPER(?)', (surveyor_id, surveyor_id))
                     u = cur.fetchone()
 
                     if not u:
@@ -1095,12 +1096,14 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                         self._send_json({'error': f'Mã nhân viên [{surveyor_id}] chưa được Admin cấp quyền trên hệ thống! Vui lòng liên hệ Quản trị viên để nhận mã qua Zalo.'}, 401)
                         return
 
-                    stored_pass, registered_name, commune_db = u[0], u[1], u[2]
+                    stored_pass, registered_name, commune_db, real_sid = u[0], u[1], u[2], u[3]
+                    surveyor_id = real_sid
 
                     # 1. Kiểm tra Họ và Tên nhập vào có khớp với mã được cấp không
                     norm_input = normalize_vn_str(full_name)
                     norm_reg = normalize_vn_str(registered_name)
-                    if norm_input != norm_reg:
+                    is_name_match = (norm_input == norm_reg or norm_input.endswith(' ' + norm_reg) or norm_reg.endswith(' ' + norm_input))
+                    if not is_name_match:
                         conn.close()
                         self._send_json({'error': f'Họ và tên [{full_name}] không khớp với hồ sơ mã [{surveyor_id}] được cấp! Vui lòng nhập đúng họ và tên đã đăng ký.'}, 401)
                         return
@@ -1435,7 +1438,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             survey_code = data.get('survey_code') or f"DKM-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
             tool_code = data.get('tool_code', 'P1')
             tool_name = data.get('tool_name', 'P1 - Phiếu hộ')
-            surveyor_id = data.get('surveyor_id', 'TCN-01-080000')
+            surveyor_id = data.get('surveyor_id', 'TCN01')
             surveyor_name = data.get('surveyor_name', 'Điều tra viên')
             survey_date = data.get('survey_date', datetime.date.today().isoformat())
             commune = data.get('commune', 'Ea Kiết')
@@ -1709,7 +1712,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 def run():
     print(f"============================================================")
     print(f" Dakman Survey VPS Web Service Starting...")
-    print(f" Target Domain: https://dakmansurvey.slowforest.vn")
+    print(f" Target Domain: https://dakmansurvey.coffeedata.it.com")
     print(f" Local Port:    http://localhost:{PORT}")
     print(f" Database:      {DB_PATH}")
     print(f" Web Root:      {PUBLIC_DIR}")

@@ -6,7 +6,7 @@
  */
 
 const API_BASE = (window.location.hostname.endsWith('github.io') || window.location.protocol === 'file:')
-    ? 'https://dakmansurvey.slowforest.vn'
+    ? 'https://dakmansurvey.coffeedata.it.com'
     : '';
 
 function apiUrl(path) {
@@ -195,7 +195,7 @@ function selectLoginTier(tier) {
         lblPass.innerHTML = 'Mật Khẩu Điều Tra Viên <span class="req">*</span>';
         passInput.placeholder = 'Nhập mật khẩu điều tra viên...';
         if (!document.getElementById('modalUserId').value) {
-            document.getElementById('modalUserId').value = 'TCN-01-080000';
+            document.getElementById('modalUserId').value = 'TCN01';
         }
     }
 }
@@ -212,14 +212,14 @@ function showLoginModal(isMandatory) {
     }
 
     if (currentUser && curRole === 'editor') {
-        document.getElementById('modalUserId').value = currentUser.surveyor_id || 'TCN-01-080000';
+        document.getElementById('modalUserId').value = currentUser.surveyor_id || 'TCN01';
         document.getElementById('modalUserName').value = currentUser.full_name || '';
         document.getElementById('modalUserDate').value = currentUser.survey_date || new Date().toISOString().split('T')[0];
         document.getElementById('modalUserCommune').value = currentUser.commune || 'Ea Kiết';
     } else {
         document.getElementById('modalUserDate').value = new Date().toISOString().split('T')[0];
         if (!document.getElementById('modalUserId').value) {
-            document.getElementById('modalUserId').value = 'TCN-01-080000';
+            document.getElementById('modalUserId').value = 'TCN01';
         }
     }
     document.getElementById('modalUserPassword').value = '';
@@ -300,7 +300,7 @@ async function saveUserLogin(e) {
             hideLoginModal();
             updateUserDisplay();
         } else if (role === 'editor' && (password === 'Edit123a#' || password)) {
-            currentUser = { role: 'editor', surveyor_id: userId || 'DTV01', full_name: userName || 'Điều tra viên', survey_date: userDate, commune: userCommune, key: password, is_authenticated: true };
+            currentUser = { role: 'editor', surveyor_id: userId || 'TCN01', full_name: userName || 'Điều tra viên', survey_date: userDate, commune: userCommune, key: password, is_authenticated: true };
             localStorage.setItem('dakman_surveyor_session', JSON.stringify(currentUser));
             hideLoginModal();
             updateUserDisplay();
@@ -404,7 +404,7 @@ function updateUserDisplay() {
     const dateInput = document.getElementById('surveyDateInput');
     const communeSelect = document.getElementById('communeSelect');
 
-    if (idInput) idInput.value = currentUser.surveyor_id || 'DTV01';
+    if (idInput) idInput.value = currentUser.surveyor_id || 'TCN01';
     if (nameInput) nameInput.value = currentUser.full_name || '';
     if (dateInput) dateInput.value = currentUser.survey_date || new Date().toISOString().split('T')[0];
     if (communeSelect && currentUser.commune && currentUser.commune !== 'Toàn vùng') {
@@ -2117,7 +2117,7 @@ async function handleSurveySubmit(e) {
         survey_code: surveyCode,
         tool_code: currentTool,
         tool_name: toolObj.tool_name || currentTool,
-        surveyor_id: currentUser?.surveyor_id || 'DTV01',
+        surveyor_id: currentUser?.surveyor_id || 'TCN01',
         surveyor_name: currentUser?.full_name || 'Điều tra viên',
         survey_date: document.getElementById('surveyDateInput').value || new Date().toISOString().split('T')[0],
         commune: commune,
@@ -2712,12 +2712,10 @@ function escapeHtml(str) {
 // ========================================================
 function generateStaffId() {
     const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    const timeStr = `${hh}${mm}${ss}`;
-    const randNum = String(Math.floor(Math.random() * 90) + 10);
-    const code = `TCN-${randNum}-${timeStr}`;
+    const tbody = document.getElementById('staffListTbody');
+    const existingCount = tbody ? tbody.querySelectorAll('tr').length : 0;
+    const nextNum = String(existingCount + 1).padStart(2, '0');
+    const code = `TCN${nextNum}`;
     const target = document.getElementById('newStaffId');
     if (target) target.value = code;
     return code;
@@ -3323,8 +3321,9 @@ async function loadStaffList() {
 }
 
 function copyZaloText(id, name, commune, pass, isNew = false) {
-    const appLink = `${window.location.origin}${window.location.pathname}`;
-    const text = `Kính gửi: ${name}\nBan Quản lý Dự án Dakman Cư M'gar (Đơn vị tư vấn Tân Cao Nguyên) gửi bạn thông tin tài khoản khảo sát:\n- Link hệ thống: ${appLink}\n- Họ và Tên: ${name}\n- Mã Nhân Viên (bắt buộc đúng từng ký tự): ${id}\n- Địa bàn phụ trách: ${commune}\n- Mật khẩu truy cập cá nhân: ${pass}\n\nLưu ý: Mật khẩu là bảo mật cá nhân, bạn không chia sẻ tài khoản cho người khác. Chúc bạn hoàn thành tốt đợt điều tra!`;
+    const primaryLink = 'https://dakmansurvey.coffeedata.it.com';
+    const githubLink = 'https://locvutrunglvt.github.io/Dakmansurvey/public/index.html';
+    const text = `Kính gửi: ${name}\nBan Quản lý Dự án Dakman Cư M'gar (Đơn vị tư vấn Tân Cao Nguyên) gửi bạn thông tin tài khoản khảo sát:\n- Link chính (Máy chủ mới): ${primaryLink}\n- Link dự phòng (GitHub): ${githubLink}\n- Họ và Tên: ${name}\n- Mã Điều Tra Viên (bắt buộc đúng từng ký tự): ${id}\n- Địa bàn phụ trách: ${commune}\n- Mật khẩu truy cập cá nhân: ${pass}\n\nLưu ý: Cả 2 link đều dùng chung 1 tài khoản và tự đồng bộ dữ liệu về máy chủ. Mật khẩu là bảo mật cá nhân, không chia sẻ cho người khác. Chúc bạn hoàn thành tốt đợt điều tra!`;
     navigator.clipboard.writeText(text).then(() => {
         alert(`ĐÃ SAO CHÉP THÔNG TIN TÀI KHOẢN [${name} - ${id}] VÀO CLIPBOARD!\n\nBạn chỉ cần mở Zalo và dán (Ctrl+V) gửi cho bạn ấy.`);
     }).catch(err => {
