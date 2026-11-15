@@ -1924,7 +1924,7 @@
                 </div>
                 <div class="meta-table-item">
                     <strong>Quy mô tham vấn:</strong>
-                    <span>238 đối tượng tham vấn (220 hộ gồm 2 chủ mô hình, 10 nhóm trưởng/đại diện/trưởng thôn, 3 chính quyền xã, 3 HTX, 2 nhà tài trợ)</span>
+                    <span>240 phiếu phỏng vấn (220 hộ nông dân, 2 chủ mô hình trình diễn, 10 nhóm trưởng/trưởng thôn, 3 chính quyền xã, 3 HTX, 2 nhà tài trợ)</span>
                 </div>
                 <div class="meta-table-item">
                     <strong>Thời gian thực hiện:</strong>
@@ -1997,18 +1997,18 @@
                 </div>
 
                 <div class="app-launcher-grid">
-                    <button type="button" class="app-tile-btn" onclick="switchMainView('pick-tool')">
+                    <button type="button" id="menuTileCreate" class="app-tile-btn" onclick="switchMainView('pick-tool')">
                         <div class="app-tile-icon app-tile-icon--green">
                             <i class="fa-solid fa-file-circle-plus"></i>
                         </div>
                         <div class="app-tile-body">
-                            <div class="app-tile-label">1. Tạo phiếu</div>
+                            <div class="app-tile-label" id="menuTileCreateLabel">1. Tạo phiếu</div>
                             <span class="app-tile-count" style="background:#f0fdf4;color:#166534;border-color:#dcfce7;">6 đối tượng khảo sát</span>
                         </div>
                         <i class="fa-solid fa-chevron-right app-tile-arrow"></i>
                     </button>
 
-                    <button type="button" class="app-tile-btn" onclick="switchMainView('history')">
+                    <button type="button" id="menuTileHistory" class="app-tile-btn" onclick="switchMainView('history')">
                         <div class="app-tile-icon app-tile-icon--navy">
                             <i class="fa-solid fa-clipboard-check"></i>
                         </div>
@@ -2019,18 +2019,18 @@
                         <i class="fa-solid fa-chevron-right app-tile-arrow"></i>
                     </button>
 
-                    <button type="button" class="app-tile-btn" onclick="switchMainView('dashboard')">
+                    <button type="button" id="menuTileDash" class="app-tile-btn" onclick="switchMainView('dashboard')">
                         <div class="app-tile-icon app-tile-icon--sky">
                             <i class="fa-solid fa-chart-pie"></i>
                         </div>
                         <div class="app-tile-body">
                             <div class="app-tile-label">3. Tiến độ - Kế hoạch</div>
-                            <span class="app-tile-count" id="menuDashBadge" style="background:#f0f9ff;color:#0369a1;border-color:#e0f2fe;">0 / 238</span>
+                            <span class="app-tile-count" id="menuDashBadge" style="background:#f0f9ff;color:#0369a1;border-color:#e0f2fe;">0 / 240</span>
                         </div>
                         <i class="fa-solid fa-chevron-right app-tile-arrow"></i>
                     </button>
 
-                    <button type="button" class="app-tile-btn" onclick="openDraftsModal()">
+                    <button type="button" id="menuTileDrafts" class="app-tile-btn" onclick="openDraftsModal()">
                         <div class="app-tile-icon app-tile-icon--amber">
                             <i class="fa-solid fa-folder-open"></i>
                         </div>
@@ -2041,18 +2041,18 @@
                         <i class="fa-solid fa-chevron-right app-tile-arrow"></i>
                     </button>
 
-                    <button type="button" class="app-tile-btn" onclick="switchMainView('field-photos')">
+                    <button type="button" id="menuTilePhotos" class="app-tile-btn" onclick="switchMainView('field-photos')">
                         <div class="app-tile-icon app-tile-icon--rose">
                             <i class="fa-solid fa-camera"></i>
                         </div>
                         <div class="app-tile-body">
-                            <div class="app-tile-label">5. Chụp ảnh hiện trường</div>
+                            <div class="app-tile-label" id="menuTilePhotosLabel">5. Chụp ảnh hiện trường</div>
                             <span class="app-tile-count" id="menuFieldPhotosBadge" style="background:#fff1f2;color:#be123c;border-color:#fecdd3;">0 ảnh HD • Lưu thẳng VPS</span>
                         </div>
                         <i class="fa-solid fa-chevron-right app-tile-arrow"></i>
                     </button>
 
-                    <button type="button" class="app-tile-btn" onclick="switchMainView('map')">
+                    <button type="button" id="menuTileMap" class="app-tile-btn" onclick="switchMainView('map')">
                         <div class="app-tile-icon app-tile-icon--teal">
                             <i class="fa-solid fa-map-location-dot"></i>
                         </div>
@@ -2062,11 +2062,22 @@
                         </div>
                         <i class="fa-solid fa-chevron-right app-tile-arrow"></i>
                     </button>
+
+                    <button type="button" id="menuTileBlankQuestions" class="app-tile-btn" onclick="switchMainView('blank-questions')" style="display: none;">
+                        <div class="app-tile-icon" style="background: #eff6ff; color: #1d4ed8;">
+                            <i class="fa-solid fa-book-open"></i>
+                        </div>
+                        <div class="app-tile-body">
+                            <div class="app-tile-label">Hệ thống bảng hỏi Blank</div>
+                            <span class="app-tile-count" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;">Xem mẫu P1 – P6 (Chỉ đọc)</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right app-tile-arrow"></i>
+                    </button>
                 </div>
 
                 <!-- BẢNG ĐIỀU HÀNH RIÊNG CHO ADMIN / ADMIN1 TRÊN MÀN HÌNH CHÍNH -->
                 <div id="adminMenuLiveBoard" style="display: none; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; margin-top: 16px;">
-                    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(15,23,42,0.06); display: flex; flex-direction: column;">
+                    <div id="adminMenuStaffCard" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(15,23,42,0.06); display: flex; flex-direction: column;">
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
                             <div style="font-size: 0.92rem; font-weight: 800; color: #0f2a4a;">
                                 <i class="fa-solid fa-users" style="color: #15803d;"></i> Danh sách nhân sự (06 ĐTV)
@@ -2075,6 +2086,35 @@
                         </div>
                         <div id="adminMenuStaffList" style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
                             <div style="color: #64748b; font-size: 0.82rem; text-align: center; padding: 20px;">Đang tải trạng thái nhân sự...</div>
+                        </div>
+                    </div>
+
+                    <div id="adminMenuPhotoGalleryCard" style="display: none; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(15,23,42,0.06); flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap;">
+                            <div style="font-size: 0.92rem; font-weight: 800; color: #0f2a4a;">
+                                <i class="fa-solid fa-photo-film" style="color: #be123c;"></i> Thư viện Ảnh hiện trường (06 ĐTV)
+                            </div>
+                            <span id="adminMenuPhotoCountChip" style="font-size: 0.76rem; font-weight: 700; color: #9f1239; background: #ffe4e6; padding: 3px 9px; border-radius: 999px;">0 ảnh</span>
+                        </div>
+                        <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;">
+                            <select id="adminMenuPhotoFilter" onchange="renderAdminMenuPhotoGallery()" style="flex: 1; min-width: 160px; font-size: 0.78rem; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; color: #0f2a4a; font-weight: 600;">
+                                <option value="">Tất cả 06 điều tra viên</option>
+                                <option value="TCN02">TCN02 — Phan Doãn Vọng</option>
+                                <option value="TCN03">TCN03 — Phạm Văn Thảo</option>
+                                <option value="TCN04">TCN04 — Nguyễn Viết Trụ</option>
+                                <option value="TCN05">TCN05 — Cao Thị Phúc</option>
+                                <option value="TCN06">TCN06 — Hoàng Trường Sinh</option>
+                                <option value="TCN07">TCN07 — Lê Đình Duy</option>
+                            </select>
+                            <button type="button" onclick="loadAdminMenuPhotoGallery(true)" class="qgis-btn-secondary" style="font-size: 0.76rem; padding: 5px 9px;">
+                                <i class="fa-solid fa-rotate"></i> Tải lại
+                            </button>
+                            <button type="button" onclick="switchMainView('field-photos')" class="qgis-btn-secondary" style="font-size: 0.76rem; padding: 5px 9px; color: #9f1239; border-color: #fecdd3; background: #fff1f2;">
+                                <i class="fa-solid fa-expand"></i> Mở rộng
+                            </button>
+                        </div>
+                        <div id="adminMenuPhotoGallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 8px; max-height: 360px; overflow-y: auto; flex: 1;">
+                            <div style="color: #64748b; font-size: 0.82rem; text-align: center; padding: 20px; grid-column: 1 / -1;">Đang tải thư viện ảnh hiện trường...</div>
                         </div>
                     </div>
 
@@ -2126,7 +2166,7 @@
             <!-- VIEW 0C: CHỤP ẢNH HIỆN TRƯỜNG HD + GHI CHÚ + LÊN THẲNG VPS -->
             <!-- ======================================================== -->
             <div id="view-field-photos" class="view-pane" style="display: none;">
-                <div class="summary-box" style="border-left-color: #be123c;">
+                <div class="summary-box" id="fpCaptureFormBox" style="border-left-color: #be123c;">
                     <div class="summary-header" style="flex-wrap: wrap; gap: 8px;">
                         <div class="summary-title" style="color: #9f1239;">
                             <i class="fa-solid fa-camera"></i> CHỤP ẢNH HIỆN TRƯỜNG CHẤT LƯỢNG CAO &amp; ĐẨY TRỰC TIẾP LÊN VPS
@@ -2202,9 +2242,23 @@
                         <div class="summary-title" style="color: var(--navy);">
                             <i class="fa-solid fa-photo-film"></i> THƯ VIỆN ẢNH HIỆN TRƯỜNG ĐÃ LƯU TRÊN VPS (<span id="fieldPhotosGalleryCount">0</span>)
                         </div>
-                        <button type="button" onclick="switchMainView('map')" class="qgis-btn-secondary" style="font-size: 0.78rem; padding: 5px 10px; color: #0f766e; border-color: #99f6e4; background: #f0fdfa;">
-                            <i class="fa-solid fa-map-location-dot"></i> Xem vị trí ảnh trên Bản đồ
-                        </button>
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                            <select id="fpGalleryFilterSurveyor" onchange="renderFieldPhotosGallery()" style="font-size: 0.78rem; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #0f2a4a; font-weight: 600;">
+                                <option value="">Tất cả điều tra viên (06 ĐTV)</option>
+                                <option value="TCN02">TCN02 — Phan Doãn Vọng</option>
+                                <option value="TCN03">TCN03 — Phạm Văn Thảo</option>
+                                <option value="TCN04">TCN04 — Nguyễn Viết Trụ</option>
+                                <option value="TCN05">TCN05 — Cao Thị Phúc</option>
+                                <option value="TCN06">TCN06 — Hoàng Trường Sinh</option>
+                                <option value="TCN07">TCN07 — Lê Đình Duy</option>
+                            </select>
+                            <button type="button" onclick="loadFieldPhotosGallery(true)" class="qgis-btn-secondary" style="font-size: 0.78rem; padding: 5px 10px;">
+                                <i class="fa-solid fa-rotate"></i> Tải lại
+                            </button>
+                            <button type="button" onclick="switchMainView('map')" class="qgis-btn-secondary" style="font-size: 0.78rem; padding: 5px 10px; color: #0f766e; border-color: #99f6e4; background: #f0fdfa;">
+                                <i class="fa-solid fa-map-location-dot"></i> Xem vị trí ảnh trên Bản đồ
+                            </button>
+                        </div>
                     </div>
                     <div id="fieldPhotosGallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px;">
                         <div style="color: #64748b; font-size: 0.85rem; padding: 20px; text-align: center; grid-column: 1 / -1;">
@@ -2293,6 +2347,37 @@
             <!-- ======================================================== -->
             <!-- VIEW 0B: CHỌN 1 TRONG 06 ĐỐI TƯỢNG KHI BẤM "TẠO PHIẾU"   -->
             <!-- ======================================================== -->
+            <div id="view-blank-questions" class="view-pane" style="display: none;">
+                <div class="summary-box" style="border-left-color: #1d4ed8;">
+                    <div class="summary-header" style="flex-wrap: wrap; gap: 8px;">
+                        <div class="summary-title" style="color: #1e3a8a;">
+                            <i class="fa-solid fa-book-open"></i> HỆ THỐNG BẢNG HỎI BLANK FULL FORM (6 CÔNG CỤ: P1, MH, NT, CQ, HTX, TT)
+                        </div>
+                        <div id="blankQuestionCountChip" style="font-size: 0.78rem; font-weight: 700; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 999px;">
+                            0 câu hỏi
+                        </div>
+                    </div>
+                    <p style="font-size: 0.82rem; color: #475569; margin: 0 0 12px 0;">
+                        Chế độ <strong>Blank Full Form (Chỉ xem)</strong>: bỏ qua điều kiện chụp ảnh và ẩn câu hỏi để hiển thị <strong>100% toàn bộ câu hỏi</strong>, kèm <span style="color:#dc2626;font-weight:700;">điều kiện rẽ nhánh chữ màu đỏ</span> giúp đối tác/khách hàng hiểu rõ bản chất bảng hỏi (không nhập liệu).
+                    </p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px;">
+                        <div id="blankToolTabs" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                            <button type="button" class="qgis-btn-primary" data-blank-tool="P1" onclick="selectBlankTool('P1')">P1 • Hộ nông dân (74)</button>
+                            <button type="button" class="qgis-btn-secondary" data-blank-tool="MH" onclick="selectBlankTool('MH')">MH • Chủ mô hình (7)</button>
+                            <button type="button" class="qgis-btn-secondary" data-blank-tool="NT" onclick="selectBlankTool('NT')">NT • Nhóm trưởng/Thôn (33)</button>
+                            <button type="button" class="qgis-btn-secondary" data-blank-tool="CQ" onclick="selectBlankTool('CQ')">CQ • Chính quyền xã (13)</button>
+                            <button type="button" class="qgis-btn-secondary" data-blank-tool="HTX" onclick="selectBlankTool('HTX')">HTX • Ban Qlý HTX (15)</button>
+                            <button type="button" class="qgis-btn-secondary" data-blank-tool="TT" onclick="selectBlankTool('TT')">TT • Nhà tài trợ (9)</button>
+                        </div>
+                        <input type="text" id="blankQuestionSearch" class="form-control" oninput="renderBlankQuestionsViewer()"
+                            placeholder="Tìm mã câu hỏi hoặc nội dung..." style="max-width: 280px; margin-left: auto;">
+                    </div>
+                    <div id="blankQuestionsContainer" style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="color: #64748b; text-align: center; padding: 20px;">Đang nạp bộ câu hỏi...</div>
+                    </div>
+                </div>
+            </div>
+
             <div id="view-pick-tool" class="view-pane" style="display: none;">
                 <div class="app-pick-grid">
                     <button type="button" class="app-pick-card" onclick="openNewSurveyTool('P1')">
@@ -2560,7 +2645,7 @@
                                 <input type="date" class="form-control" id="surveyDateInput" required>
                             </div>
                             <div class="form-group" id="gpsFieldGroup">
-                                <label>Tọa Độ GPS Hiện Trường <button type="button" onclick="autoCaptureGPS()" style="margin-left:4px; background:#0284c7; color:#fff; border:none; border-radius:2px; padding:1px 7px; font-size:0.72rem; cursor:pointer;">📍 Lấy GPS</button></label>
+                                <label>Tọa Độ GPS Hiện Trường <button type="button" id="btnAutoCaptureGPS" onclick="autoCaptureGPS()" style="margin-left:4px; background:#0284c7; color:#fff; border:none; border-radius:2px; padding:1px 7px; font-size:0.72rem; cursor:pointer;">📍 Lấy GPS</button><span id="gpsLockBadge" style="display: none; margin-left: 6px; font-size: 0.72rem; font-weight: 700; color: #b45309; background: #fef3c7; border: 1px solid #fcd34d; padding: 1px 7px; border-radius: 999px;">🔒 Đã khóa GPS lần đầu</span></label>
                                 <input type="text" class="form-control" id="gpsInput"
                                     oninput="currentDraftAnswers['_gps_text'] = this.value; saveDraftLocal(false);"
                                     placeholder="Tự động lấy GPS hoặc dán lat, lng">
@@ -2735,18 +2820,18 @@
                                 style="font-size: 0.78rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">
                                 Tổng Mục Tiêu</div>
                             <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-top: 4px;">
-                                238</div>
-                            <div style="font-size: 0.78rem; color: var(--slate-600);">Đối tượng tham vấn (+2 MH trong 220 hộ)</div>
+                                240</div>
+                            <div style="font-size: 0.78rem; color: var(--slate-600);">Tổng 240 phiếu phỏng vấn (6 công cụ)</div>
                         </div>
 
                         <div
                             style="background: #ffffff; border: 1px solid var(--border); border-left: 4px solid #15803d; padding: 14px 16px; border-radius: var(--radius-sm); box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
                             <div
                                 style="font-size: 0.78rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700;">
-                                Đã Hoàn Thành</div>
+                                Phiếu Đã Thu (Tạm + Nộp)</div>
                             <div id="statDashCompleted"
                                 style="font-size: 1.8rem; font-weight: 800; color: #15803d; margin-top: 4px;">0</div>
-                            <div style="font-size: 0.78rem; color: var(--slate-600);">Phiếu lưu trên VPS</div>
+                            <div id="statDashCompletedSub" style="font-size: 0.78rem; color: var(--slate-600);">Toàn bộ phiếu tạm + đã nộp / 240</div>
                         </div>
 
                         <div
@@ -2835,7 +2920,7 @@
                                         <th>Trạng thái</th>
                                         <th>Tọa độ GPS cuối</th>
                                         <th>Phiếu / Hộ gần nhất</th>
-                                        <th style="text-align: center;">Đã thu</th>
+                                        <th style="text-align: center;">Đã thu (Tạm + Nộp)</th>
                                         <th style="text-align: center;">Xem bản đồ</th>
                                     </tr>
                                 </thead>
@@ -2846,10 +2931,10 @@
                         </div>
                     </div>
 
-                    <!-- Progress by 4 Target Groups -->
+                    <!-- Progress by 6 Target Groups -->
                     <h3
                         style="font-size: 0.95rem; font-weight: 700; color: var(--navy); margin: 20px 0 10px 0; text-transform: uppercase;">
-                        2. Tiến độ theo đối tượng tham vấn (238 đối tượng • 2 chủ mô hình trong 220 hộ)
+                        2. Tiến độ theo 6 đối tượng tham vấn (Tổng 240 phiếu — đếm phiếu tạm + đã nộp)
                     </h3>
                     <table class="report-table">
                         <thead>
@@ -3834,7 +3919,7 @@
     <!-- Bundled Questions & Households Fallback + Application Logic -->
     <script src="questions_bundle.js?v=1"></script>
     <script src="sample_households_bundle.js?v=3"></script>
-    <script src="app.js?v=2.47"></script>
+    <script src="app.js?v=2.49"></script>
 
 </body>
 

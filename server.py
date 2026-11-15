@@ -75,11 +75,79 @@ for _member in FIELD_TEAM_ROSTER:
     for _alias in _member["aliases"]:
         ROSTER_ID_MAP[_alias.upper()] = _member["surveyor_id"]
 
+INTERVIEWER_PHOTO_FOLDERS = {
+    "TCN02": "TCN02_PhanDoanVong",
+    "TCN03": "TCN03_PhamVanThao",
+    "TCN04": "TCN04_NguyenVietTru",
+    "TCN05": "TCN05_CaoThiPhuc",
+    "TCN06": "TCN06_HoangTruongSinh",
+    "TCN07": "TCN07_LeDinhDuy",
+}
+
 
 def _norm_vi_name(name):
     s = str(name or "").strip().lower().replace("đ", "d")
     s = "".join(ch for ch in unicodedata.normalize("NFKD", s) if not unicodedata.combining(ch))
     return " ".join(s.split())
+
+
+def _slugify_ascii(text, max_len=36):
+    norm = _norm_vi_name(text)
+    slug = re.sub(r"[^a-zA-Z0-9]+", "_", norm).strip("_")
+    return slug[:max_len].strip("_")
+
+
+def _resolve_canonical_member(surveyor_id="", surveyor_name=""):
+    sid = str(surveyor_id or "").strip().upper()
+    canon = ROSTER_ID_MAP.get(sid)
+    if canon:
+        for m in FIELD_TEAM_ROSTER:
+            if m["surveyor_id"] == canon:
+                return m
+    norm_name = _norm_vi_name(surveyor_name)
+    if norm_name:
+        for m in FIELD_TEAM_ROSTER:
+            m_norm = _norm_vi_name(m["full_name"])
+            if norm_name == m_norm or m_norm in norm_name:
+                return m
+    return None
+
+
+def _resolve_interviewer_folder(surveyor_id="", surveyor_name=""):
+    m = _resolve_canonical_member(surveyor_id, surveyor_name)
+    if m and m["surveyor_id"] in INTERVIEWER_PHOTO_FOLDERS:
+        return INTERVIEWER_PHOTO_FOLDERS[m["surveyor_id"]]
+    return "Admin_Khac"
+
+
+def _is_valid_gps(lat, lng):
+    try:
+        la = float(lat or 0)
+        lo = float(lng or 0)
+        return abs(la) > 0.01 and abs(lo) > 0.01
+    except Exception:
+        return False
+
+def _parse_gps_pair(data, answers=None):
+    try:
+        la = float(data.get('gps_lat') or 0.0)
+        lo = float(data.get('gps_lng') or 0.0)
+        if abs(la) > 0.01 and abs(lo) > 0.01:
+            return la, lo
+    except Exception:
+        pass
+    gps_txt = str(data.get('gps') or (answers.get('_gps_text') if isinstance(answers, dict) else '') or '').strip()
+    if ',' in gps_txt:
+        parts = gps_txt.split(',')
+        if len(parts) >= 2:
+            try:
+                la = float(parts[0].strip())
+                lo = float(parts[1].strip())
+                if abs(la) > 0.01 and abs(lo) > 0.01:
+                    return la, lo
+            except Exception:
+                pass
+    return 0.0, 0.0
 
 def get_db_conn():
     conn = sqlite3.connect(DB_PATH, timeout=15.0)
@@ -92,12 +160,19 @@ def is_valid_admin_key(auth_key):
     if not key:
         return False
     cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
-    if key == cur_admin_pass or key == PASS_ADMIN or key == ADMIN1_PASS:
+    return key == cur_admin_pass or key == PASS_ADMIN
+
+
+def is_valid_admin1_key(auth_key):
+    key = (auth_key or "").strip()
+    if not key:
+        return False
+    if key == ADMIN1_PASS:
         return True
     try:
         conn = get_db_conn()
         cur = conn.cursor()
-        cur.execute("SELECT password FROM users WHERE UPPER(surveyor_id) = 'TCN21' OR UPPER(role) LIKE 'ADMIN%'")
+        cur.execute("SELECT password FROM users WHERE UPPER(surveyor_id) = 'TCN21' OR UPPER(role) = 'ADMIN1'")
         rows = cur.fetchall()
         conn.close()
         for r in rows:
@@ -105,6 +180,29 @@ def is_valid_admin_key(auth_key):
                 return True
     except Exception:
         pass
+    return False
+
+
+def is_admin1_actor(handler, query=None, data=None):
+    q = query or {}
+    role_q = str((q.get('role', [''])[0] if isinstance(q.get('role'), list) else q.get('role', '')) or '').strip().lower()
+    role_hdr = str(handler.headers.get('X-User-Role', '') or '').strip().lower()
+    role_body = str((data or {}).get('role', '') if isinstance(data, dict) else '').strip().lower()
+    sid_q = str((q.get('surveyor_id', [''])[0] if isinstance(q.get('surveyor_id'), list) else q.get('surveyor_id', '')) or '').strip().upper()
+    sid_hdr = str(handler.headers.get('X-User-Id', '') or '').strip().upper()
+    sid_body = str((data or {}).get('surveyor_id', '') if isinstance(data, dict) else '').strip().upper()
+    auth_key = (
+        handler.headers.get('X-Admin-Key', '')
+        or handler.headers.get('X-Delete-Password', '')
+        or handler.headers.get('Authorization', '')
+        or (q.get('key', [''])[0] if isinstance(q.get('key'), list) else '')
+    ).strip()
+    if 'admin1' in (role_q, role_hdr, role_body):
+        return True
+    if 'TCN21' in (sid_q, sid_hdr, sid_body):
+        return True
+    if auth_key and not is_valid_admin_key(auth_key) and is_valid_admin1_key(auth_key):
+        return True
     return False
 
 
@@ -666,20 +764,28 @@ def normalize_vn_str(text):
         return ''
     return ' '.join(unicodedata.normalize('NFC', str(text).strip()).lower().split())
 
-def save_survey_photo(survey_code, photo_data):
-    """Decode base64 data URL and save JPEG photo to UPLOADS_DIR."""
+def save_survey_photo(survey_code, photo_data, surveyor_id='', surveyor_name='', note=''):
+    """Decode base64 data URL and save JPEG photo into the interviewer's subfolder inside UPLOADS_DIR."""
     if not photo_data or not isinstance(photo_data, str) or ',' not in photo_data:
         return ''
     try:
         header, b64_str = photo_data.split(',', 1)
         img_bytes = base64.b64decode(b64_str)
-        safe_code = re.sub(r'[^A-Za-z0-9_-]', '_', str(survey_code or 'DKM'))[:40]
+        folder_name = _resolve_interviewer_folder(surveyor_id, surveyor_name)
+        target_dir = os.path.join(UPLOADS_DIR, folder_name)
+        os.makedirs(target_dir, exist_ok=True)
+        safe_code = re.sub(r'[^A-Za-z0-9_-]', '_', str(survey_code or 'DKM')).strip('_')[:30] or 'DKM'
+        note_slug = _slugify_ascii(note, max_len=38)
         ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"{safe_code}_{ts}.jpg"
-        filepath = os.path.join(UPLOADS_DIR, filename)
+        parts = [safe_code]
+        if note_slug and note_slug.lower() not in safe_code.lower():
+            parts.append(note_slug)
+        parts.append(ts)
+        filename = "_".join(parts) + ".jpg"
+        filepath = os.path.join(target_dir, filename)
         with open(filepath, 'wb') as f:
             f.write(img_bytes)
-        return filename
+        return f"{folder_name}/{filename}"
     except Exception as e:
         print(f"Error saving photo: {e}")
         return ''
@@ -1457,6 +1563,113 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             self._send_json(get_team_locations_data())
             return
 
+        elif path == '/api/photo-library':
+            conn = get_db_conn()
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            items = []
+
+            cur.execute('''
+                SELECT id, photo_code, survey_code, surveyor_id, surveyor_name, commune,
+                       note, gps_lat, gps_lng, photo_path, photo_meta, created_at
+                FROM field_photos
+                WHERE photo_path IS NOT NULL AND TRIM(photo_path) != ''
+                ORDER BY id DESC
+            ''')
+            for r in cur.fetchall():
+                d = dict(r)
+                m = _resolve_canonical_member(d.get('surveyor_id'), d.get('surveyor_name'))
+                items.append({
+                    'uid': f"fp_{d['id']}",
+                    'source_type': 'field_photo',
+                    'source_label': 'Ảnh hiện trường HD',
+                    'photo_code': d.get('photo_code') or f"FP_{d['id']}",
+                    'survey_code': d.get('survey_code') or '',
+                    'tool_code': '',
+                    'surveyor_id': m['surveyor_id'] if m else (d.get('surveyor_id') or ''),
+                    'surveyor_name': m['full_name'] if m else (d.get('surveyor_name') or ''),
+                    'commune': d.get('commune') or '',
+                    'note': d.get('note') or '',
+                    'gps_lat': d.get('gps_lat'),
+                    'gps_lng': d.get('gps_lng'),
+                    'photo_path': d.get('photo_path') or '',
+                    'photo_url': f"/api/photos/{d['photo_path']}",
+                    'photo_meta': d.get('photo_meta') or '',
+                    'created_at': d.get('created_at') or ''
+                })
+
+            cur.execute('''
+                SELECT id, survey_code, tool_code, surveyor_id, surveyor_name, commune, hamlet,
+                       respondent_name, gps_lat, gps_lng, photo_path, created_at
+                FROM surveys
+                WHERE photo_path IS NOT NULL AND TRIM(photo_path) != ''
+                ORDER BY id DESC
+            ''')
+            seen_paths = {x['photo_path'] for x in items if x.get('photo_path')}
+            for r in cur.fetchall():
+                d = dict(r)
+                if d.get('photo_path') in seen_paths:
+                    continue
+                seen_paths.add(d.get('photo_path'))
+                m = _resolve_canonical_member(d.get('surveyor_id'), d.get('surveyor_name'))
+                note_txt = f"Chủ hộ / PV: {d.get('respondent_name') or '—'}" + (f" ({d.get('hamlet')})" if d.get('hamlet') else '')
+                items.append({
+                    'uid': f"sv_{d['id']}",
+                    'source_type': 'survey',
+                    'source_label': f"Phiếu hoàn thành ({d.get('tool_code') or 'P1'})",
+                    'photo_code': d.get('survey_code') or f"SV_{d['id']}",
+                    'survey_code': d.get('survey_code') or '',
+                    'tool_code': d.get('tool_code') or 'P1',
+                    'surveyor_id': m['surveyor_id'] if m else (d.get('surveyor_id') or ''),
+                    'surveyor_name': m['full_name'] if m else (d.get('surveyor_name') or ''),
+                    'commune': d.get('commune') or '',
+                    'note': note_txt,
+                    'gps_lat': d.get('gps_lat'),
+                    'gps_lng': d.get('gps_lng'),
+                    'photo_path': d.get('photo_path') or '',
+                    'photo_url': f"/api/photos/{d['photo_path']}",
+                    'photo_meta': '',
+                    'created_at': d.get('created_at') or ''
+                })
+
+            cur.execute('''
+                SELECT id, survey_code, tool_code, surveyor_id, surveyor_name, commune, hamlet,
+                       respondent_name, gps_lat, gps_lng, photo_path, photo_meta, updated_at
+                FROM survey_drafts
+                WHERE photo_path IS NOT NULL AND TRIM(photo_path) != ''
+                ORDER BY updated_at DESC, id DESC
+            ''')
+            for r in cur.fetchall():
+                d = dict(r)
+                if d.get('photo_path') in seen_paths:
+                    continue
+                seen_paths.add(d.get('photo_path'))
+                m = _resolve_canonical_member(d.get('surveyor_id'), d.get('surveyor_name'))
+                note_txt = f"Phiếu tạm — {d.get('respondent_name') or 'Chưa nhập tên'}" + (f" ({d.get('hamlet')})" if d.get('hamlet') else '')
+                items.append({
+                    'uid': f"dr_{d['id']}",
+                    'source_type': 'draft',
+                    'source_label': f"Phiếu tạm ({d.get('tool_code') or 'P1'})",
+                    'photo_code': d.get('survey_code') or f"DR_{d['id']}",
+                    'survey_code': d.get('survey_code') or '',
+                    'tool_code': d.get('tool_code') or 'P1',
+                    'surveyor_id': m['surveyor_id'] if m else (d.get('surveyor_id') or ''),
+                    'surveyor_name': m['full_name'] if m else (d.get('surveyor_name') or ''),
+                    'commune': d.get('commune') or '',
+                    'note': note_txt,
+                    'gps_lat': d.get('gps_lat'),
+                    'gps_lng': d.get('gps_lng'),
+                    'photo_path': d.get('photo_path') or '',
+                    'photo_url': f"/api/photos/{d['photo_path']}",
+                    'photo_meta': d.get('photo_meta') or '',
+                    'created_at': d.get('updated_at') or ''
+                })
+
+            conn.close()
+            items.sort(key=lambda x: str(x.get('created_at') or ''), reverse=True)
+            self._send_json(items)
+            return
+
         elif path == '/api/field-photos':
             conn = get_db_conn()
             conn.row_factory = sqlite3.Row
@@ -1557,7 +1770,9 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             role_hdr = (query.get('role', [None])[0] or self.headers.get('X-User-Role', '')).strip().lower()
             sid_hdr = (query.get('surveyor_id', [None])[0] or self.headers.get('X-User-Id', '')).strip().upper()
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if role_hdr == 'viewer' or (not is_valid_admin_key(auth_key) and not sid_hdr):
+            if role_hdr in ('viewer', 'admin1') or is_admin1_actor(self, query) or (not is_valid_admin_key(auth_key) and not sid_hdr):
+                self._send_json({'error': 'Tài khoản chỉ xem không có quyền xem thùng rác'}, 403)
+                return
                 self._send_json({'error': 'Vui lòng đăng nhập tài khoản điều tra viên hoặc quản trị để xem dữ liệu đã xóa.'}, 403)
                 return
             conn = get_db_conn()
@@ -1655,22 +1870,65 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             conn = get_db_conn()
             cur = conn.cursor()
             cur.execute('SELECT tool_code, COUNT(*) FROM surveys GROUP BY tool_code')
-            tool_counts = dict(cur.fetchall())
-
-            cur.execute("SELECT commune, COUNT(*) FROM surveys WHERE tool_code = 'P1' GROUP BY commune")
-            commune_counts = dict(cur.fetchall())
+            submitted_tool_counts = dict(cur.fetchall())
 
             cur.execute('SELECT COUNT(*) FROM surveys')
             total_surveys = cur.fetchone()[0]
+            cur.execute('SELECT COUNT(*) FROM survey_drafts')
+            total_drafts = cur.fetchone()[0]
 
-            total_unique_completed = (
-                tool_counts.get('P1', 0) + tool_counts.get('NT', 0) +
-                tool_counts.get('CQ', 0) + tool_counts.get('HTX', 0) +
-                tool_counts.get('TT', 0)
-            )
+            cur.execute('SELECT survey_code, tool_code, commune, surveyor_id, surveyor_name FROM surveys')
+            survey_rows = cur.fetchall()
+            cur.execute('SELECT survey_code, tool_code, commune, surveyor_id, surveyor_name FROM survey_drafts')
+            draft_rows = cur.fetchall()
+
+            # Đếm toàn bộ các phiếu tạm đã có + phiếu đã hoàn thành (loại trùng mã phiếu nếu có) / 240
+            combined_forms = {}
+            for sc, tc, comm, sid, sname in survey_rows:
+                t_norm = str(tc or 'P1').strip().upper()
+                c_norm = str(sc or '').strip().upper()
+                key = (t_norm, c_norm) if c_norm else ('SURVEY_ROW', str(len(combined_forms)))
+                combined_forms[key] = {'status': 'completed', 'tool_code': t_norm, 'commune': comm or '', 'surveyor_id': sid or '', 'surveyor_name': sname or ''}
+
+            for sc, tc, comm, sid, sname in draft_rows:
+                t_norm = str(tc or 'P1').strip().upper()
+                c_norm = str(sc or '').strip().upper()
+                key = (t_norm, c_norm) if c_norm else ('DRAFT_ROW', str(len(combined_forms)))
+                if key not in combined_forms:
+                    combined_forms[key] = {'status': 'draft', 'tool_code': t_norm, 'commune': comm or '', 'surveyor_id': sid or '', 'surveyor_name': sname or ''}
+
+            tool_counts = {}
+            commune_counts = {}
+            staff_map = {
+                'TCN02': {'surveyor_id': 'TCN02', 'full_name': 'Phan Doãn Vọng', 'commune': 'Ea Kiết', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
+                'TCN03': {'surveyor_id': 'TCN03', 'full_name': 'Phạm Văn Thảo', 'commune': 'Ea Tul', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
+                'TCN04': {'surveyor_id': 'TCN04', 'full_name': 'Nguyễn Viết Trụ', 'commune': 'Ea Tul', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
+                'TCN05': {'surveyor_id': 'TCN05', 'full_name': 'Cao Thị Phúc', 'commune': 'Ea Tul', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
+                'TCN06': {'surveyor_id': 'TCN06', 'full_name': 'Hoàng Trường Sinh', 'commune': 'Ea Tul', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
+                'TCN07': {'surveyor_id': 'TCN07', 'full_name': 'Lê Đình Duy', 'commune': 'Ea Kiết', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
+            }
+
+            for item in combined_forms.values():
+                t = item['tool_code']
+                tool_counts[t] = tool_counts.get(t, 0) + 1
+                if t == 'P1' and item['commune']:
+                    commune_counts[item['commune']] = commune_counts.get(item['commune'], 0) + 1
+                m_canon = _resolve_canonical_member(item['surveyor_id'], item['surveyor_name'])
+                canon_sid = m_canon['surveyor_id'] if m_canon else ''
+                if canon_sid in staff_map:
+                    st_rec = staff_map[canon_sid]
+                    st_rec['total_forms_done'] += 1
+                    if item['status'] == 'completed':
+                        st_rec['completed_count'] += 1
+                    else:
+                        st_rec['draft_count'] += 1
+                    if t == 'P1':
+                        st_rec['p1_count'] += 1
+
+            total_combined_forms = len(combined_forms)
 
             targets = {
-                'total_respondents': 238,
+                'total_respondents': 240,
                 'total_forms': 240,
                 'groups': {
                     'group1_farmers': {
@@ -1678,7 +1936,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                         'completed': tool_counts.get('P1', 0),
                         'details': {
                             'P1': {'name': 'Hộ nông dân', 'target': 220, 'completed': tool_counts.get('P1', 0)},
-                            'MH': {'name': 'Chủ mô hình trình diễn (trong 220 hộ, không tính trùng)', 'target': 2, 'completed': tool_counts.get('MH', 0)}
+                            'MH': {'name': 'Chủ mô hình trình diễn', 'target': 2, 'completed': tool_counts.get('MH', 0)}
                         }
                     },
                     'group2_leaders_coops': {
@@ -1714,14 +1972,21 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             conn.close()
             self._send_json({
                 'total_completed': total_surveys,
-                'total_unique_completed': total_unique_completed,
+                'total_drafts': total_drafts,
+                'total_combined_forms': total_combined_forms,
+                'total_unique_completed': total_combined_forms,
+                'submitted_tool_counts': submitted_tool_counts,
                 'tool_counts': tool_counts,
                 'commune_counts': commune_counts,
+                'staff_progress': list(staff_map.values()),
                 'targets': targets
             })
             return
 
         elif path == '/api/drafts':
+            if is_admin1_actor(self, query):
+                self._send_json({'error': 'Tài khoản Admin1 chỉ được xem Tiến độ, Bản đồ, Bảng hỏi Blank và Thư viện Ảnh — không được xem chi tiết phiếu phỏng vấn!'}, 403)
+                return
             role_param = (query.get('role', [''])[0] or self.headers.get('X-User-Role', '')).strip().lower()
             surveyor_filter = (query.get('surveyor_id', [''])[0] or self.headers.get('X-User-Id', '')).strip()
             if role_param == 'viewer' or (role_param == 'editor' and not surveyor_filter):
@@ -1798,6 +2063,9 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             return
 
         elif path == '/api/surveys':
+            if is_admin1_actor(self, query):
+                self._send_json({'error': 'Tài khoản Admin1 không được phép xem danh sách và kết quả chi tiết các biểu phỏng vấn!'}, 403)
+                return
             tool_filter = query.get('tool', [None])[0]
             commune_filter = query.get('commune', [None])[0]
             surveyor_filter = query.get('surveyor', [None])[0]
@@ -1826,8 +2094,20 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             return
 
         elif path.startswith('/api/photos/'):
-            filename = os.path.basename(urllib.parse.unquote(path.split('/api/photos/', 1)[1]))
-            filepath = os.path.join(UPLOADS_DIR, filename)
+            raw_rel = urllib.parse.unquote(path.split('/api/photos/', 1)[1]).replace('\\', '/').lstrip('/')
+            base_real = os.path.realpath(UPLOADS_DIR)
+            candidate = os.path.realpath(os.path.join(UPLOADS_DIR, raw_rel))
+            if not (candidate == base_real or candidate.startswith(base_real + os.sep)):
+                self._send_json({'error': 'Invalid photo path'}, 403)
+                return
+            filepath = candidate
+            if not os.path.isfile(filepath):
+                base_name = os.path.basename(raw_rel)
+                if base_name:
+                    for root_dir, _, files in os.walk(UPLOADS_DIR):
+                        if base_name in files:
+                            filepath = os.path.join(root_dir, base_name)
+                            break
             if os.path.isfile(filepath):
                 with open(filepath, 'rb') as f:
                     img_bytes = f.read()
@@ -1845,6 +2125,9 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
         elif path.startswith('/api/surveys/') and path.endswith('/pdf'):
             parts = [p for p in path.split('/') if p]
             if len(parts) == 4 and parts[0] == 'api' and parts[1] == 'surveys' and parts[3] == 'pdf':
+                if is_admin1_actor(self, query):
+                    self._send_json({'error': 'Tài khoản Admin1 không được xem hoặc xuất chi tiết phiếu phỏng vấn!'}, 403)
+                    return
                 role_param = (query.get('role', [''])[0] or self.headers.get('X-User-Role', '')).strip().lower()
                 auth_key = query.get('key', [''])[0] or self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
                 cur_viewer_pass = get_setting('pass_viewer', PASS_VIEWER)
@@ -1884,6 +2167,9 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                     return
 
         elif path.startswith('/api/surveys/'):
+            if is_admin1_actor(self, query):
+                self._send_json({'error': 'Tài khoản Admin1 không được xem kết quả chi tiết phiếu phỏng vấn!'}, 403)
+                return
             survey_id = path.split('/')[-1]
             conn = get_db_conn()
             cur = conn.cursor()
@@ -1903,11 +2189,11 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             return
 
         elif path == '/api/export/excel':
-            # Chặn tài khoản Chỉ Xem tải dữ liệu Excel
-            role_param = query.get('role', [None])[0] or self.headers.get('X-User-Role', '')
+            # Chặn tài khoản Chỉ Xem & Admin1 tải dữ liệu Excel
+            role_param = (query.get('role', [''])[0] or self.headers.get('X-User-Role', '')).strip().lower()
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if role_param == 'viewer' or auth_key == PASS_VIEWER:
-                self._send_json({'error': 'Tài khoản ở chế độ chỉ xem không có quyền tải xuống dữ liệu Excel!'}, 403)
+            if role_param in ('viewer', 'admin1') or auth_key == PASS_VIEWER or is_admin1_actor(self, query):
+                self._send_json({'error': 'Tài khoản ở chế độ chỉ xem / Admin1 không có quyền tải xuống dữ liệu chi tiết Excel!'}, 403)
                 return
 
             try:
@@ -1957,6 +2243,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                         full_name = cur_admin_name
                         commune = 'Toàn vùng'
                     elif password == tcn21_pass or password == ADMIN1_PASS:
+                        role = 'admin1'
                         surveyor_id = 'TCN21'
                         full_name = (tcn21_row[0] if tcn21_row and tcn21_row[0] else 'Admin1')
                         commune = (tcn21_row[2] if tcn21_row and tcn21_row[2] else 'Toàn vùng')
@@ -2013,7 +2300,9 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
                     full_name = registered_name
                     commune = commune_db or commune or 'Ea Kiết'
-                    if str(db_role).strip().lower().startswith('admin') or str(real_sid).upper() == 'TCN21':
+                    if str(real_sid).upper() == 'TCN21' or str(db_role).strip().lower() == 'admin1':
+                        role = 'admin1'
+                    elif str(db_role).strip().lower().startswith('admin'):
                         role = 'admin'
 
                     cur.execute('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE surveyor_id = ?', (surveyor_id,))
@@ -2023,6 +2312,11 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                     self._send_json({'error': 'Vai trò đăng nhập không hợp lệ!'}, 400)
                     return
 
+                role_label_out = (
+                    'Quản Trị Viên' if role == 'admin'
+                    else ('Giám Sát Dự Án (Admin1 - Chỉ xem)' if role == 'admin1'
+                          else ('Đối Tác / Giám Sát (Chỉ xem)' if role == 'viewer' else 'Điều Tra Viên'))
+                )
                 self._send_json({
                     'success': True,
                     'user': {
@@ -2031,7 +2325,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                         'full_name': full_name,
                         'survey_date': survey_date,
                         'commune': commune,
-                        'role_label': 'Quản Trị Viên' if role == 'admin' else ('Đối Tác / Giám Sát (Chỉ xem)' if role == 'viewer' else 'Điều Tra Viên'),
+                        'role_label': role_label_out,
                         'key': password
                     }
                 })
@@ -2046,7 +2340,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 data = json.loads(raw_body)
                 sid = str(data.get('surveyor_id') or '').strip().upper()
                 role_in = str(data.get('role') or '').strip().lower()
-                if not sid or sid == 'VIEWER' or role_in == 'viewer':
+                if not sid or sid in ('VIEWER', 'TCN21', 'ADMIN') or role_in in ('viewer', 'admin1', 'admin'):
                     self._send_json({'success': True, 'ignored': True})
                     return
                 full_name = str(data.get('full_name') or '').strip()
@@ -2132,9 +2426,12 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': f'Invalid JSON: {str(e)}'}, 400)
                 return
 
-            role = data.get('role', 'editor')
-            if role == 'viewer':
-                self._send_json({'error': 'Chế độ chỉ xem không được phép lưu tạm!'}, 403)
+            role = str(data.get('role', 'editor') or 'editor').strip().lower()
+            if role in ('viewer', 'admin1') or is_admin1_actor(self, data=data):
+                self._send_json({'error': 'Chế độ chỉ xem / Admin1 không được phép lưu tạm!'}, 403)
+                return
+            if role == 'admin':
+                self._send_json({'error': 'Tài khoản Quản trị viên (Admin) không trực tiếp thực hiện phỏng vấn điều tra!'}, 403)
                 return
 
             tool_code = (data.get('tool_code') or 'P1').strip()
@@ -2165,7 +2462,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 }, 409)
                 return
 
-            cur.execute('SELECT photo_path, photo_meta FROM survey_drafts WHERE draft_key = ?', (draft_key,))
+            cur.execute('SELECT photo_path, photo_meta, gps_lat, gps_lng, answers_json FROM survey_drafts WHERE draft_key = ?', (draft_key,))
             existing_draft = cur.fetchone()
 
             is_auto_sync = bool(data.get('is_auto_sync'))
@@ -2191,7 +2488,13 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
             photo_path = (data.get('photo_path') or '').strip()
             if data.get('photo_data'):
-                saved_p = save_survey_photo(f"DRAFT_{survey_code}", data.get('photo_data'))
+                saved_p = save_survey_photo(
+                    f"DRAFT_{survey_code}",
+                    data.get('photo_data'),
+                    surveyor_id=surveyor_id,
+                    surveyor_name=data.get('surveyor_name', ''),
+                    note=(data.get('respondent_name') or data.get('hamlet') or '')
+                )
                 if saved_p:
                     photo_path = saved_p
             if not photo_path and existing_draft:
@@ -2199,6 +2502,26 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
             photo_meta = (data.get('photo_meta') or (existing_draft[1] if existing_draft else '') or '').strip()
             answers = data.get('answers') or {}
+            if not isinstance(answers, dict):
+                answers = {}
+
+            in_lat, in_lng = _parse_gps_pair(data, answers)
+
+            # Bảo toàn nguyên vị GPS đầu tiên của phiếu tạm trong suốt mọi lần cập nhật sau
+            if existing_draft and _is_valid_gps(existing_draft[2], existing_draft[3]):
+                final_lat = float(existing_draft[2])
+                final_lng = float(existing_draft[3])
+                try:
+                    prev_ans = json.loads(existing_draft[4] or '{}')
+                except Exception:
+                    prev_ans = {}
+                locked_gps_text = (prev_ans.get('_gps_text') or f"{final_lat:.6f}, {final_lng:.6f}").strip()
+                answers['_gps_text'] = locked_gps_text
+                if prev_ans.get('_gps_bg'):
+                    answers['_gps_bg'] = prev_ans.get('_gps_bg')
+            else:
+                final_lat, final_lng = in_lat, in_lng
+
             answers_json = json.dumps(answers, ensure_ascii=False)
 
             cur.execute('''
@@ -2219,8 +2542,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                     respondent_name = excluded.respondent_name,
                     respondent_phone = excluded.respondent_phone,
                     guide_name = excluded.guide_name,
-                    gps_lat = excluded.gps_lat,
-                    gps_lng = excluded.gps_lng,
+                    gps_lat = CASE WHEN ABS(COALESCE(survey_drafts.gps_lat, 0)) > 0.01 AND ABS(COALESCE(survey_drafts.gps_lng, 0)) > 0.01 THEN survey_drafts.gps_lat ELSE excluded.gps_lat END,
+                    gps_lng = CASE WHEN ABS(COALESCE(survey_drafts.gps_lat, 0)) > 0.01 AND ABS(COALESCE(survey_drafts.gps_lng, 0)) > 0.01 THEN survey_drafts.gps_lng ELSE excluded.gps_lng END,
                     current_section = excluded.current_section,
                     photo_path = COALESCE(NULLIF(excluded.photo_path, ''), survey_drafts.photo_path),
                     photo_meta = COALESCE(NULLIF(excluded.photo_meta, ''), survey_drafts.photo_meta),
@@ -2233,8 +2556,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 data.get('surveyor_name', ''), data.get('survey_date', ''),
                 data.get('commune', ''), data.get('hamlet', ''),
                 data.get('respondent_name', ''), data.get('respondent_phone', ''),
-                data.get('guide_name', ''), data.get('gps_lat', 0.0) or 0.0,
-                data.get('gps_lng', 0.0) or 0.0, data.get('current_section', ''),
+                data.get('guide_name', ''), final_lat,
+                final_lng, data.get('current_section', ''),
                 photo_path, photo_meta, answers_json,
                 int(data.get('answered_count', 0) or 0), int(data.get('total_count', 0) or 0)
             ))
@@ -2371,8 +2694,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 return
 
             role = str(data.get('role') or data.get('user_role') or 'editor').strip().lower()
-            if role == 'viewer':
-                self._send_json({'error': 'Tài khoản Chỉ Xem không được phép tải ảnh lên'}, 403)
+            if role in ('viewer', 'admin1') or is_admin1_actor(self, data=data):
+                self._send_json({'error': 'Tài khoản Chỉ Xem / Admin1 không được phép tải ảnh lên'}, 403)
                 return
 
             photo_data = data.get('photo_data') or ''
@@ -2388,19 +2711,21 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             photo_meta = str(data.get('photo_meta') or '').strip()
             gps_lat = data.get('gps_lat')
             gps_lng = data.get('gps_lng')
-            try:
-                lat_val = float(gps_lat) if gps_lat not in (None, '') else None
-                lng_val = float(gps_lng) if gps_lng not in (None, '') else None
-            except Exception:
-                lat_val, lng_val = None, None
-            if lat_val is not None and lng_val is not None and (abs(lat_val) < 0.01 or abs(lng_val) < 0.01):
+            lat_val, lng_val = _parse_gps_pair(data)
+            if not _is_valid_gps(lat_val, lng_val):
                 lat_val, lng_val = None, None
 
             now_utc = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
             now_tag = datetime.datetime.now().strftime('%y%m%d_%H%M%S')
             photo_code = str(data.get('photo_code') or '').strip() or f"FP_{now_tag}_{surveyor_id or 'USER'}"
             code_tag = ''.join(c for c in (survey_code or photo_code) if c.isalnum() or c in ('_', '-'))[:40] or 'FIELD'
-            photo_path = save_survey_photo(f"FIELD_{code_tag}", photo_data)
+            photo_path = save_survey_photo(
+                f"FIELD_{code_tag}",
+                photo_data,
+                surveyor_id=surveyor_id,
+                surveyor_name=surveyor_name,
+                note=(note or survey_code or commune)
+            )
             if not photo_path:
                 self._send_json({'error': 'Không thể lưu tệp ảnh chất lượng cao trên máy chủ'}, 400)
                 return
@@ -2520,7 +2845,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             auth_key = (self.headers.get('X-Admin-Key', '') or self.headers.get('X-Delete-Password', '') or self.headers.get('Authorization', '')).strip()
             role_hdr = self.headers.get('X-User-Role', '').strip().lower()
             sid_hdr = self.headers.get('X-User-Id', '').strip().upper()
-            if role_hdr == 'viewer':
+            if role_hdr in ('viewer', 'admin1') or is_admin1_actor(self):
                 self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền khôi phục phiếu!'}, 403)
                 return
             conn = get_db_conn()
@@ -2587,7 +2912,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             auth_key = (self.headers.get('X-Admin-Key', '') or self.headers.get('X-Delete-Password', '') or self.headers.get('Authorization', '')).strip()
             role_hdr = self.headers.get('X-User-Role', '').strip().lower()
             sid_hdr = self.headers.get('X-User-Id', '').strip().upper()
-            if role_hdr == 'viewer':
+            if role_hdr in ('viewer', 'admin1') or is_admin1_actor(self):
                 self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền khôi phục phiếu nháp!'}, 403)
                 return
             conn = get_db_conn()
@@ -2723,10 +3048,12 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': f'Invalid JSON: {str(e)}'}, 400)
                 return
 
-            # Chặn tài khoản Chỉ Xem
-            role = data.get('role', 'editor')
-            if role == 'viewer':
-                self._send_json({'error': 'Tài khoản ở chế độ chỉ xem, không có quyền tạo hoặc nộp phiếu!'}, 403)
+            role = str(data.get('role', 'editor') or 'editor').strip().lower()
+            if role in ('viewer', 'admin1') or is_admin1_actor(self, data=data):
+                self._send_json({'error': 'Tài khoản ở chế độ chỉ xem / Admin1 không có quyền tạo hoặc nộp phiếu!'}, 403)
+                return
+            if role == 'admin':
+                self._send_json({'error': 'Tài khoản Quản trị viên (Admin) không trực tiếp thực hiện phiếu điều tra!'}, 403)
                 return
 
             survey_code = data.get('survey_code') or f"DKM-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -2740,24 +3067,39 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             target_group = data.get('target_group', 'Nhóm 1: Nông Dân')
             respondent_name = data.get('respondent_name', '')
             respondent_phone = data.get('respondent_phone', '')
-            gps_lat = data.get('gps_lat', 0.0)
-            gps_lng = data.get('gps_lng', 0.0)
+            answers = data.get('answers', {})
+            if not isinstance(answers, dict):
+                answers = {}
+            gps_lat, gps_lng = _parse_gps_pair(data, answers)
             start_time = data.get('start_time', '')
             end_time = data.get('end_time', '')
-            answers = data.get('answers', {})
-            answers_json = json.dumps(answers, ensure_ascii=False)
-            photo_path = save_survey_photo(survey_code, data.get('photo_data'))
+            photo_path = save_survey_photo(
+                survey_code,
+                data.get('photo_data'),
+                surveyor_id=surveyor_id,
+                surveyor_name=surveyor_name,
+                note=(respondent_name or hamlet)
+            )
             if not photo_path:
                 photo_path = (data.get('photo_path') or '').strip()
 
             conn = get_db_conn()
             cur = conn.cursor()
             draft_key = (data.get('draft_key') or f"{tool_code}::{survey_code}").strip()
-            if not photo_path:
-                cur.execute('SELECT photo_path FROM survey_drafts WHERE draft_key = ?', (draft_key,))
-                d_photo = cur.fetchone()
-                if d_photo and d_photo[0]:
-                    photo_path = d_photo[0]
+            cur.execute('SELECT photo_path, gps_lat, gps_lng, answers_json FROM survey_drafts WHERE draft_key = ?', (draft_key,))
+            d_row = cur.fetchone()
+            if d_row:
+                if not photo_path and d_row[0]:
+                    photo_path = d_row[0]
+                if _is_valid_gps(d_row[1], d_row[2]):
+                    gps_lat = float(d_row[1])
+                    gps_lng = float(d_row[2])
+                    try:
+                        prev_d_ans = json.loads(d_row[3] or '{}')
+                    except Exception:
+                        prev_d_ans = {}
+                    answers['_gps_text'] = (prev_d_ans.get('_gps_text') or f"{gps_lat:.6f}, {gps_lng:.6f}").strip()
+            answers_json = json.dumps(answers, ensure_ascii=False)
 
             cur.execute('''
                 INSERT INTO surveys (
@@ -2850,8 +3192,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 return
 
             role = str(data.get('role') or 'editor').strip().lower()
-            if role == 'viewer':
-                self._send_json({'error': 'Chế độ chỉ xem không được phép sửa ghi chú ảnh!'}, 403)
+            if role in ('viewer', 'admin1') or is_admin1_actor(self, data=data):
+                self._send_json({'error': 'Chế độ chỉ xem / Admin1 không được phép sửa ghi chú ảnh!'}, 403)
                 return
 
             now_utc = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
@@ -2890,9 +3232,9 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': f'Invalid JSON: {str(e)}'}, 400)
                 return
 
-            role = data.get('role', 'editor')
-            if role == 'viewer':
-                self._send_json({'error': 'Chế độ chỉ xem không được phép cập nhật hoặc sửa đổi phiếu!'}, 403)
+            role = str(data.get('role', 'editor') or 'editor').strip().lower()
+            if role in ('viewer', 'admin1') or is_admin1_actor(self, data=data):
+                self._send_json({'error': 'Chế độ chỉ xem / Admin1 không được phép cập nhật hoặc sửa đổi phiếu!'}, 403)
                 return
 
             answers = data.get('answers')
@@ -2903,22 +3245,39 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
             cur.execute('SELECT * FROM surveys WHERE id = ?', (survey_id,))
             old_row = cur.fetchone()
+            old_dict = dict(old_row) if old_row else {}
             if old_row:
-                old_dict = dict(old_row)
                 cur.execute('''
                     INSERT INTO surveys_revision_history (survey_id, survey_code, updated_by, row_json)
                     VALUES (?, ?, ?, ?)
                 ''', (survey_id, old_dict.get('survey_code'), role, json.dumps(old_dict, ensure_ascii=False)))
                 append_audit_event('UPDATE_SURVEY', {'survey_id': survey_id, 'survey_code': old_dict.get('survey_code'), 'updated_by': role})
 
+            # Bảo toàn nguyên vị GPS đầu tiên của phiếu khi cập nhật sửa dữ liệu
+            in_lat = data.get('gps_lat')
+            in_lng = data.get('gps_lng')
+            if old_dict and _is_valid_gps(old_dict.get('gps_lat'), old_dict.get('gps_lng')):
+                in_lat = float(old_dict['gps_lat'])
+                in_lng = float(old_dict['gps_lng'])
+                if isinstance(answers, dict):
+                    try:
+                        prev_ans = json.loads(old_dict.get('answers_json') or '{}')
+                    except Exception:
+                        prev_ans = {}
+                    answers['_gps_text'] = (prev_ans.get('_gps_text') or f"{in_lat:.6f}, {in_lng:.6f}").strip()
+                    if prev_ans.get('_gps_bg'):
+                        answers['_gps_bg'] = prev_ans.get('_gps_bg')
+
             photo_path = ''
             if photo_data:
-                s_code = data.get('survey_code')
-                if not s_code:
-                    cur.execute('SELECT survey_code FROM surveys WHERE id = ?', (survey_id,))
-                    row_code = cur.fetchone()
-                    s_code = row_code[0] if row_code else f'SURVEY_{survey_id}'
-                photo_path = save_survey_photo(s_code, photo_data)
+                s_code = data.get('survey_code') or old_dict.get('survey_code') or f'SURVEY_{survey_id}'
+                photo_path = save_survey_photo(
+                    s_code,
+                    photo_data,
+                    surveyor_id=(data.get('surveyor_id') or old_dict.get('surveyor_id') or ''),
+                    surveyor_name=(data.get('surveyor_name') or old_dict.get('surveyor_name') or ''),
+                    note=(data.get('respondent_name') or old_dict.get('respondent_name') or '')
+                )
 
             if answers is not None and isinstance(answers, dict) and len(answers) > 0:
                 answers_json = json.dumps(answers, ensure_ascii=False)
@@ -2944,8 +3303,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                     data.get('respondent_phone'),
                     data.get('surveyor_name'),
                     data.get('survey_date'),
-                    data.get('gps_lat'),
-                    data.get('gps_lng'),
+                    in_lat,
+                    in_lng,
                     answers_json,
                     photo_path,
                     survey_id
@@ -2972,8 +3331,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                     data.get('respondent_phone'),
                     data.get('surveyor_name'),
                     data.get('survey_date'),
-                    data.get('gps_lat'),
-                    data.get('gps_lng'),
+                    in_lat,
+                    in_lng,
                     photo_path,
                     survey_id
                 ))
@@ -3022,8 +3381,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             role_hdr = self.headers.get('X-User-Role', '').strip().lower()
             sid_hdr = self.headers.get('X-User-Id', '').strip()
 
-            if role_hdr == 'viewer':
-                self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền xóa phiếu!'}, 403)
+            if role_hdr in ('viewer', 'admin1') or is_admin1_actor(self):
+                self._send_json({'error': 'Tài khoản Chỉ Xem / Admin1 không có quyền xóa phiếu!'}, 403)
                 return
 
             conn = get_db_conn()
@@ -3081,8 +3440,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             delete_pwd = (self.headers.get('X-Delete-Password', '') or self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')).strip()
             confirm_x = self.headers.get('X-Confirm-Delete', '').strip().upper()
 
-            if role_hdr == 'viewer':
-                self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền xóa phiếu nháp!'}, 403)
+            if role_hdr in ('viewer', 'admin1') or is_admin1_actor(self):
+                self._send_json({'error': 'Tài khoản Chỉ Xem / Admin1 không có quyền xóa phiếu nháp!'}, 403)
                 return
             if confirm_x and confirm_x != 'X':
                 self._send_json({'error': 'Vui lòng nhập đúng ký tự X để xác nhận xóa phiếu nháp!'}, 400)
@@ -3146,8 +3505,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             role_hdr = self.headers.get('X-User-Role', '').strip().lower()
             sid_hdr = self.headers.get('X-User-Id', '').strip()
             confirm_x = self.headers.get('X-Confirm-Delete', '').strip().upper()
-            if role_hdr == 'viewer':
-                self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền xóa ảnh!'}, 403)
+            if role_hdr in ('viewer', 'admin1') or is_admin1_actor(self):
+                self._send_json({'error': 'Tài khoản Chỉ Xem / Admin1 không có quyền xóa ảnh!'}, 403)
                 return
             if confirm_x and confirm_x != 'X':
                 self._send_json({'error': 'Vui lòng nhập đúng ký tự X để xác nhận xóa ảnh!'}, 400)
