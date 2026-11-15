@@ -3601,6 +3601,7 @@ function removeMultiTxRow(code, btn) {
 // ========================================================
 const DRAFTS_IDB_NAME = 'dakman_drafts_db';
 const DRAFTS_IDB_STORE = 'drafts';
+const OFFLINE_QUEUE_IDB_STORE = 'offline_surveys';
 
 function openDraftsIdb() {
     return new Promise((resolve, reject) => {
@@ -3608,16 +3609,55 @@ function openDraftsIdb() {
             reject(new Error('IndexedDB unavailable'));
             return;
         }
-        const req = indexedDB.open(DRAFTS_IDB_NAME, 1);
+        const req = indexedDB.open(DRAFTS_IDB_NAME, 2);
         req.onupgradeneeded = () => {
             const db = req.result;
             if (!db.objectStoreNames.contains(DRAFTS_IDB_STORE)) {
                 db.createObjectStore(DRAFTS_IDB_STORE, { keyPath: 'draft_key' });
             }
+            if (!db.objectStoreNames.contains(OFFLINE_QUEUE_IDB_STORE)) {
+                db.createObjectStore(OFFLINE_QUEUE_IDB_STORE, { keyPath: 'queue_id' });
+            }
         };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
     });
+}
+
+async function getAllIdbOfflineQueue() {
+    try {
+        const db = await openDraftsIdb();
+        return await new Promise((resolve) => {
+            const tx = db.transaction(OFFLINE_QUEUE_IDB_STORE, 'readonly');
+            const req = tx.objectStore(OFFLINE_QUEUE_IDB_STORE).getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => resolve([]);
+        });
+    } catch (_) {
+        return [];
+    }
+}
+
+async function putIdbOfflineQueue(record) {
+    const db = await openDraftsIdb();
+    await new Promise((resolve, reject) => {
+        const tx = db.transaction(OFFLINE_QUEUE_IDB_STORE, 'readwrite');
+        tx.objectStore(OFFLINE_QUEUE_IDB_STORE).put(record);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error('IDB write failed'));
+    });
+}
+
+async function deleteIdbOfflineQueue(queueId) {
+    try {
+        const db = await openDraftsIdb();
+        await new Promise((resolve) => {
+            const tx = db.transaction(OFFLINE_QUEUE_IDB_STORE, 'readwrite');
+            tx.objectStore(OFFLINE_QUEUE_IDB_STORE).delete(queueId);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+        });
+    } catch (_) {}
 }
 
 async function getIdbDrafts() {
@@ -4730,6 +4770,68 @@ function drawFittedWatermarkLine(ctx, text, x, y, baseSize, isBold, maxWidth) {
     ctx.fillText(text, x, y);
 }
 
+async function readImageDimensionsFast(file) {
+    try {
+        const buf = await file.slice(0, 65536).arrayBuffer();
+        const v = new DataView(buf);
+        if (v.byteLength >= 24 && v.getUint32(0) === 0x89504E47) {
+            return { width: v.getUint32(16), height: v.getUint32(20) };
+        }
+        if (v.byteLength >= 4 && v.getUint16(0) === 0xFFD8) {
+            let pos = 2;
+            while (pos + 4 < v.byteLength) {
+                if (v.getUint8(pos) !== 0xFF) break;
+                const marker = v.getUint8(pos + 1);
+                if (marker === 0xDA || marker === 0xD9) break;
+                if (marker === 0xFF) { pos += 1; continue; }
+                if ((marker >= 0xD0 && marker <= 0xD8) || marker === 0x01) { pos += 2; continue; }
+                const segLen = v.getUint16(pos + 2);
+                if (segLen < 2 || pos + 2 + segLen > v.byteLength) break;
+                if (marker >= 0xC0 && marker <= 0xCF && marker !== 0xC4 && marker !== 0xC8 && marker !== 0xCC) {
+                    if (pos + 9 <= v.byteLength) {
+                        return { width: v.getUint16(pos + 7), height: v.getUint16(pos + 5) };
+                    }
+                    break;
+                }
+                pos += 2 + segLen;
+            }
+        }
+    } catch (_) {}
+    return null;
+}
+
+async function decodeImageSourceLowMem(file, maxDim) {
+    if (typeof createImageBitmap === 'function') {
+        try {
+            const dims = await readImageDimensionsFast(file);
+            let bmpOpts = null;
+            if (dims && dims.width > 0 && dims.height > 0 && Math.max(dims.width, dims.height) > maxDim) {
+                const targetW = dims.width >= dims.height
+                    ? maxDim
+                    : Math.max(1, Math.round(maxDim * (dims.width / dims.height)));
+                bmpOpts = { resizeWidth: targetW, resizeQuality: 'high' };
+            }
+            const bmp = bmpOpts ? await createImageBitmap(file, bmpOpts) : await createImageBitmap(file);
+            return { source: bmp, w: bmp.width, h: bmp.height, cleanup: () => { try { bmp.close(); } catch (_) {} } };
+        } catch (_) {}
+    }
+    return await new Promise((resolve, reject) => {
+        const img = new Image();
+        const objUrl = URL.createObjectURL(file);
+        img.onload = () => resolve({
+            source: img,
+            w: img.naturalWidth || img.width,
+            h: img.naturalHeight || img.height,
+            cleanup: () => URL.revokeObjectURL(objUrl)
+        });
+        img.onerror = () => {
+            URL.revokeObjectURL(objUrl);
+            reject(new Error('Tệp ảnh không hợp lệ hoặc bị lỗi.'));
+        };
+        img.src = objUrl;
+    });
+}
+
 async function handlePhotoSelected(event) {
     const inputEl = event.target;
     const file = inputEl?.files && inputEl.files[0];
@@ -4860,37 +4962,15 @@ async function handlePhotoSelected(event) {
         }
     };
 
-    // Giải mã bitmap (không truyền resizeWidth để tránh tự phóng to ảnh nhỏ) và đóng ngay sau khi vẽ canvas
-    if (typeof createImageBitmap === 'function') {
-        try {
-            const bitmap = await createImageBitmap(file);
-            await drawAndSaveSource(bitmap, bitmap.width, bitmap.height, () => {
-                try { bitmap.close(); } catch (_) {}
-            });
-            return;
-        } catch (_) {
-            // Fall through to Image() fallback for older browsers
-        }
+    // Giải mã bitmap (chỉ nén khi ảnh gốc lớn hơn maxDim) và đóng ngay sau khi vẽ canvas
+    try {
+        const decoded = await decodeImageSourceLowMem(file, 1024);
+        await drawAndSaveSource(decoded.source, decoded.w, decoded.h, decoded.cleanup);
+    } catch (_) {
+        if (inputEl) inputEl.value = '';
+        alert('Tệp ảnh không hợp lệ hoặc bị lỗi.');
+        clearHouseholdPhoto(true);
     }
-
-    await new Promise((resolve) => {
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(file);
-        img.onload = async () => {
-            await drawAndSaveSource(img, img.naturalWidth || img.width, img.naturalHeight || img.height, () => {
-                URL.revokeObjectURL(objectUrl);
-            });
-            resolve();
-        };
-        img.onerror = () => {
-            URL.revokeObjectURL(objectUrl);
-            if (inputEl) inputEl.value = '';
-            alert('Tệp ảnh không hợp lệ hoặc bị lỗi.');
-            clearHouseholdPhoto(true);
-            resolve();
-        };
-        img.src = objectUrl;
-    });
 }
 
 // ========================================================
@@ -5080,7 +5160,7 @@ async function handleSurveySubmit(e) {
             alert('Lỗi từ máy chủ: ' + (err.error || 'Không thể lưu phiếu'));
         }
     } catch (err) {
-        saveToOfflineQueue(payload);
+        await saveToOfflineQueue(payload);
         alert('Máy chủ tạm thời chưa phản hồi hoặc mất kết nối mạng.\n\nPhiếu của bạn ĐÃ ĐƯỢC LƯU AN TOÀN vào HÀNG ĐỢI OFFLINE trên thiết bị và sẽ tự động đồng bộ lên VPS ngay khi có mạng!');
     } finally {
         btn.disabled = false;
@@ -5156,20 +5236,47 @@ async function finishAfterCompletion() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function saveToOfflineQueue(surveyData) {
-    const queue = JSON.parse(localStorage.getItem('dakman_offline_queue') || '[]');
-    queue.push(surveyData);
-    localStorage.setItem('dakman_offline_queue', JSON.stringify(queue));
+async function saveToOfflineQueue(surveyData) {
+    const rec = Object.assign({
+        queue_id: `OQ_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        queued_at: new Date().toISOString()
+    }, surveyData);
+    try {
+        await putIdbOfflineQueue(rec);
+        return;
+    } catch (_) {}
+    // Fallback nhẹ vào localStorage (cắt photo_data nếu quá lớn tránh QuotaExceededError trên Safari)
+    try {
+        const queue = JSON.parse(localStorage.getItem('dakman_offline_queue') || '[]');
+        const light = (rec.photo_data && rec.photo_data.length > 200000)
+            ? Object.assign({}, rec, { photo_data: '' })
+            : rec;
+        queue.push(light);
+        localStorage.setItem('dakman_offline_queue', JSON.stringify(queue));
+    } catch (_) {}
 }
 
 async function syncOfflineQueue(silent = false) {
-    const raw = localStorage.getItem('dakman_offline_queue');
-    if (!raw) return;
-    let queue = [];
-    try { queue = JSON.parse(raw) || []; } catch (_) { return; }
-    if (!queue.length || !navigator.onLine) return;
+    if (!navigator.onLine) return;
 
-    const remaining = [];
+    // Di chuyển dữ liệu cũ từ localStorage (nếu có) sang IndexedDB trước khi gửi
+    const raw = localStorage.getItem('dakman_offline_queue');
+    if (raw) {
+        try {
+            const legacyQueue = JSON.parse(raw) || [];
+            for (const legacyItem of legacyQueue) {
+                const qRec = Object.assign({
+                    queue_id: legacyItem.queue_id || `OQ_LEG_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+                }, legacyItem);
+                try { await putIdbOfflineQueue(qRec); } catch (_) {}
+            }
+            localStorage.removeItem('dakman_offline_queue');
+        } catch (_) {}
+    }
+
+    const queue = await getAllIdbOfflineQueue();
+    if (!queue.length) return;
+
     let syncedCount = 0;
     for (const item of queue) {
         try {
@@ -5178,13 +5285,12 @@ async function syncOfflineQueue(silent = false) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(item)
             });
-            if (res.ok) syncedCount++;
-            else remaining.push(item);
-        } catch (_) {
-            remaining.push(item);
-        }
+            if (res.ok) {
+                syncedCount++;
+                await deleteIdbOfflineQueue(item.queue_id);
+            }
+        } catch (_) {}
     }
-    localStorage.setItem('dakman_offline_queue', JSON.stringify(remaining));
     if (syncedCount > 0) {
         await refreshDashboardData();
         await loadSurveysList();
@@ -8809,29 +8915,7 @@ function triggerFieldQuickPhotoCapture(sourceType = 'camera') {
 
 async function createHighResWatermarkedFieldPhoto(file, meta) {
     const maxDim = 1920;
-    const decodeSource = async () => {
-        if (typeof createImageBitmap === 'function') {
-            try {
-                const bmp = await createImageBitmap(file);
-                return { source: bmp, w: bmp.width, h: bmp.height, cleanup: () => { try { bmp.close(); } catch (_) {} } };
-            } catch (_) {}
-        }
-        return await new Promise((resolve, reject) => {
-            const img = new Image();
-            const objUrl = URL.createObjectURL(file);
-            img.onload = () => resolve({
-                source: img,
-                w: img.naturalWidth || img.width,
-                h: img.naturalHeight || img.height,
-                cleanup: () => URL.revokeObjectURL(objUrl)
-            });
-            img.onerror = () => {
-                URL.revokeObjectURL(objUrl);
-                reject(new Error('Tệp ảnh không hợp lệ'));
-            };
-            img.src = objUrl;
-        });
-    };
+    const decodeSource = () => decodeImageSourceLowMem(file, maxDim);
 
     const decoded = await decodeSource();
     const canvas = document.createElement('canvas');

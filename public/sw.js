@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dakman-survey-shell-v51';
+const CACHE_NAME = 'dakman-survey-shell-v52';
 const SHELL_FILES = [
   './',
   './index.html',
