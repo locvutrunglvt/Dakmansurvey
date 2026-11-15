@@ -2587,8 +2587,12 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                         serve_path = filepath
                 with open(serve_path, 'rb') as f:
                     img_bytes = f.read()
+                want_dl = str(query.get('dl', [''])[0] or '').strip().lower() in ('1', 'true', 'yes')
                 self.send_response(200)
                 self.send_header('Content-Type', 'image/jpeg')
+                if want_dl:
+                    dl_name = os.path.basename(serve_path).replace('"', '')
+                    self.send_header('Content-Disposition', f'attachment; filename="{dl_name}"')
                 self.send_header('Content-Length', str(len(img_bytes)))
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.send_header('Cache-Control', cache_control)

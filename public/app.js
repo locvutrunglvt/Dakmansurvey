@@ -6576,9 +6576,11 @@ async function viewSurveyDetail(id, options = {}) {
                 <div style="margin-bottom: 12px; padding: 10px; background: #ffffff; border: 1px solid #d0d0d0; border-radius: var(--radius-sm);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.82rem; font-weight: 700; color: #15803d;">
                         <span><i class="fa-solid fa-camera"></i> ẢNH NGƯỜI ĐƯỢC PHỎNG VẤN (WATERMARK &amp; WGS84)</span>
-                        <a href="${fullPhotoUrl}" target="_blank" style="color: var(--primary); text-decoration: none;">Mở ảnh gốc <i class="fa-solid fa-up-right-from-square"></i></a>
+                        <button type="button" onclick="openPhotoLightbox('${escapeQuotes(fullPhotoUrl)}', '${escapeQuotes(item.survey_code || 'Ảnh phỏng vấn')}', '${escapeQuotes((item.survey_code || 'survey') + '.jpg')}')" class="qgis-btn-secondary" style="font-size:0.76rem; padding:3px 9px; color:#0f2a4a;">
+                            <i class="fa-solid fa-expand"></i> Xem ảnh HD
+                        </button>
                     </div>
-                    <img src="${fullPhotoUrl}" alt="Ảnh hiện trường ${escapeHtml(item.survey_code)}" style="max-width: 100%; max-height: 360px; display: block; border: 1px solid #e2e8f0; border-radius: 2px;">
+                    <img src="${fullPhotoUrl}" onclick="openPhotoLightbox('${escapeQuotes(fullPhotoUrl)}', '${escapeQuotes(item.survey_code || 'Ảnh phỏng vấn')}', '${escapeQuotes((item.survey_code || 'survey') + '.jpg')}')" alt="Ảnh hiện trường ${escapeHtml(item.survey_code)}" style="max-width: 100%; max-height: 360px; display: block; border: 1px solid #e2e8f0; border-radius: 2px; cursor: zoom-in;">
                 </div>
             `;
         }
@@ -8543,16 +8545,18 @@ function renderTeamMapMarkersShared(mode, fitAll = false) {
         const imgUrl = fp.photo_url ? apiUrl(fp.photo_url) : '';
         const thumbUrl = photoThumbUrl(imgUrl);
         const earthUrl = `https://earth.google.com/web/search/${lat.toFixed(6)},${lng.toFixed(6)}`;
+        const fpTitle = fp.photo_code || fp.survey_code || ('Ảnh #' + fp.id);
+        const fpFile = `${fpTitle}.jpg`;
         const popupHtml = `
             <div style="min-width:225px;max-width:270px;font-size:12.5px;line-height:1.45;">
                 <div style="font-weight:800;color:#9f1239;margin-bottom:4px;"><i class="fa-solid fa-camera"></i> ${escapeHtml(fp.photo_code || ('Ảnh #' + fp.id))}</div>
-                ${imgUrl ? `<a href="${imgUrl}" target="_blank" style="display:block;margin-bottom:6px;"><img src="${thumbUrl}" alt="Ảnh hiện trường" style="width:100%;max-height:145px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1;"></a>` : ''}
+                ${imgUrl ? `<div onclick="openPhotoLightbox('${escapeQuotes(imgUrl)}', '${escapeQuotes(fpTitle)}', '${escapeQuotes(fpFile)}')" style="display:block;margin-bottom:6px;cursor:zoom-in;"><img src="${thumbUrl}" alt="Ảnh hiện trường" style="width:100%;max-height:145px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1;"></div>` : ''}
                 <div><strong>Ghi chú:</strong> ${escapeHtml(fp.note || 'Chưa có ghi chú')}</div>
                 ${fp.survey_code ? `<div><strong>Mã hộ / Phiếu:</strong> ${escapeHtml(fp.survey_code)}</div>` : ''}
                 <div><strong>Địa bàn:</strong> ${escapeHtml(fp.commune || '—')} • <strong>ĐTV:</strong> ${escapeHtml(fp.surveyor_name || fp.surveyor_id || '—')}</div>
                 <div><strong>WGS84:</strong> <code>${lat.toFixed(6)}, ${lng.toFixed(6)}</code></div>
-                <div style="margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;">
-                    ${imgUrl ? `<a href="${imgUrl}" target="_blank" download style="color:#be123c;font-weight:700;text-decoration:none;"><i class="fa-solid fa-download"></i> Ảnh HD gốc</a>` : ''}
+                <div style="margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                    ${imgUrl ? `<button type="button" onclick="downloadPhotoInApp('${escapeQuotes(imgUrl)}', '${escapeQuotes(fpFile)}', this)" style="background:#fff1f2;border:1px solid #fecdd3;border-radius:5px;padding:3px 8px;color:#be123c;font-weight:700;cursor:pointer;font-size:12px;"><i class="fa-solid fa-download"></i> Ảnh HD gốc</button>` : ''}
                     <a href="${earthUrl}" target="_blank" style="color:#0369a1;font-weight:700;text-decoration:none;"><i class="fa-solid fa-earth-asia"></i> Google Earth</a>
                 </div>
             </div>
@@ -9274,9 +9278,9 @@ function renderFieldPhotosGallery() {
         const sourceTag = fp.source_label || (srcType === 'survey' ? 'Phiếu hoàn thành' : (srcType === 'draft' ? 'Phiếu tạm' : 'Ảnh hiện trường'));
         return `
                 <div id="fp-card-${escapeHtml(cardId)}" style="border:1px solid #cbd5e1; border-radius:10px; background:#ffffff; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 1px 3px rgba(15,23,42,0.05);">
-                    <a href="${imgUrl}" target="_blank" title="Bấm để xem ảnh HD kích thước đầy đủ" style="display:block; background:#0f172a;">
+                    <div onclick="openPhotoLightbox('${escapeQuotes(imgUrl)}', '${escapeQuotes(codeLabel)}', '${escapeQuotes(codeLabel + '.jpg')}')" title="Bấm để xem ảnh HD kích thước đầy đủ" style="display:block; background:#0f172a; cursor:zoom-in;">
                         <img src="${thumbUrl}" loading="lazy" decoding="async" alt="${escapeHtml(codeLabel)}" style="width:100%; height:195px; object-fit:cover; display:block;">
-                    </a>
+                    </div>
                     <div style="padding:10px; font-size:0.82rem; display:flex; flex-direction:column; gap:6px; flex:1;">
                         <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
                             <strong style="color:#0f2a4a; font-family:monospace;">${escapeHtml(codeLabel)}</strong>
@@ -9301,9 +9305,9 @@ function renderFieldPhotosGallery() {
                             ${hasGps ? `<button type="button" onclick="focusFieldPhotoOnStandaloneMap('${escapeQuotes(cardId)}')" class="qgis-btn-secondary" style="font-size:0.75rem; padding:5px 9px; color:#0f766e; border-color:#99f6e4; background:#f0fdfa;">
                                 <i class="fa-solid fa-map-pin"></i> Bản đồ
                             </button>` : ''}
-                            <a href="${imgUrl}" target="_blank" download class="qgis-btn-secondary" style="font-size:0.75rem; padding:5px 9px; text-decoration:none; color:#0369a1;">
+                            <button type="button" onclick="downloadPhotoInApp('${escapeQuotes(imgUrl)}', '${escapeQuotes(codeLabel + '.jpg')}', this)" class="qgis-btn-secondary" style="font-size:0.75rem; padding:5px 9px; color:#0369a1;">
                                 <i class="fa-solid fa-download"></i> Ảnh HD
-                            </a>
+                            </button>
                             ${canEditOrDelete ? `<button type="button" onclick="deleteFieldPhotoItem(${fp.id}, '${escapeQuotes(codeLabel)}')" class="qgis-btn-secondary" style="font-size:0.75rem; padding:5px 9px; color:#dc2626; border-color:#fca5a5; background:#fef2f2;">
                                 <i class="fa-solid fa-trash-can"></i> Xóa
                             </button>` : ''}
@@ -9561,6 +9565,116 @@ function photoThumbUrl(url) {
     return u + (u.includes('?') ? '&' : '?') + 'thumb=1';
 }
 
+function closePhotoLightbox() {
+    const modal = document.getElementById('dakmanPhotoLightboxModal');
+    if (modal) {
+        modal.style.display = 'none';
+        const img = document.getElementById('dakmanPhotoLightboxImg');
+        if (img) img.removeAttribute('src');
+    }
+}
+
+function openPhotoLightbox(imgUrl, title = '', downloadName = '') {
+    let modal = document.getElementById('dakmanPhotoLightboxModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'dakmanPhotoLightboxModal';
+        modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,0.96);display:flex;flex-direction:column;padding:max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));box-sizing:border-box;';
+        modal.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding-bottom:10px;flex-shrink:0;">
+                <div id="dakmanPhotoLightboxTitle" style="color:#f8fafc;font-weight:800;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+                <button type="button" onclick="closePhotoLightbox()" style="background:#ffffff;color:#0f172a;border:none;border-radius:8px;padding:8px 14px;font-weight:800;font-size:0.86rem;cursor:pointer;flex-shrink:0;">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại App
+                </button>
+            </div>
+            <div id="dakmanPhotoLightboxBackdrop" style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:auto;-webkit-overflow-scrolling:touch;">
+                <img id="dakmanPhotoLightboxImg" alt="Ảnh HD" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;box-shadow:0 8px 30px rgba(0,0,0,0.6);">
+            </div>
+            <div style="padding-top:10px;display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;">
+                <div style="color:#cbd5e1;font-size:0.75rem;text-align:center;">Trên iPhone: bấm <strong>Lưu / Tải ảnh HD</strong> (hoặc nhấn giữ ảnh để Lưu vào Ảnh) • Bấm <strong>Quay lại App</strong> để đóng</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+                    <button type="button" id="dakmanPhotoLightboxDownloadBtn" style="background:#0284c7;color:#ffffff;border:none;border-radius:8px;padding:9px 16px;font-weight:800;font-size:0.86rem;cursor:pointer;">
+                        <i class="fa-solid fa-download"></i> Lưu / Tải ảnh HD về máy
+                    </button>
+                    <button type="button" onclick="closePhotoLightbox()" style="background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:8px;padding:9px 16px;font-weight:700;font-size:0.86rem;cursor:pointer;">
+                        Đóng
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('dakmanPhotoLightboxBackdrop')?.addEventListener('click', (ev) => {
+            if (ev.target && ev.target.id === 'dakmanPhotoLightboxBackdrop') closePhotoLightbox();
+        });
+        document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Escape' && modal.style.display !== 'none') closePhotoLightbox();
+        });
+    }
+    const titleEl = document.getElementById('dakmanPhotoLightboxTitle');
+    const imgEl = document.getElementById('dakmanPhotoLightboxImg');
+    const dlBtn = document.getElementById('dakmanPhotoLightboxDownloadBtn');
+    const safeName = downloadName || ((title || 'dakman_photo').replace(/[^\w.-]+/g, '_') + '.jpg');
+    if (titleEl) titleEl.textContent = title || 'Xem ảnh HD';
+    if (imgEl) imgEl.src = imgUrl;
+    if (dlBtn) {
+        dlBtn.onclick = () => downloadPhotoInApp(imgUrl, safeName, dlBtn);
+    }
+    modal.style.display = 'flex';
+}
+
+async function downloadPhotoInApp(imgUrl, filename = '', triggerBtn = null) {
+    if (!imgUrl) return;
+    const rawName = filename || imgUrl.split('?')[0].split('/').pop() || 'dakman_photo.jpg';
+    const safeName = rawName.toLowerCase().endsWith('.jpg') || rawName.toLowerCase().endsWith('.jpeg') || rawName.toLowerCase().endsWith('.png')
+        ? rawName
+        : `${rawName}.jpg`;
+    const prevHtml = triggerBtn ? triggerBtn.innerHTML : '';
+    if (triggerBtn) {
+        triggerBtn.disabled = true;
+        triggerBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tải...';
+    }
+    try {
+        const res = await fetch(imgUrl, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isIos && typeof File === 'function' && navigator.canShare) {
+            const shareFile = new File([blob], safeName, { type: blob.type || 'image/jpeg' });
+            if (navigator.canShare({ files: [shareFile] })) {
+                try {
+                    await navigator.share({ files: [shareFile], title: safeName });
+                    showInstantActionToast(`Đã mở bảng Lưu ảnh [${safeName}]!`);
+                    return;
+                } catch (shareErr) {
+                    if (shareErr && shareErr.name === 'AbortError') return;
+                }
+            }
+        }
+        if (isIos && typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches) {
+            openPhotoLightbox(imgUrl, safeName, safeName);
+            showInstantActionToast('Nhấn giữ vào ảnh để Lưu vào Ảnh iPhone, rồi bấm Quay lại App.');
+            return;
+        }
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = safeName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => { try { URL.revokeObjectURL(blobUrl); } catch (_) {} }, 4000);
+        showInstantActionToast(`Đã tải ảnh HD [${safeName}] về máy (không rời App)!`);
+    } catch (_) {
+        openPhotoLightbox(imgUrl, safeName, safeName);
+    } finally {
+        if (triggerBtn) {
+            triggerBtn.disabled = false;
+            triggerBtn.innerHTML = prevHtml;
+        }
+    }
+}
+
 function renderAdminMenuPhotoGallery() {
     const gridEl = document.getElementById('adminMenuPhotoGallery');
     const chipEl = document.getElementById('adminMenuPhotoCountChip');
@@ -9581,14 +9695,14 @@ function renderAdminMenuPhotoGallery() {
         const thumbUrl = photoThumbUrl(imgUrl);
         const title = p.photo_code || p.survey_code || ('#' + p.id);
         return `
-            <a href="${imgUrl}" target="_blank" title="${escapeHtml(p.note || title)}" style="display:flex;flex-direction:column;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#f8fafc;text-decoration:none;color:inherit;">
+            <div onclick="openPhotoLightbox('${escapeQuotes(imgUrl)}', '${escapeQuotes(title)}', '${escapeQuotes(title + '.jpg')}')" title="${escapeHtml(p.note || title)}" style="display:flex;flex-direction:column;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#f8fafc;color:inherit;cursor:pointer;">
                 <img src="${thumbUrl}" loading="lazy" decoding="async" alt="${escapeHtml(title)}" style="width:100%;height:110px;object-fit:cover;background:#0f172a;">
                 <div style="padding:6px 8px;font-size:0.73rem;">
                     <div style="font-weight:800;color:#0f2a4a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(title)}</div>
                     <div style="color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.surveyor_id || '')} • ${escapeHtml(p.surveyor_name || '')}</div>
                     ${p.note ? `<div style="color:#64748b;font-size:0.70rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.note)}</div>` : ''}
                 </div>
-            </a>
+            </div>
         `;
     }).join('');
     const moreBtn = items.length > previewItems.length
