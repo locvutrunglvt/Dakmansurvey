@@ -1548,6 +1548,8 @@
         .app-tile-icon--navy  { background: #eff6ff; color: #0f2a4a; border: 1px solid #bfdbfe; }
         .app-tile-icon--sky   { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
         .app-tile-icon--amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+        .app-tile-icon--rose  { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+        .app-tile-icon--teal  { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
 
         .app-tile-body {
             flex: 1;
@@ -1700,6 +1702,70 @@
             }
             .app-pick-grid {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        /* Mobile full-feature card layout for History & Drafts tables (matches PC actions 100%) */
+        @media (max-width: 768px) {
+            table.history-mobile-cards thead {
+                display: none;
+            }
+            table.history-mobile-cards,
+            table.history-mobile-cards tbody,
+            table.history-mobile-cards tr,
+            table.history-mobile-cards td {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            table.history-mobile-cards tr {
+                background: #ffffff;
+                border: 1px solid #cbd5e1;
+                border-radius: 10px;
+                padding: 10px 12px;
+                margin-bottom: 10px;
+                box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+            }
+            table.history-mobile-cards td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 10px;
+                text-align: right !important;
+                padding: 5px 2px !important;
+                border: none !important;
+                border-bottom: 1px dashed #e2e8f0 !important;
+                white-space: normal !important;
+                font-size: 0.84rem;
+            }
+            table.history-mobile-cards td::before {
+                content: attr(data-label);
+                font-weight: 700;
+                color: #475569;
+                font-size: 0.76rem;
+                text-align: left;
+                flex-shrink: 0;
+            }
+            table.history-mobile-cards td:last-child {
+                border-bottom: none !important;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+                gap: 6px;
+                padding-top: 9px !important;
+                margin-top: 2px;
+                text-align: left !important;
+            }
+            table.history-mobile-cards td:last-child::before {
+                width: 100%;
+                margin-bottom: 2px;
+            }
+            table.history-mobile-cards td[colspan] {
+                display: block;
+                text-align: center !important;
+            }
+            table.history-mobile-cards td[colspan]::before {
+                content: none;
             }
         }
 
@@ -1900,6 +1966,10 @@
                 <span id="subviewTitleText" style="font-size: 0.90rem; font-weight: 800; color: var(--navy);"></span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <button type="button" id="btnDeleteActiveSurveyInHeader" onclick="deleteActiveSurveyInHeader()"
+                    style="display: none; background: #fef2f2; color: #dc2626; border: 1.5px solid #fca5a5; padding: 6px 10px; border-radius: 4px; font-size: 0.78rem; font-weight: 800; cursor: pointer; align-items: center; gap: 5px;">
+                    <i class="fa-solid fa-trash-can"></i> Xóa phiếu
+                </button>
                 <button type="button" id="btnChangeObjectSub" onclick="switchMainView('pick-tool')"
                     style="display: none; background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; padding: 6px 10px; border-radius: 4px; font-size: 0.78rem; font-weight: 700; cursor: pointer;">
                     <i class="fa-solid fa-repeat"></i> Đổi đối tượng
@@ -1970,6 +2040,28 @@
                         </div>
                         <i class="fa-solid fa-chevron-right app-tile-arrow"></i>
                     </button>
+
+                    <button type="button" class="app-tile-btn" onclick="switchMainView('field-photos')">
+                        <div class="app-tile-icon app-tile-icon--rose">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                        <div class="app-tile-body">
+                            <div class="app-tile-label">5. Chụp ảnh hiện trường</div>
+                            <span class="app-tile-count" id="menuFieldPhotosBadge" style="background:#fff1f2;color:#be123c;border-color:#fecdd3;">0 ảnh HD • Lưu thẳng VPS</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right app-tile-arrow"></i>
+                    </button>
+
+                    <button type="button" class="app-tile-btn" onclick="switchMainView('map')">
+                        <div class="app-tile-icon app-tile-icon--teal">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                        </div>
+                        <div class="app-tile-body">
+                            <div class="app-tile-label">6. Bản đồ</div>
+                            <span class="app-tile-count" id="menuMapBadge" style="background:#f0fdfa;color:#0f766e;border-color:#99f6e4;">Vị trí 06 ĐTV &amp; Ảnh GPS</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right app-tile-arrow"></i>
+                    </button>
                 </div>
 
                 <!-- BẢNG ĐIỀU HÀNH RIÊNG CHO ADMIN / ADMIN1 TRÊN MÀN HÌNH CHÍNH -->
@@ -2025,6 +2117,174 @@
                         </div>
                         <div id="adminMenuMapMeta" style="font-size: 0.76rem; color: #64748b; margin-top: 8px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
                             <span>Chọn nhân sự ở bảng bên để định vị nhanh trên bản đồ.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- VIEW 0C: CHỤP ẢNH HIỆN TRƯỜNG HD + GHI CHÚ + LÊN THẲNG VPS -->
+            <!-- ======================================================== -->
+            <div id="view-field-photos" class="view-pane" style="display: none;">
+                <div class="summary-box" style="border-left-color: #be123c;">
+                    <div class="summary-header" style="flex-wrap: wrap; gap: 8px;">
+                        <div class="summary-title" style="color: #9f1239;">
+                            <i class="fa-solid fa-camera"></i> CHỤP ẢNH HIỆN TRƯỜNG CHẤT LƯỢNG CAO &amp; ĐẨY TRỰC TIẾP LÊN VPS
+                        </div>
+                        <button type="button" onclick="loadFieldPhotosGallery(true)" class="qgis-btn-secondary" style="font-size: 0.78rem; padding: 5px 10px;">
+                            <i class="fa-solid fa-rotate"></i> Tải lại thư viện ảnh
+                        </button>
+                    </div>
+                    <p style="font-size: 0.83rem; color: #475569; margin: 0 0 12px 0; line-height: 1.45;">
+                        Ảnh được giữ ở độ phân giải cao nhất tới <strong>2560px (JPEG 94%)</strong>, tự động đóng dấu tọa độ <strong>WGS84 &amp; thời gian thực</strong> rồi <strong>tải thẳng lên máy chủ VPS</strong> ngay sau khi chụp để không bị mất hoặc mờ ảnh khi mạng yếu.
+                    </p>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                        <div>
+                            <label for="fpCommuneSelect" style="display:block; font-size:0.78rem; font-weight:700; color:#334155; margin-bottom:4px;">Địa bàn Xã</label>
+                            <select id="fpCommuneSelect" class="form-input" style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.86rem;">
+                                <option value="Ea Kiết">Xã Ea Kiết</option>
+                                <option value="Ea Tul">Xã Ea Tul</option>
+                                <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
+                                <option value="Ea Tar">Xã Ea Tar</option>
+                                <option value="Cư M'gar">Thị trấn / Khu vực khác</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="fpSurveyCodeInput" style="display:block; font-size:0.78rem; font-weight:700; color:#334155; margin-bottom:4px;">Mã phiếu / Tên hộ (không bắt buộc)</label>
+                            <input type="text" id="fpSurveyCodeInput" placeholder="VD: P1_DTV_261115_01 hoặc Vườn cà phê ông A"
+                                style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.86rem; box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label for="fpGpsInput" style="display:block; font-size:0.78rem; font-weight:700; color:#334155; margin-bottom:4px;">Tọa độ WGS84 hiện trường</label>
+                            <div style="display: flex; gap: 6px;">
+                                <input type="text" id="fpGpsInput" placeholder="Tự động bắt GPS hoặc bấm lấy ngay..."
+                                    style="flex:1; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.84rem; font-family:monospace; box-sizing:border-box;">
+                                <button type="button" onclick="captureFieldPhotoGpsNow()" class="qgis-btn-secondary" style="padding: 6px 10px; font-size: 0.78rem; white-space: nowrap;">
+                                    <i class="fa-solid fa-location-crosshairs"></i> Lấy GPS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 12px;">
+                        <label for="fpNoteInput" style="display:block; font-size:0.80rem; font-weight:700; color:#0f172a; margin-bottom:4px;">
+                            <i class="fa-solid fa-note-sticky" style="color:#d97706;"></i> Ghi chú hiện trường (Note — nhập trước hoặc chỉnh sửa lại sau khi chụp)
+                        </label>
+                        <textarea id="fpNoteInput" rows="2" placeholder="Nhập ghi chú về vườn cây, hộ phỏng vấn, cảnh quan, hiện trạng thực tế..."
+                            style="width:100%; padding:9px 11px; border:1.5px solid #cbd5e1; border-radius:6px; font-size:0.88rem; font-family:inherit; box-sizing:border-box; resize:vertical;"></textarea>
+                    </div>
+
+                    <input type="file" id="fieldQuickPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleFieldQuickPhotoSelected(event)">
+                    <input type="file" id="fieldLibraryPhotoInput" accept="image/*" style="display:none;" onchange="handleFieldQuickPhotoSelected(event)">
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <button type="button" id="btnCaptureFieldPhotoCamera" onclick="triggerFieldQuickPhotoCapture('camera')"
+                            style="background: #be123c; color: #ffffff; border: none; border-radius: 8px; padding: 11px 18px; font-size: 0.90rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 6px rgba(190,18,60,0.28);">
+                            <i class="fa-solid fa-camera"></i> Chụp ảnh HD ngay (Camera)
+                        </button>
+                        <button type="button" id="btnCaptureFieldPhotoGallery" onclick="triggerFieldQuickPhotoCapture('gallery')"
+                            style="background: #0f2a4a; color: #ffffff; border: none; border-radius: 8px; padding: 11px 16px; font-size: 0.88rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-images"></i> Chọn ảnh gốc từ thư viện
+                        </button>
+                        <button type="button" id="btnSyncPendingFieldPhotos" onclick="syncPendingFieldPhotosQueue(false)" class="qgis-btn-secondary" style="display:none; background:#fffbeb; color:#b45309; border-color:#fcd34d; padding:10px 14px; font-weight:700;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Đẩy lại ảnh chờ (<span id="pendingFieldPhotosCount">0</span>)
+                        </button>
+                    </div>
+
+                    <div id="fieldQuickPhotoStatus" style="margin-top: 10px; font-size: 0.84rem; font-weight: 600; color: #475569;">
+                        Sẵn sàng chụp ảnh chất lượng cao &amp; đồng bộ trực tiếp lên máy chủ VPS.
+                    </div>
+                </div>
+
+                <div class="summary-box" style="border-left-color: var(--navy);">
+                    <div class="summary-header" style="flex-wrap: wrap; gap: 8px;">
+                        <div class="summary-title" style="color: var(--navy);">
+                            <i class="fa-solid fa-photo-film"></i> THƯ VIỆN ẢNH HIỆN TRƯỜNG ĐÃ LƯU TRÊN VPS (<span id="fieldPhotosGalleryCount">0</span>)
+                        </div>
+                        <button type="button" onclick="switchMainView('map')" class="qgis-btn-secondary" style="font-size: 0.78rem; padding: 5px 10px; color: #0f766e; border-color: #99f6e4; background: #f0fdfa;">
+                            <i class="fa-solid fa-map-location-dot"></i> Xem vị trí ảnh trên Bản đồ
+                        </button>
+                    </div>
+                    <div id="fieldPhotosGallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px;">
+                        <div style="color: #64748b; font-size: 0.85rem; padding: 20px; text-align: center; grid-column: 1 / -1;">
+                            Đang tải danh sách ảnh hiện trường từ VPS...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- VIEW 0D: BẢN ĐỒ VỊ TRÍ THÀNH VIÊN & ẢNH HIỆN TRƯỜNG (ALL) -->
+            <!-- ======================================================== -->
+            <div id="view-map" class="view-pane" style="display: none;">
+                <div class="summary-box" style="border-left-color: #0f766e;">
+                    <div class="summary-header" style="flex-wrap: wrap; gap: 8px;">
+                        <div class="summary-title" style="color: #0f766e;">
+                            <i class="fa-solid fa-earth-asia"></i> BẢN ĐỒ VỊ TRÍ 06 THÀNH VIÊN &amp; ẢNH HIỆN TRƯỜNG (GOOGLE HYBRID)
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <button type="button" onclick="locateMeOnStandaloneMap()" class="qgis-btn-primary" style="font-size: 0.78rem; padding: 5px 10px; background: #15803d; border-color: #16a34a;">
+                                <i class="fa-solid fa-location-crosshairs"></i> Định vị tôi ngay
+                            </button>
+                            <button type="button" id="btnStandaloneMapSpiderfy" onclick="toggleSpiderfyAllForMap('map')" class="qgis-btn-secondary" style="font-size: 0.78rem; padding: 5px 10px; color: #0369a1; border-color: #bae6fd; background: #f0f9ff;">
+                                <i class="fa-solid fa-snowflake"></i> Tỏa bông tuyết
+                            </button>
+                            <button type="button" id="btnStandaloneMapFullscreen" onclick="toggleMapFullscreen('map')" class="qgis-btn-secondary" style="font-size: 0.78rem; padding: 5px 10px; color: #0f2a4a;">
+                                <i class="fa-solid fa-expand"></i> Mở rộng
+                            </button>
+                            <button type="button" onclick="refreshStandaloneTeamMap(true)" class="qgis-btn-secondary" style="font-size: 0.78rem; padding: 5px 10px;">
+                                <i class="fa-solid fa-rotate"></i> Làm mới
+                            </button>
+                            <a id="btnStandaloneMapKml" href="/api/team-locations.kml" target="_blank" class="qgis-btn-secondary" style="font-size: 0.78rem; padding: 5px 10px; text-decoration: none; color: #0f766e;">
+                                <i class="fa-solid fa-file-export"></i> KML
+                            </a>
+                        </div>
+                    </div>
+
+                    <div id="standaloneMapSummaryText" style="font-size: 0.82rem; color: #475569; margin-bottom: 10px;">
+                        Đang tải vị trí trực tuyến 06 điều tra viên &amp; ảnh hiện trường...
+                    </div>
+
+                    <div id="standaloneMapWrapper" class="map-fullscreen-wrapper">
+                        <div id="standaloneMapFsBar" class="map-fullscreen-fsbar">
+                            <span style="font-size: 0.84rem; font-weight: 800;"><i class="fa-solid fa-earth-asia" style="color: #38bdf8;"></i> Bản đồ vị trí 06 ĐTV &amp; Ảnh hiện trường (Google Hybrid)</span>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <button type="button" onclick="toggleSpiderfyAllForMap('map')" class="qgis-btn-secondary" style="font-size: 0.76rem; padding: 4px 10px; background: #0284c7; color: #fff; border-color: #38bdf8;">
+                                    <i class="fa-solid fa-snowflake"></i> Tỏa bông tuyết / Gom
+                                </button>
+                                <button type="button" onclick="refreshStandaloneTeamMap(true)" class="qgis-btn-secondary" style="font-size: 0.76rem; padding: 4px 10px;">
+                                    <i class="fa-solid fa-rotate"></i> Làm mới
+                                </button>
+                                <button type="button" onclick="toggleMapFullscreen('map', false)" class="qgis-btn-primary" style="font-size: 0.76rem; padding: 4px 10px; background: #dc2626; border-color: #ef4444;">
+                                    <i class="fa-solid fa-compress"></i> Thu nhỏ (ESC)
+                                </button>
+                            </div>
+                        </div>
+                        <div id="standaloneActivityMap" class="map-fullscreen-canvas" style="width: 100%; height: 460px; border-radius: 8px; border: 1px solid #cbd5e1; background: #e2e8f0; z-index: 1;"></div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px;">
+                    <div class="summary-box" style="margin-bottom: 0; border-left-color: #0284c7;">
+                        <div class="summary-header">
+                            <div class="summary-title" style="color: #0369a1;">
+                                <i class="fa-solid fa-users"></i> Vị trí 06 Thành viên (bấm để định vị)
+                            </div>
+                        </div>
+                        <div id="standaloneMapStaffList" style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="color: #64748b; font-size: 0.82rem; text-align: center; padding: 14px;">Đang tải danh sách thành viên...</div>
+                        </div>
+                    </div>
+
+                    <div class="summary-box" style="margin-bottom: 0; border-left-color: #be123c;">
+                        <div class="summary-header">
+                            <div class="summary-title" style="color: #9f1239;">
+                                <i class="fa-solid fa-camera"></i> Ảnh hiện trường có GPS trên bản đồ
+                            </div>
+                        </div>
+                        <div id="standaloneMapPhotoList" style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="color: #64748b; font-size: 0.82rem; text-align: center; padding: 14px;">Đang tải điểm ảnh hiện trường...</div>
                         </div>
                     </div>
                 </div>
@@ -2744,7 +3004,7 @@
                     </div>
 
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                        <table class="report-table">
+                        <table class="report-table history-mobile-cards">
                             <thead>
                                 <tr>
                                     <th>Mã Phiếu</th>
@@ -2772,7 +3032,7 @@
                             </button>
                         </div>
                         <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                            <table class="report-table" style="margin-top: 0;">
+                            <table class="report-table history-mobile-cards" style="margin-top: 0;">
                                 <thead>
                                     <tr>
                                         <th>Mã Phiếu</th>
@@ -3574,7 +3834,7 @@
     <!-- Bundled Questions & Households Fallback + Application Logic -->
     <script src="questions_bundle.js?v=1"></script>
     <script src="sample_households_bundle.js?v=3"></script>
-    <script src="app.js?v=2.45"></script>
+    <script src="app.js?v=2.47"></script>
 
 </body>
 

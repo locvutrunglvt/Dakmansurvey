@@ -148,16 +148,16 @@ def is_known_editor_sid(sid):
         return False
 
 
-def is_record_owned_by(sid_hdr, row_sid, row_name=""):
+def is_record_owned_by(sid_hdr, row_sid, row_name="", allow_unclaimed=True):
     s = str(sid_hdr or "").strip().upper()
     if not s:
         return False
     r_sid = str(row_sid or "").strip().upper()
     r_name = _norm_vi_name(row_name)
     if r_sid in ("", "DTV", "GUEST", "USER"):
-        if not r_name or r_name in ("dieu tra vien", "guest", "user"):
+        if allow_unclaimed and (not r_name or r_name in ("dieu tra vien", "guest", "user")):
             return True
-    if r_sid and r_sid in _get_sid_aliases(s):
+    if r_sid and r_sid not in ("", "DTV", "GUEST", "USER") and r_sid in _get_sid_aliases(s):
         return True
     roster_names = _get_roster_names_for_sid(s)
     if r_name and roster_names and r_name in roster_names:
@@ -552,6 +552,35 @@ def init_db():
             answered_count INTEGER DEFAULT 0,
             total_count INTEGER DEFAULT 0,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS field_photos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            photo_code TEXT,
+            survey_code TEXT,
+            surveyor_id TEXT,
+            surveyor_name TEXT,
+            commune TEXT,
+            note TEXT,
+            gps_lat REAL,
+            gps_lng REAL,
+            photo_path TEXT NOT NULL,
+            photo_meta TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS deleted_field_photos_archive (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            original_id INTEGER,
+            survey_code TEXT,
+            surveyor_id TEXT,
+            note TEXT,
+            deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            deleted_by TEXT,
+            row_json TEXT
         )
     ''')
     cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('pass_admin', 'AAdmin123'))
@@ -1428,6 +1457,26 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             self._send_json(get_team_locations_data())
             return
 
+        elif path == '/api/field-photos':
+            conn = get_db_conn()
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute('''
+                SELECT id, photo_code, survey_code, surveyor_id, surveyor_name, commune,
+                       note, gps_lat, gps_lng, photo_path, photo_meta, created_at, updated_at
+                FROM field_photos
+                ORDER BY id DESC
+                LIMIT 200
+            ''')
+            rows = []
+            for r in cur.fetchall():
+                d = dict(r)
+                d['photo_url'] = f"/api/photos/{d['photo_path']}" if d.get('photo_path') else ''
+                rows.append(d)
+            conn.close()
+            self._send_json(rows)
+            return
+
         elif path == '/api/team-locations.kml':
             kml_bytes = build_team_locations_kml(get_team_locations_data())
             self.send_response(200)
@@ -1673,8 +1722,11 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             return
 
         elif path == '/api/drafts':
-            role_param = (query.get('role', [''])[0] or '').strip().lower()
-            surveyor_filter = (query.get('surveyor_id', [''])[0] or '').strip()
+            role_param = (query.get('role', [''])[0] or self.headers.get('X-User-Role', '')).strip().lower()
+            surveyor_filter = (query.get('surveyor_id', [''])[0] or self.headers.get('X-User-Id', '')).strip()
+            if role_param == 'viewer' or (role_param == 'editor' and not surveyor_filter):
+                self._send_json([])
+                return
             conn = get_db_conn()
             cur = conn.cursor()
             sql = '''
@@ -1691,7 +1743,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             for r in cur.fetchall():
                 d = dict(zip(cols, r))
                 if role_param != 'admin' and surveyor_filter:
-                    if not is_record_owned_by(surveyor_filter, d.get('surveyor_id'), d.get('surveyor_name')):
+                    if not is_record_owned_by(surveyor_filter, d.get('surveyor_id'), d.get('surveyor_name'), allow_unclaimed=False):
                         continue
                 try:
                     d['answers'] = json.loads(d.get('answers_json') or '{}')
@@ -2309,8 +2361,100 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': f'Lỗi cập nhật câu hỏi: {str(e)}'}, 400)
                 return
 
-        elif path == '/api/team-locations':
-            self._send_json(get_team_locations_data())
+        elif path == '/api/field-photos':
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+            except Exception as e:
+                self._send_json({'error': f'Dữ liệu JSON không hợp lệ: {str(e)}'}, 400)
+                return
+
+            role = str(data.get('role') or data.get('user_role') or 'editor').strip().lower()
+            if role == 'viewer':
+                self._send_json({'error': 'Tài khoản Chỉ Xem không được phép tải ảnh lên'}, 403)
+                return
+
+            photo_data = data.get('photo_data') or ''
+            if not photo_data or not isinstance(photo_data, str):
+                self._send_json({'error': 'Thiếu dữ liệu ảnh tải lên (photo_data)'}, 400)
+                return
+
+            surveyor_id = str(data.get('surveyor_id') or '').strip().upper()
+            surveyor_name = str(data.get('surveyor_name') or '').strip()
+            survey_code = str(data.get('survey_code') or '').strip()
+            commune = str(data.get('commune') or '').strip()
+            note = str(data.get('note') or '').strip()
+            photo_meta = str(data.get('photo_meta') or '').strip()
+            gps_lat = data.get('gps_lat')
+            gps_lng = data.get('gps_lng')
+            try:
+                lat_val = float(gps_lat) if gps_lat not in (None, '') else None
+                lng_val = float(gps_lng) if gps_lng not in (None, '') else None
+            except Exception:
+                lat_val, lng_val = None, None
+            if lat_val is not None and lng_val is not None and (abs(lat_val) < 0.01 or abs(lng_val) < 0.01):
+                lat_val, lng_val = None, None
+
+            now_utc = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            now_tag = datetime.datetime.now().strftime('%y%m%d_%H%M%S')
+            photo_code = str(data.get('photo_code') or '').strip() or f"FP_{now_tag}_{surveyor_id or 'USER'}"
+            code_tag = ''.join(c for c in (survey_code or photo_code) if c.isalnum() or c in ('_', '-'))[:40] or 'FIELD'
+            photo_path = save_survey_photo(f"FIELD_{code_tag}", photo_data)
+            if not photo_path:
+                self._send_json({'error': 'Không thể lưu tệp ảnh chất lượng cao trên máy chủ'}, 400)
+                return
+
+            conn = get_db_conn()
+            cur = conn.cursor()
+            cur.execute('''
+                INSERT INTO field_photos (
+                    photo_code, survey_code, surveyor_id, surveyor_name, commune,
+                    note, gps_lat, gps_lng, photo_path, photo_meta, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (photo_code, survey_code, surveyor_id, surveyor_name, commune,
+                  note, lat_val, lng_val, photo_path, photo_meta, now_utc, now_utc))
+            new_id = cur.lastrowid
+
+            if surveyor_id and lat_val is not None and lng_val is not None:
+                cur.execute('''
+                    INSERT INTO user_locations (surveyor_id, full_name, lat, lng, accuracy, source, current_view, survey_code, commune, updated_at)
+                    VALUES (?, ?, ?, ?, 0, ?, 'field-photos', ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(surveyor_id) DO UPDATE SET
+                        full_name = COALESCE(NULLIF(excluded.full_name, ''), user_locations.full_name),
+                        lat = excluded.lat,
+                        lng = excluded.lng,
+                        source = excluded.source,
+                        current_view = excluded.current_view,
+                        survey_code = CASE WHEN excluded.survey_code != '' THEN excluded.survey_code ELSE user_locations.survey_code END,
+                        commune = CASE WHEN excluded.commune != '' THEN excluded.commune ELSE user_locations.commune END,
+                        updated_at = CURRENT_TIMESTAMP
+                ''', (surveyor_id, surveyor_name or surveyor_id, lat_val, lng_val,
+                      f'Ảnh hiện trường ({photo_code})', survey_code, commune))
+
+            conn.commit()
+            conn.close()
+            try:
+                append_audit_event('CREATE_FIELD_PHOTO', {
+                    'id': new_id,
+                    'photo_code': photo_code,
+                    'survey_code': survey_code,
+                    'surveyor_id': surveyor_id,
+                    'surveyor_name': surveyor_name,
+                    'commune': commune,
+                    'note': note
+                })
+            except Exception:
+                pass
+            self._send_json({
+                'success': True,
+                'id': new_id,
+                'photo_code': photo_code,
+                'photo_path': photo_path,
+                'photo_url': f'/api/photos/{photo_path}',
+                'created_at': now_utc
+            })
             return
 
         elif path == '/api/team-locations.kml':
@@ -2695,6 +2839,47 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': str(e)}, 400)
                 return
 
+        elif path.startswith('/api/field-photos/'):
+            fp_id = path.split('/')[-1]
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+            except Exception as e:
+                self._send_json({'error': f'Invalid JSON: {str(e)}'}, 400)
+                return
+
+            role = str(data.get('role') or 'editor').strip().lower()
+            if role == 'viewer':
+                self._send_json({'error': 'Chế độ chỉ xem không được phép sửa ghi chú ảnh!'}, 403)
+                return
+
+            now_utc = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            conn = get_db_conn()
+            cur = conn.cursor()
+            cur.execute('''
+                UPDATE field_photos SET
+                    note = COALESCE(?, note),
+                    survey_code = COALESCE(?, survey_code),
+                    commune = COALESCE(?, commune),
+                    gps_lat = COALESCE(?, gps_lat),
+                    gps_lng = COALESCE(?, gps_lng),
+                    updated_at = ?
+                WHERE id = ?
+            ''', (
+                data.get('note'),
+                data.get('survey_code'),
+                data.get('commune'),
+                data.get('gps_lat'),
+                data.get('gps_lng'),
+                now_utc,
+                fp_id
+            ))
+            conn.commit()
+            conn.close()
+            self._send_json({'success': True, 'message': 'Đã cập nhật ghi chú ảnh hiện trường!'})
+            return
+
         elif path.startswith('/api/surveys/'):
             survey_id = path.split('/')[-1]
             length = int(self.headers.get('Content-Length', 0))
@@ -2797,6 +2982,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             sid_out = int(survey_id) if str(survey_id).isdigit() else survey_id
             self._send_json({'success': True, 'survey_id': sid_out, 'message': f'Đã cập nhật chỉnh sửa phiếu #{survey_id} thành công!'})
             return
+
         self._send_json({'error': 'Not found'}, 404)
 
     def do_DELETE(self):
@@ -2952,6 +3138,56 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             conn.commit()
             conn.close()
             self._send_json({'success': True, 'message': 'Đã xóa bản nháp khỏi danh sách (dữ liệu nguồn trên VPS vẫn được bảo lưu để khôi phục).'})
+            return
+
+        elif path.startswith('/api/field-photos/'):
+            fp_id = path.split('/')[-1]
+            delete_pwd = (self.headers.get('X-Delete-Password', '') or self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')).strip()
+            role_hdr = self.headers.get('X-User-Role', '').strip().lower()
+            sid_hdr = self.headers.get('X-User-Id', '').strip()
+            confirm_x = self.headers.get('X-Confirm-Delete', '').strip().upper()
+            if role_hdr == 'viewer':
+                self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền xóa ảnh!'}, 403)
+                return
+            if confirm_x and confirm_x != 'X':
+                self._send_json({'error': 'Vui lòng nhập đúng ký tự X để xác nhận xóa ảnh!'}, 400)
+                return
+
+            conn = get_db_conn()
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute('SELECT * FROM field_photos WHERE id = ?', (fp_id,))
+            fp_row = cur.fetchone()
+            if not fp_row:
+                conn.close()
+                self._send_json({'error': 'Không tìm thấy ảnh cần xóa!'}, 404)
+                return
+            fp_dict = dict(fp_row)
+            is_admin_pwd = is_valid_admin_key(delete_pwd)
+            is_owner = False
+            if not is_admin_pwd and role_hdr == 'editor' and sid_hdr:
+                if is_record_owned_by(sid_hdr, fp_dict.get('surveyor_id'), fp_dict.get('surveyor_name')):
+                    if confirm_x == 'X' or (delete_pwd and verify_owner_password(sid_hdr, delete_pwd)):
+                        is_owner = True
+            if not is_admin_pwd and not is_owner:
+                conn.close()
+                self._send_json({'error': 'Bạn không có quyền xóa ảnh hiện trường này!'}, 403)
+                return
+
+            no_archive = ('no_archive=1' in parsed.query)
+            if not no_archive:
+                cur.execute('''
+                    INSERT INTO deleted_field_photos_archive (original_id, survey_code, surveyor_id, note, deleted_by, row_json)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (
+                    fp_dict.get('id'), fp_dict.get('survey_code'), fp_dict.get('surveyor_id'),
+                    fp_dict.get('note'), ('admin' if is_admin_pwd else sid_hdr),
+                    json.dumps(fp_dict, ensure_ascii=False)
+                ))
+            cur.execute('DELETE FROM field_photos WHERE id = ?', (fp_id,))
+            conn.commit()
+            conn.close()
+            self._send_json({'success': True, 'message': 'Đã xóa ảnh hiện trường khỏi danh sách (bản gốc vẫn bảo lưu trên VPS).'})
             return
 
         self._send_json({'error': 'Not found'}, 404)

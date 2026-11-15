@@ -745,7 +745,7 @@ let currentMainView = 'menu';
 
 function switchMainView(viewId, subTab = '', skipHistory = false) {
     const prevView = currentMainView;
-    const views = ['menu', 'pick-tool', 'survey', 'dashboard', 'schedule', 'history'];
+    const views = ['menu', 'pick-tool', 'survey', 'dashboard', 'schedule', 'history', 'field-photos', 'map'];
     views.forEach(v => {
         const pane = document.getElementById(`view-${v}`);
         const btn = document.getElementById(`btnView${capitalize(v)}`);
@@ -775,11 +775,16 @@ function switchMainView(viewId, subTab = '', skipHistory = false) {
     const subTop = document.getElementById('subviewTopBar');
     const subTitle = document.getElementById('subviewTitleText');
     const btnChangeObj = document.getElementById('btnChangeObjectSub');
+    const btnDeleteHdr = document.getElementById('btnDeleteActiveSurveyInHeader');
     if (subTop) {
         subTop.classList.toggle('active', viewId !== 'menu');
     }
     if (btnChangeObj) {
         btnChangeObj.style.display = (viewId === 'survey') ? 'inline-flex' : 'none';
+    }
+    if (btnDeleteHdr) {
+        const canDeleteInHeader = (viewId === 'survey' && currentUser?.role !== 'viewer');
+        btnDeleteHdr.style.display = canDeleteInHeader ? 'inline-flex' : 'none';
     }
     if (subTitle) {
         if (viewId === 'pick-tool') {
@@ -793,6 +798,10 @@ function switchMainView(viewId, subTab = '', skipHistory = false) {
             subTitle.textContent = '2. Xem phiếu đã phỏng vấn';
         } else if (viewId === 'dashboard' || viewId === 'schedule') {
             subTitle.textContent = '3. Tiến độ - Kế hoạch';
+        } else if (viewId === 'field-photos') {
+            subTitle.textContent = '5. Chụp ảnh hiện trường';
+        } else if (viewId === 'map') {
+            subTitle.textContent = '6. Bản đồ';
         } else {
             subTitle.textContent = '';
         }
@@ -801,6 +810,9 @@ function switchMainView(viewId, subTab = '', skipHistory = false) {
     if (viewId === 'menu') {
         refreshDraftBadgeCount(false);
         updateMenuSummaryBadges();
+        if (typeof refreshFieldPhotosBadgeCount === 'function') {
+            refreshFieldPhotosBadgeCount();
+        }
         if (currentUser?.role === 'admin' && typeof refreshAdminMenuLiveBoard === 'function') {
             refreshAdminMenuLiveBoard(false);
         }
@@ -824,6 +836,12 @@ function switchMainView(viewId, subTab = '', skipHistory = false) {
         switchScheduleTab(subTab || 'team6');
     }
     if (viewId === 'history') loadSurveysList();
+    if (viewId === 'field-photos' && typeof initFieldPhotosView === 'function') {
+        initFieldPhotosView();
+    }
+    if (viewId === 'map' && typeof refreshStandaloneTeamMap === 'function') {
+        refreshStandaloneTeamMap(true);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2037,12 +2055,15 @@ async function selectTool(toolCode, options = {}) {
         applySharedDemographicsToForm(ans, respName, toolCode);
     };
 
-    // Khôi phục bản nháp gần nhất của công cụ nếu có (bỏ qua khi đang mở phiếu đã hoàn thành để sửa/bổ sung)
+    // Khôi phục bản nháp gần nhất của công cụ nếu đúng chủ tài khoản (bỏ qua khi đang mở phiếu đã hoàn thành để sửa/bổ sung)
     const draftKey = `dakman_draft_${toolCode}`;
     const savedDraft = options?.skipDraftRestore ? null : localStorage.getItem(draftKey);
     if (savedDraft) {
         try {
             const parsed = JSON.parse(savedDraft);
+            if (!isDraftStrictlyOwnedByCurrentUser(parsed)) {
+                throw new Error('Draft belongs to another user');
+            }
             currentDraftAnswers = parsed.answers || {};
             currentDraftPhotoPath = parsed.photo_path || '';
             if (parsed.survey_code) document.getElementById('surveyCodeInput').value = parsed.survey_code;
@@ -3569,6 +3590,8 @@ function saveDraftLocal(isManual) {
     const payload = {
         tool_code: rec.tool_code,
         survey_code: rec.survey_code,
+        surveyor_id: rec.surveyor_id,
+        surveyor_name: rec.surveyor_name,
         commune: rec.commune,
         hamlet: rec.hamlet,
         respondent_name: rec.respondent_name,
@@ -3672,7 +3695,8 @@ async function syncPendingDrafts(silent = true) {
 }
 
 async function fetchMergedDraftsList(syncRemote = true) {
-    const localList = await getIdbDrafts();
+    if (!currentUser || currentUser.role === 'viewer') return [];
+    const localList = (await getIdbDrafts()).filter(d => isDraftStrictlyOwnedByCurrentUser(d));
     const mergedMap = new Map();
     localList.forEach(d => mergedMap.set(d.draft_key, Object.assign({ source: 'Thiết bị (Offline)' }, d)));
 
@@ -3686,7 +3710,7 @@ async function fetchMergedDraftsList(syncRemote = true) {
             }
             const remote = await draftsRemoteFetchPromise;
             if (Array.isArray(remote)) {
-                remote.forEach(r => {
+                remote.filter(r => isDraftStrictlyOwnedByCurrentUser(r)).forEach(r => {
                     const existing = mergedMap.get(r.draft_key);
                     if (existing) {
                         mergedMap.set(r.draft_key, Object.assign({}, r, existing, {
@@ -3820,15 +3844,14 @@ async function refreshAllDraftsList() {
     await refreshDraftBadgeCount(false, drafts);
 
     const role = currentUser?.role || 'viewer';
-    const isDraftLocal = (d) => Boolean(d?.source && String(d.source).startsWith('Thiết bị'));
     const btnBulkModal = document.getElementById('btnDeleteAllMyModalDrafts');
     if (btnBulkModal) {
-        const hasOwned = role !== 'viewer' && drafts.some(d => isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name, isDraftLocal(d)));
+        const hasOwned = role !== 'viewer' && drafts.some(d => isDraftStrictlyOwnedByCurrentUser(d));
         btnBulkModal.style.display = hasOwned ? 'inline-flex' : 'none';
     }
 
     if (!drafts.length) {
-        box.innerHTML = '<div style="text-align: center; padding: 24px; color: #64748b;">Chưa có phiếu nào đang lưu tạm. Khi đi hiện trường, chỉ cần chọn Chủ hộ, chụp ảnh &amp; lấy GPS rồi bấm <strong>Lưu Tạm</strong> để mở lại hoàn thiện sau.</div>';
+        box.innerHTML = '<div style="text-align: center; padding: 24px; color: #64748b;">Chưa có phiếu nào đang lưu tạm thuộc tài khoản của bạn. Khi đi hiện trường, chỉ cần chọn Chủ hộ, chụp ảnh &amp; lấy GPS rồi bấm <strong>Lưu Tạm</strong> để mở lại hoàn thiện sau.</div>';
         return;
     }
 
@@ -3842,7 +3865,7 @@ async function refreshAllDraftsList() {
             : '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-weight:700;font-size:0.70rem;margin-left:4px;">Đang nhập dở</span>';
         const btnLabel = '<i class="fa-solid fa-pen-to-square"></i> Mở Phiếu Tạm';
         const borderLeftColor = isPaperPending ? '#0f766e' : '#d97706';
-        const canDeleteDraft = (role === 'admin') || isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name, isDraftLocal(d));
+        const canDeleteDraft = (role === 'admin') || isDraftStrictlyOwnedByCurrentUser(d);
         return `
             <div style="border: 1px solid #cbd5e1; border-left: 4px solid ${borderLeftColor}; border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; background: #fff; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                 ${thumbSrc ? `<img src="${thumbSrc}" alt="Ảnh" style="width: 72px; height: 72px; object-fit: cover; border-radius: 3px; border: 1px solid #e2e8f0; flex-shrink: 0;">` : `<div style="width:72px; height:72px; background:#f1f5f9; border:1px dashed #cbd5e1; border-radius:3px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:0.72rem; text-align:center; flex-shrink:0;">Chưa ảnh</div>`}
@@ -4074,7 +4097,7 @@ async function deleteAllMyDraftsConfirm() {
         return;
     }
     const drafts = await fetchMergedDraftsList(true);
-    const owned = (Array.isArray(drafts) ? drafts : []).filter(d => (role === 'admin') || isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name, Boolean(d?.source && String(d.source).startsWith('Thiết bị'))));
+    const owned = (Array.isArray(drafts) ? drafts : []).filter(d => (role === 'admin') || isDraftStrictlyOwnedByCurrentUser(d));
     if (!owned.length) {
         alert('Không có phiếu nháp nào thuộc tài khoản của bạn để xóa.');
         return;
@@ -5131,6 +5154,33 @@ function normViNameOwner(str) {
         .replace(/\s+/g, ' ');
 }
 
+function isDraftStrictlyOwnedByCurrentUser(rec) {
+    if (!rec) return false;
+    const role = currentUser?.role || 'viewer';
+    if (role === 'admin') return true;
+    if (role !== 'editor') return false;
+    const mySid = String(currentUser?.surveyor_id || '').trim().toUpperCase();
+    const myName = normViNameOwner(currentUser?.full_name || currentUser?.surveyor_name || currentUser?.name || '');
+    const recSid = String(rec.surveyor_id || '').trim().toUpperCase();
+    const recName = normViNameOwner(rec.surveyor_name || '');
+
+    if (recSid && !['', 'DTV', 'GUEST', 'USER'].includes(recSid)) {
+        if (mySid && recSid === mySid) return true;
+        for (const grp of OWNER_ALIAS_GROUPS) {
+            const myMatch = (mySid && grp.ids.includes(mySid)) || (myName && myName === grp.name);
+            if (myMatch && (grp.ids.includes(recSid) || (recName && recName === grp.name))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    if (recName && !['dieu tra vien', 'guest', 'user'].includes(recName) && myName && recName === myName) {
+        return true;
+    }
+    return false;
+}
+
 function isCurrentUserOwnerOf(recordSurveyorId, recordSurveyorName = '', isLocalDeviceOnly = false) {
     const role = currentUser?.role || 'viewer';
     if (role === 'admin') return true;
@@ -5172,13 +5222,13 @@ function renderCompletedSurveysRows(list) {
 
         return `
             <tr onclick="viewSurveyDetail(${item.id})" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor=''">
-                <td style="font-family: monospace; font-weight: 700; color: var(--primary);">${escapeHtml(item.survey_code)}${photoBadge}</td>
-                <td><span style="background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 0.78rem;">${escapeHtml(item.tool_code)}</span></td>
-                <td>${escapeHtml(item.commune)} ${item.hamlet ? `(${escapeHtml(item.hamlet)})` : ''}</td>
-                <td style="font-weight: 600;">${escapeHtml(item.respondent_name || '—')}</td>
-                <td style="font-size: 0.82rem;">${escapeHtml(item.surveyor_name)} (${escapeHtml(item.surveyor_id)})</td>
-                <td style="text-align: center; font-family: monospace; font-size: 0.82rem;">${formatDateVN(item.survey_date)}</td>
-                <td style="text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
+                <td data-label="Mã phiếu" style="font-family: monospace; font-weight: 700; color: var(--primary);">${escapeHtml(item.survey_code)}${photoBadge}</td>
+                <td data-label="Công cụ"><span style="background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 0.78rem;">${escapeHtml(item.tool_code)}</span></td>
+                <td data-label="Địa bàn">${escapeHtml(item.commune)} ${item.hamlet ? `(${escapeHtml(item.hamlet)})` : ''}</td>
+                <td data-label="Người được PV" style="font-weight: 600;">${escapeHtml(item.respondent_name || '—')}</td>
+                <td data-label="Điều tra viên" style="font-size: 0.82rem;">${escapeHtml(item.surveyor_name)} (${escapeHtml(item.surveyor_id)})</td>
+                <td data-label="Ngày khảo sát" style="text-align: center; font-family: monospace; font-size: 0.82rem;">${formatDateVN(item.survey_date)}</td>
+                <td data-label="Thao tác" style="text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
                     <button type="button"
                             onclick="event.stopPropagation(); viewSurveyDetail(${item.id})"
                             style="background: #eff6ff; border: 1px solid #93c5fd; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: #1d4ed8; margin-right: 4px;" title="Mở xem chi tiết &amp; chọn sửa/bổ sung/xóa">
@@ -5286,9 +5336,9 @@ async function renderHistoryDraftsTable() {
     if (role === 'viewer') return;
 
     try {
-        const res = await fetch(apiUrl('/api/drafts'));
+        const res = await fetch(apiUrl(`/api/drafts?role=${encodeURIComponent(role)}&surveyor_id=${encodeURIComponent(currentUser?.surveyor_id || '')}`), { cache: 'no-store' });
         const allDrafts = res.ok ? await res.json() : [];
-        const visibleDrafts = (Array.isArray(allDrafts) ? allDrafts : []).filter(d => isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name));
+        const visibleDrafts = (Array.isArray(allDrafts) ? allDrafts : []).filter(d => isDraftStrictlyOwnedByCurrentUser(d));
         const btnBulkHist = document.getElementById('btnDeleteAllMyHistoryDrafts');
         if (btnBulkHist) {
             btnBulkHist.style.display = visibleDrafts.length > 0 ? 'inline-flex' : 'none';
@@ -5302,13 +5352,13 @@ async function renderHistoryDraftsTable() {
             const photoBadge = hasPhoto ? ' <i class="fa-solid fa-camera" style="color:#0f766e;" title="Đã có ảnh"></i>' : '';
             return `
                 <tr>
-                    <td style="font-family:monospace;font-weight:700;color:#b45309;">${escapeHtml(d.survey_code || d.draft_key)}${photoBadge}</td>
-                    <td><span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:3px;font-weight:700;font-size:0.78rem;">${escapeHtml(d.tool_code || 'P1')}</span></td>
-                    <td>${escapeHtml(d.commune || '')} ${d.hamlet ? `(${escapeHtml(d.hamlet)})` : ''}</td>
-                    <td style="font-weight:600;">${escapeHtml(d.respondent_name || '—')}</td>
-                    <td style="font-size:0.82rem;">${escapeHtml(d.surveyor_name || '')} (${escapeHtml(d.surveyor_id || '')})</td>
-                    <td style="font-size:0.78rem;text-align:center;">${d.answered_count || 0}/${d.total_count || '?'} câu</td>
-                    <td style="text-align:center;white-space:nowrap;">
+                    <td data-label="Mã phiếu" style="font-family:monospace;font-weight:700;color:#b45309;">${escapeHtml(d.survey_code || d.draft_key)}${photoBadge}</td>
+                    <td data-label="Công cụ"><span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:3px;font-weight:700;font-size:0.78rem;">${escapeHtml(d.tool_code || 'P1')}</span></td>
+                    <td data-label="Địa bàn">${escapeHtml(d.commune || '')} ${d.hamlet ? `(${escapeHtml(d.hamlet)})` : ''}</td>
+                    <td data-label="Người được PV" style="font-weight:600;">${escapeHtml(d.respondent_name || '—')}</td>
+                    <td data-label="Điều tra viên" style="font-size:0.82rem;">${escapeHtml(d.surveyor_name || '')} (${escapeHtml(d.surveyor_id || '')})</td>
+                    <td data-label="Tiến độ" style="font-size:0.78rem;text-align:center;">${d.answered_count || 0}/${d.total_count || '?'} câu</td>
+                    <td data-label="Thao tác" style="text-align:center;white-space:nowrap;">
                         <button type="button" onclick="loadDraftIntoForm('${escapeQuotes(d.draft_key)}')" style="background:#f0fdf4;border:1px solid #bbf7d0;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:600;color:#166534;margin-right:4px;">
                             <i class="fa-solid fa-pen-to-square"></i> Mở Sửa
                         </button>
@@ -5895,11 +5945,11 @@ async function handleEditSurveySubmit(e) {
     }
 }
 
-async function deleteSurveyConfirm(id, surveyCode, closeDetailOnSuccess = false) {
+async function deleteSurveyConfirm(id, surveyCode, closeDetailOnSuccess = false, options = {}) {
     const role = currentUser?.role || 'viewer';
     if (role === 'viewer') {
         alert('Tài khoản Chỉ Xem không có quyền xóa phiếu.');
-        return;
+        return false;
     }
 
     const detailHtml = `
@@ -5907,7 +5957,7 @@ async function deleteSurveyConfirm(id, surveyCode, closeDetailOnSuccess = false)
         <div style="margin-top:4px;font-size:0.78rem;color:#64748b;">Phiếu sẽ được chuyển vào Thùng rác lưu trữ trên VPS và có thể phục hồi bất cứ lúc nào.</div>
     `;
     const confirmed = await requestConfirmDeleteWithX('Xác nhận xóa phiếu đã phỏng vấn', detailHtml);
-    if (!confirmed) return;
+    if (!confirmed) return false;
 
     let pwd = (currentUser?.key || (role === 'admin' ? getAdminKey() : '') || '').trim();
     const doDeleteReq = async (passVal) => fetch(apiUrl(`/api/surveys/${id}`), {
@@ -5925,7 +5975,7 @@ async function deleteSurveyConfirm(id, surveyCode, closeDetailOnSuccess = false)
         let res = await doDeleteReq(pwd);
         if (res.status === 403 && !pwd && role === 'admin') {
             const prompted = prompt(`XÁC NHẬN MẬT KHẨU QUẢN TRỊ VIÊN ĐỂ XÓA PHIẾU [${surveyCode}]:`);
-            if (prompted === null || !prompted.trim()) return;
+            if (prompted === null || !prompted.trim()) return false;
             pwd = prompted.trim();
             res = await doDeleteReq(pwd);
         }
@@ -5939,12 +5989,86 @@ async function deleteSurveyConfirm(id, surveyCode, closeDetailOnSuccess = false)
             if (typeof refreshDashboardData === 'function') {
                 refreshDashboardData();
             }
+            if (typeof options?.afterDelete === 'function') {
+                await options.afterDelete();
+            }
+            return true;
         } else {
             alert('Lỗi xóa phiếu: ' + (data.error || 'Mật khẩu không đúng hoặc thao tác không được phép'));
+            return false;
         }
     } catch (err) {
         alert('Lỗi kết nối máy chủ khi gửi yêu cầu xóa.');
+        return false;
     }
+}
+
+async function deleteActiveSurveyInHeader() {
+    const role = currentUser?.role || 'viewer';
+    if (role === 'viewer') {
+        alert('Tài khoản Chỉ Xem không có quyền xóa phiếu.');
+        return;
+    }
+
+    const surveyCode = (document.getElementById('surveyCodeInput')?.value || '').trim();
+    const personName = (document.getElementById('headNameInput')?.value || document.getElementById('respondentNameInput')?.value || '').trim();
+
+    if (editingSurveyId) {
+        await deleteSurveyConfirm(editingSurveyId, surveyCode || `#${editingSurveyId}`, false, {
+            afterDelete: async () => {
+                editingSurveyId = null;
+                await finishAfterCompletion();
+                switchMainView('history');
+            }
+        });
+        return;
+    }
+
+    const displayLabel = surveyCode || `${currentTool || 'P1'} (Phiếu hiện tại)`;
+    const detailHtml = `
+        <div><strong>Phiếu đang mở cần xóa:</strong> <span style="font-family:monospace;color:#991b1b;">${escapeHtml(displayLabel)}</span></div>
+        ${personName ? `<div><strong>Chủ hộ / Người trả lời:</strong> ${escapeHtml(personName)}</div>` : ''}
+        <div style="margin-top:4px;font-size:0.78rem;color:#64748b;">Sau khi xóa, phiếu tạm này sẽ bị gỡ khỏi danh sách chờ và trả lại hộ chưa phỏng vấn (bản sao vẫn lưu trong Thùng rác VPS nếu đã đồng bộ).</div>
+    `;
+    const confirmed = await requestConfirmDeleteWithX('Xác nhận xóa phiếu đang mở', detailHtml);
+    if (!confirmed) return;
+
+    const draftKey = surveyCode ? `${currentTool || 'P1'}::${surveyCode}` : '';
+    if (draftKey && navigator.onLine) {
+        try {
+            const res = await fetch(apiUrl(`/api/drafts/${encodeURIComponent(draftKey)}`), {
+                method: 'DELETE',
+                headers: {
+                    'X-Confirm-Delete': 'X',
+                    'X-User-Role': role,
+                    'X-User-Id': currentUser?.surveyor_id || '',
+                    'X-Delete-Password': currentUser?.key || '',
+                    'X-Admin-Key': role === 'admin' ? (getAdminKey() || currentUser?.key || '') : ''
+                }
+            });
+            if (!res.ok && res.status !== 404) {
+                const errData = await res.json().catch(() => ({}));
+                alert('Không thể xóa phiếu tạm trên VPS: ' + (errData.error || `HTTP ${res.status}`));
+                return;
+            }
+        } catch (_) {
+            // Tiếp tục dọn bộ nhớ cục bộ nếu mất mạng tạm thời
+        }
+    }
+
+    if (draftKey) {
+        await cleanupDeletedDraftLocally(draftKey, surveyCode);
+    } else {
+        try { localStorage.removeItem(`dakman_draft_${currentTool || 'P1'}`); } catch (_) {}
+    }
+
+    await finishAfterCompletion();
+    await loadHouseholdLocks();
+    await refreshDraftBadgeCount(true);
+    if (typeof loadSurveysList === 'function') {
+        loadSurveysList();
+    }
+    showInstantActionToast(`Đã xóa phiếu [${displayLabel}] và làm mới biểu mẫu.`);
 }
 
 function formatAnswerDisplay(val) {
@@ -6915,6 +7039,7 @@ const mapInteractiveState = {
         layerGroup: null,
         members: [],
         markersById: {},
+        photoMarkersById: {},
         clusterByMemberId: {},
         spiderKey: null,
         spiderAll: false,
@@ -6930,6 +7055,7 @@ const mapInteractiveState = {
         layerGroup: null,
         members: [],
         markersById: {},
+        photoMarkersById: {},
         clusterByMemberId: {},
         spiderKey: null,
         spiderAll: false,
@@ -6939,6 +7065,22 @@ const mapInteractiveState = {
         fsBtnId: 'btnAdminMapFullscreen',
         spiderBtnId: 'btnAdminMapSpiderfy',
         boundsFlag: '_adminBoundsFitted'
+    },
+    map: {
+        map: null,
+        layerGroup: null,
+        members: [],
+        markersById: {},
+        photoMarkersById: {},
+        clusterByMemberId: {},
+        spiderKey: null,
+        spiderAll: false,
+        activeHighlightId: null,
+        wrapperId: 'standaloneMapWrapper',
+        canvasId: 'standaloneActivityMap',
+        fsBtnId: 'btnStandaloneMapFullscreen',
+        spiderBtnId: 'btnStandaloneMapSpiderfy',
+        boundsFlag: '_standaloneMapBoundsFitted'
     }
 };
 
@@ -6992,7 +7134,7 @@ function initGoogleHybridMapInstance(mode) {
         if (mode === 'team') {
             teamGeoMap = m;
             teamGeoLayerGroup = st.layerGroup;
-        } else {
+        } else if (mode === 'admin') {
             adminMenuMap = m;
             adminMenuLayerGroup = st.layerGroup;
         }
@@ -7010,6 +7152,10 @@ function ensureTeamGoogleHybridMap() {
 
 function ensureAdminMenuMap() {
     return initGoogleHybridMapInstance('admin');
+}
+
+function ensureStandaloneTeamMap() {
+    return initGoogleHybridMapInstance('map');
 }
 
 function getTeamStatusBadgeHtml(member) {
@@ -7182,6 +7328,9 @@ if (!window.__dakmanMapEscBound) {
             if (document.getElementById('teamGeoMapWrapper')?.classList.contains('is-fullscreen')) {
                 toggleMapFullscreen('team', false);
             }
+            if (document.getElementById('standaloneMapWrapper')?.classList.contains('is-fullscreen')) {
+                toggleMapFullscreen('map', false);
+            }
         }
     });
 }
@@ -7193,6 +7342,7 @@ function renderTeamMapMarkersShared(mode, fitAll = false) {
     const lg = st.layerGroup;
     lg.clearLayers();
     st.markersById = {};
+    st.photoMarkersById = {};
     st.clusterByMemberId = {};
 
     const clusters = clusterTeamMembersForMap(map, st.members);
@@ -7286,7 +7436,42 @@ function renderTeamMapMarkersShared(mode, fitAll = false) {
     });
 
     if (mode === 'team') teamMarkersById = st.markersById;
-    else adminMenuMarkersById = st.markersById;
+    else if (mode === 'admin') adminMenuMarkersById = st.markersById;
+
+    const fieldPhotosList = Array.isArray(window._cachedFieldPhotos) ? window._cachedFieldPhotos : [];
+    fieldPhotosList.forEach((fp) => {
+        const lat = Number(fp.gps_lat);
+        const lng = Number(fp.gps_lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || (Math.abs(lat) < 0.01 && Math.abs(lng) < 0.01)) return;
+        bounds.push([lat, lng]);
+        const fpIcon = L.divIcon({
+            className: 'team-pin-wrapper',
+            html: `<div style="background:#be123c;color:#fff;border:2px solid #fff;border-radius:999px;padding:3px 7px;font-size:11px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,0.45);white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
+                <i class="fa-solid fa-camera"></i> ${escapeHtml(fp.survey_code || fp.photo_code || ('#' + fp.id))}
+            </div>`,
+            iconSize: [0, 0],
+            iconAnchor: [0, 0]
+        });
+        const imgUrl = fp.photo_url ? apiUrl(fp.photo_url) : '';
+        const earthUrl = `https://earth.google.com/web/search/${lat.toFixed(6)},${lng.toFixed(6)}`;
+        const popupHtml = `
+            <div style="min-width:225px;max-width:270px;font-size:12.5px;line-height:1.45;">
+                <div style="font-weight:800;color:#9f1239;margin-bottom:4px;"><i class="fa-solid fa-camera"></i> ${escapeHtml(fp.photo_code || ('Ảnh #' + fp.id))}</div>
+                ${imgUrl ? `<a href="${imgUrl}" target="_blank" style="display:block;margin-bottom:6px;"><img src="${imgUrl}" alt="Ảnh hiện trường" style="width:100%;max-height:145px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1;"></a>` : ''}
+                <div><strong>Ghi chú:</strong> ${escapeHtml(fp.note || 'Chưa có ghi chú')}</div>
+                ${fp.survey_code ? `<div><strong>Mã hộ / Phiếu:</strong> ${escapeHtml(fp.survey_code)}</div>` : ''}
+                <div><strong>Địa bàn:</strong> ${escapeHtml(fp.commune || '—')} • <strong>ĐTV:</strong> ${escapeHtml(fp.surveyor_name || fp.surveyor_id || '—')}</div>
+                <div><strong>WGS84:</strong> <code>${lat.toFixed(6)}, ${lng.toFixed(6)}</code></div>
+                <div style="margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;">
+                    ${imgUrl ? `<a href="${imgUrl}" target="_blank" download style="color:#be123c;font-weight:700;text-decoration:none;"><i class="fa-solid fa-download"></i> Ảnh HD gốc</a>` : ''}
+                    <a href="${earthUrl}" target="_blank" style="color:#0369a1;font-weight:700;text-decoration:none;"><i class="fa-solid fa-earth-asia"></i> Google Earth</a>
+                </div>
+            </div>
+        `;
+        const fpMarker = L.marker([lat, lng], { icon: fpIcon, zIndexOffset: 300 }).addTo(lg);
+        fpMarker.bindPopup(popupHtml);
+        st.photoMarkersById[String(fp.id)] = fpMarker;
+    });
 
     if (bounds.length > 0 && (fitAll || !map[st.boundsFlag])) {
         map.fitBounds(bounds, { padding: [45, 45], maxZoom: 15 });
@@ -7329,6 +7514,8 @@ function startSharedTeamMapRefreshTimer() {
         if (document.getElementById('userLoginModal')?.classList.contains('active')) return;
         if (typeof currentMainView !== 'undefined' && currentMainView === 'dashboard') {
             loadTeamLocationsMap(false);
+        } else if (typeof currentMainView !== 'undefined' && currentMainView === 'map') {
+            refreshStandaloneTeamMap(false);
         } else if (typeof currentMainView !== 'undefined' && currentMainView === 'menu' && currentUser?.role === 'admin') {
             refreshAdminMenuLiveBoard(false);
         }
@@ -7456,3 +7643,707 @@ async function refreshAdminMenuLiveBoard(fitAll = false) {
         }
     }
 }
+
+// ========================================================
+// 12. CHỤP ẢNH HIỆN TRƯỜNG CHẤT LƯỢNG CAO & BẢN ĐỒ ĐỘC LẬP
+// ========================================================
+window._cachedFieldPhotos = [];
+const FIELD_PHOTO_IDB_NAME = 'dakman_field_photos_idb_v1';
+const FIELD_PHOTO_IDB_STORE = 'pending_photos';
+
+function openFieldPhotoIdb() {
+    return new Promise((resolve, reject) => {
+        if (typeof indexedDB === 'undefined') {
+            reject(new Error('IndexedDB không khả dụng'));
+            return;
+        }
+        const req = indexedDB.open(FIELD_PHOTO_IDB_NAME, 1);
+        req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(FIELD_PHOTO_IDB_STORE)) {
+                db.createObjectStore(FIELD_PHOTO_IDB_STORE, { keyPath: 'local_id' });
+            }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error || new Error('Lỗi mở IDB ảnh hiện trường'));
+    });
+}
+
+async function putPendingFieldPhotoIdb(record) {
+    try {
+        const db = await openFieldPhotoIdb();
+        return await new Promise((resolve, reject) => {
+            const tx = db.transaction(FIELD_PHOTO_IDB_STORE, 'readwrite');
+            tx.objectStore(FIELD_PHOTO_IDB_STORE).put(record);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => reject(tx.error);
+        });
+    } catch (_) {
+        return false;
+    }
+}
+
+async function getAllPendingFieldPhotosIdb() {
+    try {
+        const db = await openFieldPhotoIdb();
+        return await new Promise((resolve) => {
+            const tx = db.transaction(FIELD_PHOTO_IDB_STORE, 'readonly');
+            const req = tx.objectStore(FIELD_PHOTO_IDB_STORE).getAll();
+            req.onsuccess = () => resolve(Array.isArray(req.result) ? req.result : []);
+            req.onerror = () => resolve([]);
+        });
+    } catch (_) {
+        return [];
+    }
+}
+
+async function deletePendingFieldPhotoIdb(localId) {
+    try {
+        const db = await openFieldPhotoIdb();
+        return await new Promise((resolve) => {
+            const tx = db.transaction(FIELD_PHOTO_IDB_STORE, 'readwrite');
+            tx.objectStore(FIELD_PHOTO_IDB_STORE).delete(localId);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+        });
+    } catch (_) {
+        return false;
+    }
+}
+
+function parseGpsPair(str) {
+    const parts = String(str || '').split(',').map(x => parseFloat(String(x).trim()));
+    if (parts.length === 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) && Math.abs(parts[0]) > 0.01 && Math.abs(parts[1]) > 0.01) {
+        return { lat: Number(parts[0].toFixed(6)), lng: Number(parts[1].toFixed(6)) };
+    }
+    return { lat: null, lng: null };
+}
+
+async function getFieldPhotoGpsCoords(timeoutMs = 5500) {
+    const fpGpsEl = document.getElementById('fpGpsInput');
+    const existing = parseGpsPair(fpGpsEl?.value || '');
+    if (existing.lat !== null) return existing;
+
+    if (bgBestGps && bgBestGps.lat && bgBestGps.lng) {
+        const lat = Number(parseFloat(bgBestGps.lat).toFixed(6));
+        const lng = Number(parseFloat(bgBestGps.lng).toFixed(6));
+        if (fpGpsEl && !fpGpsEl.value.trim()) fpGpsEl.value = `${lat}, ${lng}`;
+        return { lat, lng };
+    }
+
+    if (!navigator.geolocation) return { lat: null, lng: null };
+    return await new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = Number(pos.coords.latitude.toFixed(6));
+                const lng = Number(pos.coords.longitude.toFixed(6));
+                if (fpGpsEl) fpGpsEl.value = `${lat}, ${lng}`;
+                if (typeof sendTeamLocationPing === 'function') {
+                    sendTeamLocationPing(lat, lng, Math.round(pos.coords.accuracy || 0), 'Chụp ảnh hiện trường');
+                }
+                resolve({ lat, lng });
+            },
+            () => resolve({ lat: null, lng: null }),
+            { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 30000 }
+        );
+    });
+}
+
+async function captureFieldPhotoGpsNow() {
+    const fpGpsEl = document.getElementById('fpGpsInput');
+    const statusEl = document.getElementById('fieldQuickPhotoStatus');
+    if (statusEl) {
+        statusEl.style.color = '#d97706';
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang bắt tọa độ WGS84 chính xác...';
+    }
+    if (!navigator.geolocation) {
+        if (statusEl) {
+            statusEl.style.color = '#dc2626';
+            statusEl.textContent = 'Thiết bị chưa bật hoặc không hỗ trợ định vị GPS.';
+        }
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            const lat = Number(pos.coords.latitude.toFixed(6));
+            const lng = Number(pos.coords.longitude.toFixed(6));
+            const acc = Math.round(pos.coords.accuracy || 0);
+            if (fpGpsEl) fpGpsEl.value = `${lat}, ${lng}`;
+            if (statusEl) {
+                statusEl.style.color = '#15803d';
+                statusEl.textContent = `Đã khóa GPS WGS84: ${lat}, ${lng} (sai số ~${acc}m)`;
+            }
+            if (typeof sendTeamLocationPing === 'function') {
+                sendTeamLocationPing(lat, lng, acc, 'Lấy GPS chụp ảnh');
+            }
+        },
+        (err) => {
+            if (statusEl) {
+                statusEl.style.color = '#dc2626';
+                statusEl.textContent = `Không lấy được GPS (${err.message}). Có thể chụp ảnh trước hoặc nhập tọa độ.`;
+            }
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
+    );
+}
+
+function triggerFieldQuickPhotoCapture(sourceType = 'camera') {
+    if (currentUser?.role === 'viewer') {
+        alert('Tài khoản Chỉ Xem không được phép chụp/tải ảnh lên.');
+        return;
+    }
+    const id = (sourceType === 'gallery') ? 'fieldLibraryPhotoInput' : 'fieldQuickPhotoInput';
+    const inp = document.getElementById(id);
+    if (inp) {
+        inp.value = '';
+        inp.click();
+    }
+}
+
+async function createHighResWatermarkedFieldPhoto(file, meta) {
+    const maxDim = 2560;
+    const decodeSource = async () => {
+        if (typeof createImageBitmap === 'function') {
+            try {
+                const bmp = await createImageBitmap(file);
+                return { source: bmp, w: bmp.width, h: bmp.height, cleanup: () => { try { bmp.close(); } catch (_) {} } };
+            } catch (_) {}
+        }
+        return await new Promise((resolve, reject) => {
+            const img = new Image();
+            const objUrl = URL.createObjectURL(file);
+            img.onload = () => resolve({
+                source: img,
+                w: img.naturalWidth || img.width,
+                h: img.naturalHeight || img.height,
+                cleanup: () => URL.revokeObjectURL(objUrl)
+            });
+            img.onerror = () => {
+                URL.revokeObjectURL(objUrl);
+                reject(new Error('Tệp ảnh không hợp lệ'));
+            };
+            img.src = objUrl;
+        });
+    };
+
+    const decoded = await decodeSource();
+    const canvas = document.createElement('canvas');
+    try {
+        let w = decoded.w || 1920;
+        let h = decoded.h || 1440;
+        const scale = Math.min(1, maxDim / Math.max(w, h));
+        w = Math.max(1, Math.round(w * scale));
+        h = Math.max(1, Math.round(h * scale));
+
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(decoded.source, 0, 0, w, h);
+
+        const fontSize = Math.max(16, Math.round(w * 0.020));
+        const lineHeight = Math.round(fontSize * 1.45);
+        const padding = Math.round(fontSize * 0.8);
+        const barHeight = lineHeight * 3 + padding * 1.6;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.80)';
+        ctx.fillRect(0, h - barHeight, w, barHeight);
+        ctx.fillStyle = '#fb7185';
+        ctx.fillRect(0, h - barHeight, Math.max(5, Math.round(w * 0.006)), barHeight);
+
+        ctx.textBaseline = 'top';
+        const startY = h - barHeight + padding * 0.7;
+        const leftX = padding + 8;
+        const maxTextW = Math.max(180, w - leftX - padding);
+
+        const wgs84Text = meta.lat !== null && meta.lng !== null
+            ? `Lat ${meta.lat.toFixed(6)}, Long ${meta.lng.toFixed(6)} (WGS84)`
+            : 'Chưa có tọa độ WGS84';
+        const line1 = `DAKMAN CƯ M'GAR | Ảnh hiện trường${meta.surveyCode ? ' | Mã: ' + meta.surveyCode : ''}${meta.note ? ' | ' + meta.note.slice(0, 60) : ''}`;
+        const line2 = `Vị trí ${wgs84Text} | ${meta.timestampStr}`;
+        const line3 = `Địa bàn: ${meta.commune || 'Cư M\'gar'} | ĐTV: ${meta.surveyorName} (${meta.surveyorId}) | HD ${w}x${h}`;
+
+        ctx.fillStyle = '#ffffff';
+        drawFittedWatermarkLine(ctx, line1, leftX, startY, fontSize, true, maxTextW);
+        ctx.fillStyle = '#fde047';
+        drawFittedWatermarkLine(ctx, line2, leftX, startY + lineHeight, fontSize, false, maxTextW);
+        ctx.fillStyle = '#e2e8f0';
+        drawFittedWatermarkLine(ctx, line3, leftX, startY + lineHeight * 2, fontSize, false, maxTextW);
+
+        let dataUrl = canvas.toDataURL('image/jpeg', 0.94);
+        if (dataUrl.length > 10 * 1024 * 1024) {
+            dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        }
+        return { dataUrl, width: w, height: h, wgs84Text };
+    } finally {
+        canvas.width = 0;
+        canvas.height = 0;
+        if (typeof decoded.cleanup === 'function') decoded.cleanup();
+    }
+}
+
+async function handleFieldQuickPhotoSelected(event) {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+    if (currentUser?.role === 'viewer') {
+        alert('Tài khoản Chỉ Xem không được phép tải ảnh lên.');
+        return;
+    }
+
+    const statusEl = document.getElementById('fieldQuickPhotoStatus');
+    if (statusEl) {
+        statusEl.style.color = '#d97706';
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang giữ độ phân giải cao nhất &amp; lấy tọa độ GPS...';
+    }
+
+    try {
+        const coords = await getFieldPhotoGpsCoords(6000);
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const timestampStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        const surveyCode = (document.getElementById('fpSurveyCodeInput')?.value || '').trim();
+        const commune = (document.getElementById('fpCommuneSelect')?.value || currentUser?.commune || 'Ea Kiết').trim();
+        const noteEl = document.getElementById('fpNoteInput');
+        const note = (noteEl?.value || '').trim();
+        const surveyorId = currentUser?.surveyor_id || 'DTV';
+        const surveyorName = currentUser?.full_name || 'Điều tra viên';
+
+        const rendered = await createHighResWatermarkedFieldPhoto(file, {
+            lat: coords.lat,
+            lng: coords.lng,
+            timestampStr,
+            surveyCode,
+            commune,
+            note,
+            surveyorId,
+            surveyorName
+        });
+
+        const photoCode = `FP_${String(now.getFullYear()).slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}_${surveyorId}`;
+        const payload = {
+            photo_code: photoCode,
+            survey_code: surveyCode,
+            surveyor_id: surveyorId,
+            surveyor_name: surveyorName,
+            role: currentUser?.role || 'editor',
+            commune: commune,
+            note: note,
+            gps_lat: coords.lat,
+            gps_lng: coords.lng,
+            photo_data: rendered.dataUrl,
+            photo_meta: `${timestampStr} | ${rendered.wgs84Text} | ${rendered.width}x${rendered.height}`
+        };
+
+        if (statusEl) {
+            statusEl.style.color = '#0369a1';
+            statusEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-up fa-beat"></i> Đang đẩy ảnh HD (${rendered.width}x${rendered.height}) trực tiếp lên máy chủ VPS...`;
+        }
+
+        try {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 30000);
+            const res = await fetch(apiUrl('/api/field-photos'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: ctrl.signal
+            });
+            clearTimeout(timer);
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.success) {
+                if (noteEl) noteEl.value = '';
+                if (statusEl) {
+                    statusEl.style.color = '#15803d';
+                    statusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đã lưu &amp; tải ảnh HD <strong>[${escapeHtml(data.photo_code)}]</strong> (${rendered.width}x${rendered.height}) lên VPS!`;
+                }
+                showInstantActionToast(`Đã tải ảnh hiện trường HD [${data.photo_code}] lên VPS!`);
+                await loadFieldPhotosGallery(false);
+                return;
+            }
+            throw new Error(data.error || `HTTP ${res.status}`);
+        } catch (netErr) {
+            const localRec = Object.assign({ local_id: `LOCAL_${Date.now()}`, saved_at: timestampStr }, payload);
+            await putPendingFieldPhotoIdb(localRec);
+            if (statusEl) {
+                statusEl.style.color = '#b45309';
+                statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Mạng đang yếu (${escapeHtml(netErr.message)}). Ảnh HD đã được giữ an toàn trong máy — bấm <strong>Đẩy lại ảnh chờ</strong> hoặc hệ thống sẽ tự đẩy khi có mạng.`;
+            }
+            await loadFieldPhotosGallery(false);
+        }
+    } catch (err) {
+        if (statusEl) {
+            statusEl.style.color = '#dc2626';
+            statusEl.textContent = 'Lỗi xử lý ảnh hiện trường: ' + err.message;
+        }
+        alert('Không thể xử lý ảnh hiện trường: ' + err.message);
+    }
+}
+
+async function syncPendingFieldPhotosQueue(silent = false) {
+    if (!navigator.onLine || currentUser?.role === 'viewer') return 0;
+    const pending = await getAllPendingFieldPhotosIdb();
+    updatePendingFieldPhotosUi(pending.length);
+    if (!pending.length) return 0;
+
+    let uploaded = 0;
+    for (const item of pending) {
+        try {
+            const res = await fetch(apiUrl('/api/field-photos'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item)
+            });
+            if (res.ok) {
+                await deletePendingFieldPhotoIdb(item.local_id);
+                uploaded += 1;
+            }
+        } catch (_) {}
+    }
+
+    const left = await getAllPendingFieldPhotosIdb();
+    updatePendingFieldPhotosUi(left.length);
+    if (uploaded > 0) {
+        if (!silent) showInstantActionToast(`Đã đồng bộ ${uploaded} ảnh HD hiện trường lên VPS!`);
+        if (currentMainView === 'field-photos') {
+            await loadFieldPhotosGallery(false);
+        } else {
+            refreshFieldPhotosBadgeCount();
+        }
+    } else if (!silent && left.length > 0) {
+        alert(`Vẫn còn ${left.length} ảnh chờ đồng bộ do mạng yếu, hệ thống sẽ tự thử lại.`);
+    }
+    return uploaded;
+}
+
+function updatePendingFieldPhotosUi(count) {
+    const btn = document.getElementById('btnSyncPendingFieldPhotos');
+    const span = document.getElementById('pendingFieldPhotosCount');
+    if (span) span.textContent = String(count || 0);
+    if (btn) btn.style.display = (count > 0) ? 'inline-flex' : 'none';
+}
+
+async function refreshFieldPhotosBadgeCount() {
+    try {
+        const list = await fetchJsonWithTimeout(apiUrl('/api/field-photos'), 6000);
+        if (Array.isArray(list)) {
+            window._cachedFieldPhotos = list;
+            const pending = await getAllPendingFieldPhotosIdb();
+            updatePendingFieldPhotosUi(pending.length);
+            const total = list.length + pending.length;
+            const badge = document.getElementById('menuFieldPhotosBadge');
+            if (badge) {
+                badge.textContent = `${total} ảnh HD • Lưu thẳng VPS`;
+            }
+        }
+    } catch (_) {}
+}
+
+async function initFieldPhotosView() {
+    if (currentUser?.commune) {
+        const sel = document.getElementById('fpCommuneSelect');
+        if (sel && Array.from(sel.options).some(o => o.value === currentUser.commune)) {
+            sel.value = currentUser.commune;
+        }
+    }
+    await syncPendingFieldPhotosQueue(true);
+    await loadFieldPhotosGallery(false);
+}
+
+async function loadFieldPhotosGallery(showToast = false) {
+    const galleryEl = document.getElementById('fieldPhotosGallery');
+    const countEl = document.getElementById('fieldPhotosGalleryCount');
+    const pending = await getAllPendingFieldPhotosIdb();
+    updatePendingFieldPhotosUi(pending.length);
+
+    try {
+        const rows = await fetchJsonWithTimeout(apiUrl('/api/field-photos'), 10000);
+        const list = Array.isArray(rows) ? rows : [];
+        window._cachedFieldPhotos = list;
+        if (countEl) countEl.textContent = String(list.length + pending.length);
+        const badge = document.getElementById('menuFieldPhotosBadge');
+        if (badge) badge.textContent = `${list.length + pending.length} ảnh HD • Lưu thẳng VPS`;
+
+        if (!galleryEl) return;
+        const role = currentUser?.role || 'viewer';
+        const isViewer = (role === 'viewer');
+
+        const pendingCards = pending.map((p) => `
+            <div style="border:1.5px dashed #f59e0b; border-radius:10px; background:#fffbeb; overflow:hidden; display:flex; flex-direction:column;">
+                <img src="${p.photo_data}" alt="Ảnh chờ đồng bộ" style="width:100%; height:190px; object-fit:cover; background:#0f172a;">
+                <div style="padding:10px; font-size:0.82rem; display:flex; flex-direction:column; gap:6px; flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                        <strong style="color:#b45309;">${escapeHtml(p.photo_code || 'Ảnh chờ đẩy VPS')}</strong>
+                        <span style="background:#fef3c7; color:#92400e; padding:2px 7px; border-radius:999px; font-size:0.72rem; font-weight:700;">Chờ mạng</span>
+                    </div>
+                    <div style="color:#475569;">${escapeHtml(p.note || 'Chưa có ghi chú')}</div>
+                    <div style="font-size:0.75rem; color:#64748b;">${escapeHtml(p.photo_meta || p.saved_at || '')}</div>
+                    <div style="margin-top:auto; display:flex; gap:6px; flex-wrap:wrap; padding-top:4px;">
+                        <button type="button" onclick="syncPendingFieldPhotosQueue(false)" class="qgis-btn-primary" style="font-size:0.75rem; padding:5px 9px; background:#b45309; border-color:#d97706;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Đẩy lên VPS
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        const serverCards = list.map((fp) => {
+            const imgUrl = apiUrl(fp.photo_url || `/api/photos/${fp.photo_path}`);
+            const hasGps = (fp.gps_lat !== null && fp.gps_lng !== null && Math.abs(Number(fp.gps_lat)) > 0.01);
+            const canEditOrDelete = !isViewer && (role === 'admin' || isCurrentUserOwnerOf(fp.surveyor_id, fp.surveyor_name, false));
+            return `
+                <div id="fp-card-${fp.id}" style="border:1px solid #cbd5e1; border-radius:10px; background:#ffffff; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 1px 3px rgba(15,23,42,0.05);">
+                    <a href="${imgUrl}" target="_blank" title="Bấm để xem ảnh HD kích thước đầy đủ" style="display:block; background:#0f172a;">
+                        <img src="${imgUrl}" loading="lazy" alt="${escapeHtml(fp.photo_code)}" style="width:100%; height:195px; object-fit:cover; display:block;">
+                    </a>
+                    <div style="padding:10px; font-size:0.82rem; display:flex; flex-direction:column; gap:6px; flex:1;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
+                            <strong style="color:#0f2a4a; font-family:monospace;">${escapeHtml(fp.photo_code || ('#' + fp.id))}</strong>
+                            <span style="background:#dcfce7; color:#166534; padding:2px 7px; border-radius:999px; font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-cloud-check"></i> Đã lưu VPS</span>
+                        </div>
+                        <div style="font-size:0.76rem; color:#475569;">
+                            <strong>ĐTV:</strong> ${escapeHtml(fp.surveyor_name || fp.surveyor_id || '—')} • <strong>Xã:</strong> ${escapeHtml(fp.commune || '—')}
+                            ${fp.survey_code ? ` • <strong>Mã hộ:</strong> ${escapeHtml(fp.survey_code)}` : ''}
+                        </div>
+                        <div style="font-size:0.73rem; color:#64748b; font-family:monospace;">
+                            ${escapeHtml(fp.photo_meta || (hasGps ? `${fp.gps_lat}, ${fp.gps_lng}` : fp.created_at || ''))}
+                        </div>
+                        <div style="margin-top:2px;">
+                            <label for="fp-note-edit-${fp.id}" style="display:block; font-size:0.73rem; font-weight:700; color:#334155; margin-bottom:2px;">Ghi chú (Note):</label>
+                            <textarea id="fp-note-edit-${fp.id}" rows="2" ${isViewer ? 'readonly' : ''} placeholder="Nhập hoặc bổ sung ghi chú cho ảnh này..."
+                                style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:5px; font-size:0.80rem; font-family:inherit; box-sizing:border-box; resize:vertical;">${escapeHtml(fp.note || '')}</textarea>
+                        </div>
+                        <div style="margin-top:auto; display:flex; gap:6px; flex-wrap:wrap; padding-top:4px;">
+                            ${!isViewer ? `<button type="button" onclick="saveFieldPhotoNote(${fp.id})" class="qgis-btn-primary" style="font-size:0.75rem; padding:5px 9px; background:#0f2a4a; border-color:#1e3a8a;">
+                                <i class="fa-solid fa-floppy-disk"></i> Lưu ghi chú
+                            </button>` : ''}
+                            ${hasGps ? `<button type="button" onclick="focusFieldPhotoOnStandaloneMap(${fp.id})" class="qgis-btn-secondary" style="font-size:0.75rem; padding:5px 9px; color:#0f766e; border-color:#99f6e4; background:#f0fdfa;">
+                                <i class="fa-solid fa-map-pin"></i> Bản đồ
+                            </button>` : ''}
+                            <a href="${imgUrl}" target="_blank" download class="qgis-btn-secondary" style="font-size:0.75rem; padding:5px 9px; text-decoration:none; color:#0369a1;">
+                                <i class="fa-solid fa-download"></i> Ảnh HD
+                            </a>
+                            ${canEditOrDelete ? `<button type="button" onclick="deleteFieldPhotoItem(${fp.id}, '${escapeQuotes(fp.photo_code || ('#' + fp.id))}')" class="qgis-btn-secondary" style="font-size:0.75rem; padding:5px 9px; color:#dc2626; border-color:#fca5a5; background:#fef2f2;">
+                                <i class="fa-solid fa-trash-can"></i> Xóa
+                            </button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        if (!pendingCards && !serverCards) {
+            galleryEl.innerHTML = `<div style="color:#64748b; font-size:0.86rem; padding:26px; text-align:center; grid-column:1 / -1;">Chưa có ảnh hiện trường nào được tải lên. Hãy nhập ghi chú (nếu cần) và bấm <strong>Chụp ảnh HD ngay</strong> bên trên!</div>`;
+        } else {
+            galleryEl.innerHTML = pendingCards + serverCards;
+        }
+        if (showToast) showInstantActionToast(`Đã tải ${list.length} ảnh hiện trường từ VPS.`);
+    } catch (e) {
+        if (galleryEl && !pending.length) {
+            galleryEl.innerHTML = `<div style="color:#dc2626; font-size:0.85rem; padding:20px; text-align:center; grid-column:1 / -1;">Không thể kết nối máy chủ VPS để tải danh sách ảnh hiện trường.</div>`;
+        }
+    }
+}
+
+async function saveFieldPhotoNote(id) {
+    if (currentUser?.role === 'viewer') return;
+    const inp = document.getElementById(`fp-note-edit-${id}`);
+    if (!inp) return;
+    const note = inp.value.trim();
+    try {
+        const res = await fetch(apiUrl(`/api/field-photos/${id}`), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                note,
+                role: currentUser?.role || 'editor',
+                surveyor_id: currentUser?.surveyor_id || ''
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+            const cached = (window._cachedFieldPhotos || []).find(x => String(x.id) === String(id));
+            if (cached) cached.note = note;
+            showInstantActionToast('Đã lưu ghi chú ảnh hiện trường lên VPS!');
+        } else {
+            alert('Không thể lưu ghi chú: ' + (data.error || `HTTP ${res.status}`));
+        }
+    } catch (_) {
+        alert('Lỗi kết nối VPS khi lưu ghi chú ảnh.');
+    }
+}
+
+async function deleteFieldPhotoItem(id, labelCode = '') {
+    const role = currentUser?.role || 'viewer';
+    if (role === 'viewer') {
+        alert('Tài khoản Chỉ Xem không được phép xóa ảnh.');
+        return;
+    }
+    const detailHtml = `
+        <div><strong>Ảnh hiện trường cần xóa:</strong> <span style="font-family:monospace;color:#991b1b;">${escapeHtml(labelCode || ('#' + id))}</span></div>
+        <div style="margin-top:4px;font-size:0.78rem;color:#64748b;">Ảnh sẽ được chuyển vào Thùng rác lưu trữ trên VPS (tệp ảnh gốc vẫn được bảo toàn).</div>
+    `;
+    const confirmed = await requestConfirmDeleteWithX('Xác nhận xóa ảnh hiện trường', detailHtml);
+    if (!confirmed) return;
+
+    try {
+        const res = await fetch(apiUrl(`/api/field-photos/${id}`), {
+            method: 'DELETE',
+            headers: {
+                'X-Confirm-Delete': 'X',
+                'X-User-Role': role,
+                'X-User-Id': currentUser?.surveyor_id || '',
+                'X-Delete-Password': currentUser?.key || '',
+                'X-Admin-Key': role === 'admin' ? (getAdminKey() || currentUser?.key || '') : ''
+            }
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+            showInstantActionToast(`Đã xóa ảnh hiện trường [${labelCode || id}].`);
+            await loadFieldPhotosGallery(false);
+        } else {
+            alert('Không thể xóa ảnh: ' + (data.error || `HTTP ${res.status}`));
+        }
+    } catch (_) {
+        alert('Lỗi kết nối máy chủ VPS khi xóa ảnh.');
+    }
+}
+
+async function refreshStandaloneTeamMap(fitAll = false) {
+    const summaryEl = document.getElementById('standaloneMapSummaryText');
+    const staffListEl = document.getElementById('standaloneMapStaffList');
+    const photoListEl = document.getElementById('standaloneMapPhotoList');
+    const kmlEl = document.getElementById('btnStandaloneMapKml');
+    if (kmlEl) kmlEl.href = apiUrl('/api/team-locations.kml');
+
+    try {
+        const [teamData, photosData] = await Promise.all([
+            fetchJsonWithTimeout(apiUrl('/api/team-locations'), 8000),
+            fetchJsonWithTimeout(apiUrl('/api/field-photos'), 8000).catch(() => null)
+        ]);
+
+        const members = Array.isArray(teamData?.members) ? teamData.members : [];
+        if (Array.isArray(photosData)) {
+            window._cachedFieldPhotos = photosData;
+        }
+        const gpsPhotos = (window._cachedFieldPhotos || []).filter(fp =>
+            fp.gps_lat !== null && fp.gps_lng !== null && Math.abs(Number(fp.gps_lat)) > 0.01
+        );
+
+        if (summaryEl) {
+            summaryEl.innerHTML = `Cập nhật lúc <strong>${escapeHtml(teamData?.updated_at_vn || '')}</strong> • Đang online: <strong style="color:#15803d;">${teamData?.online_count || 0}/6</strong> ĐTV • Đã có GPS: <strong style="color:#0369a1;">${teamData?.gps_count || 0}/6</strong> ĐTV • Ảnh hiện trường có GPS: <strong style="color:#be123c;">${gpsPhotos.length}</strong> ảnh • <em>Bấm vào cụm/chốt để tỏa bông tuyết</em>`;
+        }
+
+        if (staffListEl) {
+            staffListEl.innerHTML = members.map((m) => {
+                const hasGps = (m.lat !== null && m.lng !== null);
+                const dotColor = m.status === 'online' ? '#16a34a' : (m.status === 'recent' ? '#f59e0b' : (hasGps ? '#2563eb' : '#94a3b8'));
+                const coordStr = hasGps ? `${Number(m.lat).toFixed(5)}, ${Number(m.lng).toFixed(5)}` : 'Chưa có GPS';
+                return `
+                    <div onclick="focusMemberOnSharedMap('map', '${escapeHtml(m.surveyor_id)}')" style="border: 1px solid #e2e8f0; border-left: 4px solid ${dotColor}; border-radius: 8px; padding: 8px 10px; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <div style="min-width: 170px; flex: 1;">
+                            <div style="font-size: 0.85rem; font-weight: 800; color: #0f2a4a;">
+                                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-right:5px;"></span>[${escapeHtml(m.surveyor_id)}] ${escapeHtml(m.full_name)}
+                            </div>
+                            <div style="font-size: 0.75rem; color: #475569; margin-top: 2px;">
+                                Xã: <strong>${escapeHtml(m.commune || '')}</strong> • ${escapeHtml(m.last_survey_code || m.last_activity || 'Chưa có phiếu')}
+                            </div>
+                            <div style="font-size: 0.73rem; color: #64748b; font-family: monospace; margin-top: 2px;">
+                                WGS84: ${escapeHtml(coordStr)}${m.last_seen_vn ? ` • ${escapeHtml(m.last_seen_vn)}` : ''}
+                            </div>
+                        </div>
+                        <div style="text-align: right; flex-shrink: 0;">
+                            <div>${getTeamStatusBadgeHtml(m)}</div>
+                            <div style="font-size: 0.74rem; color: #334155; font-weight: 700; margin-top: 4px;">
+                                ${m.completed_count || 0} đã nộp • ${m.draft_count || 0} nháp
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div style="color:#64748b;font-size:0.82rem;text-align:center;padding:14px;">Chưa có dữ liệu thành viên.</div>';
+        }
+
+        if (photoListEl) {
+            photoListEl.innerHTML = gpsPhotos.length
+                ? gpsPhotos.slice(0, 20).map((fp) => `
+                    <div onclick="focusFieldPhotoOnStandaloneMap(${fp.id})" style="border: 1px solid #fecdd3; border-left: 4px solid #be123c; border-radius: 8px; padding: 8px 10px; background: #fff1f2; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                        <img src="${apiUrl(fp.photo_url || `/api/photos/${fp.photo_path}`)}" alt="" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid #fda4af; flex-shrink:0;">
+                        <div style="min-width: 0; flex: 1;">
+                            <div style="font-size: 0.83rem; font-weight: 800; color: #9f1239; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                ${escapeHtml(fp.photo_code || ('Ảnh #' + fp.id))}${fp.survey_code ? ` (${escapeHtml(fp.survey_code)})` : ''}
+                            </div>
+                            <div style="font-size: 0.76rem; color: #334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                ${escapeHtml(fp.note || 'Không có ghi chú')}
+                            </div>
+                            <div style="font-size: 0.72rem; color: #64748b; font-family: monospace;">
+                                ${Number(fp.gps_lat).toFixed(5)}, ${Number(fp.gps_lng).toFixed(5)} • ${escapeHtml(fp.surveyor_name || fp.surveyor_id || '')}
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-location-dot" style="color:#be123c;"></i>
+                    </div>
+                `).join('')
+                : '<div style="color:#64748b;font-size:0.82rem;text-align:center;padding:16px;">Chưa có ảnh hiện trường nào có tọa độ GPS. Hãy chụp ảnh ở mục <strong>5. Chụp ảnh hiện trường</strong>!</div>';
+        }
+
+        const map = ensureStandaloneTeamMap();
+        mapInteractiveState.map.members = members;
+        if (map) {
+            renderTeamMapMarkersShared('map', fitAll);
+        }
+        startSharedTeamMapRefreshTimer();
+    } catch (e) {
+        if (summaryEl) {
+            summaryEl.textContent = 'Không thể tải dữ liệu bản đồ trực tuyến từ máy chủ VPS.';
+        }
+    }
+}
+
+async function focusFieldPhotoOnStandaloneMap(photoId) {
+    if (currentMainView !== 'map') {
+        switchMainView('map');
+        await refreshStandaloneTeamMap(false);
+    }
+    const fp = (window._cachedFieldPhotos || []).find(x => String(x.id) === String(photoId));
+    const st = mapInteractiveState.map;
+    if (!fp || fp.gps_lat === null || fp.gps_lng === null || !st?.map) {
+        alert('Ảnh này chưa ghi nhận tọa độ GPS hợp lệ để định vị trên bản đồ.');
+        return;
+    }
+    st.map.setView([Number(fp.gps_lat), Number(fp.gps_lng)], 17, { animate: false });
+    renderTeamMapMarkersShared('map', false);
+    const marker = st.photoMarkersById?.[String(photoId)];
+    if (marker) marker.openPopup();
+    document.getElementById('standaloneActivityMap')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function locateMeOnStandaloneMap() {
+    if (!navigator.geolocation) {
+        alert('Thiết bị không hỗ trợ định vị GPS.');
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+            const lat = Number(pos.coords.latitude.toFixed(6));
+            const lng = Number(pos.coords.longitude.toFixed(6));
+            const acc = Math.round(pos.coords.accuracy || 0);
+            if (typeof sendTeamLocationPing === 'function') {
+                await sendTeamLocationPing(lat, lng, acc, 'Định vị trên Bản đồ');
+            }
+            await refreshStandaloneTeamMap(false);
+            const st = mapInteractiveState.map;
+            if (st?.map) {
+                st.map.setView([lat, lng], 16, { animate: false });
+            }
+            showInstantActionToast(`Đã cập nhật vị trí GPS hiện tại: ${lat}, ${lng}`);
+        },
+        (err) => {
+            alert('Không thể định vị GPS hiện tại: ' + err.message);
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
+    );
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('online', () => {
+        syncPendingFieldPhotosQueue(true);
+    });
+}
+
