@@ -777,11 +777,11 @@ function switchMainView(viewId, subTab = '', skipHistory = false) {
             sampleHouseholds = getInitialSampleHouseholdsFallback();
         }
         populateSampleGuideFilter();
-        filterSampleHouseholds(Boolean(document.getElementById('sampleFilterGuide')?.value || document.getElementById('sampleSearchInput')?.value));
+        filterSampleHouseholds(sampleListPinnedOpen || Boolean(document.getElementById('sampleFilterGuide')?.value || document.getElementById('sampleSearchInput')?.value));
         loadSampleHouseholds(false);
         loadHouseholdLocks().then(() => {
             populateSampleGuideFilter();
-            filterSampleHouseholds(Boolean(document.getElementById('sampleFilterGuide')?.value || document.getElementById('sampleSearchInput')?.value));
+            filterSampleHouseholds(sampleListPinnedOpen || Boolean(document.getElementById('sampleFilterGuide')?.value || document.getElementById('sampleSearchInput')?.value));
         });
     }
     if (viewId === 'dashboard') refreshDashboardData();
@@ -1196,7 +1196,10 @@ function onSampleNVFilterChange() {
     filterSampleHouseholds(Boolean(document.getElementById('sampleFilterGuide')?.value));
 }
 
+let sampleListPinnedOpen = false;
+
 function onSampleGuideFilterChange() {
+    sampleListPinnedOpen = true;
     const searchEl = document.getElementById('sampleSearchInput');
     if (searchEl && lastAutoSelectedHouseholdLabel && searchEl.value.trim() === lastAutoSelectedHouseholdLabel) {
         searchEl.value = '';
@@ -1211,6 +1214,7 @@ function onSampleGuideFilterChange() {
 }
 
 function clearSampleFilter() {
+    sampleListPinnedOpen = false;
     const guideEl = document.getElementById('sampleFilterGuide');
     const searchEl = document.getElementById('sampleSearchInput');
     if (guideEl) guideEl.value = '';
@@ -1221,6 +1225,7 @@ function clearSampleFilter() {
 }
 
 function showPendingHouseholdsList() {
+    sampleListPinnedOpen = true;
     filterSampleHouseholds(true);
 }
 
@@ -1553,8 +1558,9 @@ function filterSampleHouseholds(forceShow = false) {
 
     const box = document.getElementById('sampleResultList');
     if (!box) return;
+    if (forceShow) sampleListPinnedOpen = true;
     const isSearchFocused = (document.activeElement && document.activeElement.id === 'sampleSearchInput');
-    if (!forceShow && !isSearchFocused && !guide && !kwRaw) {
+    if (!forceShow && !sampleListPinnedOpen && !isSearchFocused && !guide && !kwRaw) {
         box.style.display = 'none';
         box.innerHTML = '';
         return;
@@ -1662,6 +1668,7 @@ async function selectSampleHousehold(id) {
     currentDraftAnswers['_head_birth_year'] = h.birth_year || '';
     syncRespondentFromHead();
 
+    sampleListPinnedOpen = false;
     const box = document.getElementById('sampleResultList');
     if (box) box.style.display = 'none';
     const banner = document.getElementById('sampleSelectedBanner');
@@ -4901,7 +4908,7 @@ async function loadSurveysList() {
             const guideVal = document.getElementById('sampleFilterGuide')?.value || '';
             const kwVal = (document.getElementById('sampleSearchInput')?.value || '').trim();
             populateSampleGuideFilter();
-            filterSampleHouseholds(Boolean(guideVal || kwVal));
+            filterSampleHouseholds(sampleListPinnedOpen || Boolean(guideVal || kwVal));
         }
 
         const tbody = document.getElementById('surveyHistoryTbody');
@@ -6429,28 +6436,64 @@ function startTeamHeartbeat() {
     }, 45000);
 }
 
-function ensureTeamGoogleHybridMap() {
-    const mapEl = document.getElementById('teamGoogleEarthMap');
-    if (!mapEl || typeof L === 'undefined') return null;
+let adminMenuMap = null;
+let adminMenuLayerGroup = null;
+let adminMenuMarkersById = {};
 
-    if (!teamGeoMap) {
-        teamGeoMap = L.map('teamGoogleEarthMap', {
+const mapInteractiveState = {
+    team: {
+        map: null,
+        layerGroup: null,
+        members: [],
+        markersById: {},
+        clusterByMemberId: {},
+        spiderKey: null,
+        spiderAll: false,
+        activeHighlightId: null,
+        wrapperId: 'teamGeoMapWrapper',
+        canvasId: 'teamGoogleEarthMap',
+        fsBtnId: 'btnTeamMapFullscreen',
+        spiderBtnId: 'btnTeamMapSpiderfy',
+        boundsFlag: '_teamBoundsFitted'
+    },
+    admin: {
+        map: null,
+        layerGroup: null,
+        members: [],
+        markersById: {},
+        clusterByMemberId: {},
+        spiderKey: null,
+        spiderAll: false,
+        activeHighlightId: null,
+        wrapperId: 'adminMenuMapWrapper',
+        canvasId: 'adminMenuActivityMap',
+        fsBtnId: 'btnAdminMapFullscreen',
+        spiderBtnId: 'btnAdminMapSpiderfy',
+        boundsFlag: '_adminBoundsFitted'
+    }
+};
+
+function initGoogleHybridMapInstance(mode) {
+    const st = mapInteractiveState[mode];
+    if (!st || typeof L === 'undefined') return null;
+    const mapEl = document.getElementById(st.canvasId);
+    if (!mapEl) return null;
+
+    if (!st.map) {
+        const m = L.map(st.canvasId, {
             center: [12.885, 108.115],
             zoom: 12,
             zoomControl: true
         });
-
         const googleHybridLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 20,
             attribution: 'Google Satellite Hybrid'
         });
-
         const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: 'OpenStreetMap'
         });
-
-        googleHybridLayer.addTo(teamGeoMap);
+        googleHybridLayer.addTo(m);
         L.control.layers(
             {
                 'Google Map Hybrid (Vệ tinh + Tên đường)': googleHybridLayer,
@@ -6458,16 +6501,46 @@ function ensureTeamGoogleHybridMap() {
             },
             null,
             { position: 'topright' }
-        ).addTo(teamGeoMap);
+        ).addTo(m);
+        st.layerGroup = L.layerGroup().addTo(m);
+        st.map = m;
 
-        teamGeoLayerGroup = L.layerGroup().addTo(teamGeoMap);
+        m.on('click', () => {
+            if (st.spiderKey || st.spiderAll || st.activeHighlightId) {
+                st.spiderKey = null;
+                st.spiderAll = false;
+                st.activeHighlightId = null;
+                updateMapSpiderButtonState(mode);
+                renderTeamMapMarkersShared(mode, false);
+            }
+        });
+        m.on('zoomend', () => {
+            if (st.members && st.members.length > 0) {
+                renderTeamMapMarkersShared(mode, false);
+            }
+        });
+
+        if (mode === 'team') {
+            teamGeoMap = m;
+            teamGeoLayerGroup = st.layerGroup;
+        } else {
+            adminMenuMap = m;
+            adminMenuLayerGroup = st.layerGroup;
+        }
     }
 
     setTimeout(() => {
-        if (teamGeoMap) teamGeoMap.invalidateSize();
+        if (st.map) st.map.invalidateSize();
     }, 150);
+    return st.map;
+}
 
-    return teamGeoMap;
+function ensureTeamGoogleHybridMap() {
+    return initGoogleHybridMapInstance('team');
+}
+
+function ensureAdminMenuMap() {
+    return initGoogleHybridMapInstance('admin');
 }
 
 function getTeamStatusBadgeHtml(member) {
@@ -6484,16 +6557,313 @@ function getTeamStatusBadgeHtml(member) {
     return `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:#f1f5f9;color:#475569;font-weight:600;font-size:0.78rem;">Chưa có tín hiệu</span>`;
 }
 
-function focusTeamMemberOnMap(surveyorId) {
-    const marker = teamMarkersById[String(surveyorId || '').toUpperCase()];
-    if (!marker || !teamGeoMap) {
+function buildTeamMemberPopupHtml(m) {
+    return `
+        <div style="min-width:225px;font-size:12.5px;line-height:1.45;">
+            <div style="font-weight:800;color:#0f2a4a;font-size:13.5px;margin-bottom:4px;">[${escapeHtml(m.surveyor_id)}] ${escapeHtml(m.full_name)}</div>
+            <div><strong>Trạng thái:</strong> ${escapeHtml(m.status_label)} (${escapeHtml(m.age_text || '')})</div>
+            <div><strong>Địa bàn:</strong> ${escapeHtml(m.commune || '')}</div>
+            <div><strong>WGS84:</strong> <code>${m.lat}, ${m.lng}</code></div>
+            <div><strong>Thời gian GPS:</strong> ${escapeHtml(m.gps_time_vn || m.last_seen_vn || 'Chưa có')}</div>
+            <div><strong>Hoạt động / Hộ:</strong> ${escapeHtml(m.last_survey_code || '—')} ${escapeHtml(m.last_household || '')}</div>
+            <div><strong>Phiếu đã nộp:</strong> ${m.completed_count || 0} phiếu (${m.draft_count || 0} nháp)</div>
+            <div style="margin-top:7px;display:flex;gap:10px;flex-wrap:wrap;">
+                <a href="${m.google_earth_url}" target="_blank" style="color:#0369a1;font-weight:700;text-decoration:none;"><i class="fa-solid fa-earth-asia"></i> Google Earth Web</a>
+                <a href="${m.google_maps_url}" target="_blank" style="color:#15803d;font-weight:700;text-decoration:none;"><i class="fa-solid fa-map-pin"></i> Google Maps</a>
+            </div>
+        </div>
+    `;
+}
+
+function createTeamPinIcon(m) {
+    const color = m.status === 'online' ? '#16a34a' : (m.status === 'recent' ? '#f59e0b' : '#2563eb');
+    return L.divIcon({
+        className: 'team-pin-wrapper',
+        html: `<div style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);pointer-events:auto;">
+            <div style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.45);">
+                ${escapeHtml(m.surveyor_id)} • ${escapeHtml(m.full_name)}
+            </div>
+            <div style="width:12px;height:12px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.5);margin-top:2px;"></div>
+        </div>`,
+        iconSize: [0, 0],
+        iconAnchor: [0, 0]
+    });
+}
+
+function projectSpiderfyLatLng(map, centerLatLng, angleRad, radiusPx) {
+    try {
+        const size = map.getSize();
+        if (size && size.x > 0 && size.y > 0) {
+            const centerPt = map.latLngToContainerPoint(centerLatLng);
+            const targetPt = L.point(
+                centerPt.x + Math.cos(angleRad) * radiusPx,
+                centerPt.y + Math.sin(angleRad) * radiusPx
+            );
+            return map.containerPointToLatLng(targetPt);
+        }
+    } catch (_) {}
+    const dLat = Math.sin(angleRad) * 0.00075;
+    const dLng = Math.cos(angleRad) * 0.00075;
+    return L.latLng(centerLatLng[0] + dLat, centerLatLng[1] + dLng);
+}
+
+function drawSnowflakeBurst(layerGroup, map, centerLatLng, color = '#38bdf8', radiusPx = 46) {
+    const arms = 6;
+    for (let i = 0; i < arms; i++) {
+        const angle = (Math.PI * 2 * i) / arms - Math.PI / 2;
+        const tip = projectSpiderfyLatLng(map, centerLatLng, angle, radiusPx);
+        L.polyline([centerLatLng, tip], { color: '#ffffff', weight: 4, opacity: 0.8 }).addTo(layerGroup);
+        L.polyline([centerLatLng, tip], { color, weight: 2, dashArray: '4,4', opacity: 0.95 }).addTo(layerGroup);
+        L.circleMarker(tip, { radius: 3.5, color: '#ffffff', weight: 1.5, fillColor: color, fillOpacity: 1 }).addTo(layerGroup);
+    }
+}
+
+function clusterTeamMembersForMap(map, members) {
+    const valid = (members || []).filter(m => m.lat !== null && m.lng !== null);
+    const size = map ? map.getSize() : { x: 0, y: 0 };
+    const usePixels = Boolean(map && size && size.x > 40 && size.y > 40);
+    const clusters = [];
+
+    valid.forEach((m) => {
+        const pt = usePixels ? map.latLngToContainerPoint([m.lat, m.lng]) : null;
+        let target = null;
+        for (const c of clusters) {
+            if (usePixels) {
+                const distPx = Math.hypot(pt.x - c.pt.x, pt.y - c.pt.y);
+                if (distPx <= 48) { target = c; break; }
+            } else {
+                const dDeg = Math.hypot(m.lat - c.lat, m.lng - c.lng);
+                if (dDeg <= 0.0005) { target = c; break; }
+            }
+        }
+        if (!target) {
+            clusters.push({
+                key: `C_${String(m.surveyor_id).toUpperCase()}`,
+                lat: m.lat,
+                lng: m.lng,
+                pt,
+                members: [m]
+            });
+        } else {
+            target.members.push(m);
+            target.lat = target.members.reduce((s, x) => s + x.lat, 0) / target.members.length;
+            target.lng = target.members.reduce((s, x) => s + x.lng, 0) / target.members.length;
+            if (usePixels) target.pt = map.latLngToContainerPoint([target.lat, target.lng]);
+        }
+    });
+    return clusters;
+}
+
+function updateMapSpiderButtonState(mode) {
+    const st = mapInteractiveState[mode];
+    const btn = st ? document.getElementById(st.spiderBtnId) : null;
+    if (!btn) return;
+    if (st.spiderAll) {
+        btn.innerHTML = '<i class="fa-solid fa-snowflake"></i> Gom bông tuyết';
+        btn.style.background = '#0284c7';
+        btn.style.color = '#ffffff';
+    } else {
+        btn.innerHTML = '<i class="fa-solid fa-snowflake"></i> Tỏa bông tuyết';
+        btn.style.background = '#f0f9ff';
+        btn.style.color = '#0369a1';
+    }
+}
+
+function toggleSpiderfyAllForMap(mode) {
+    const st = mapInteractiveState[mode];
+    if (!st || !st.map) return;
+    st.spiderAll = !st.spiderAll;
+    if (!st.spiderAll) {
+        st.spiderKey = null;
+        st.activeHighlightId = null;
+    }
+    updateMapSpiderButtonState(mode);
+    renderTeamMapMarkersShared(mode, false);
+}
+
+function toggleMapFullscreen(mode, forceState = null) {
+    const st = mapInteractiveState[mode];
+    if (!st) return;
+    const wrapper = document.getElementById(st.wrapperId);
+    const btn = document.getElementById(st.fsBtnId);
+    if (!wrapper) return;
+    const nextState = (forceState === null) ? !wrapper.classList.contains('is-fullscreen') : Boolean(forceState);
+    wrapper.classList.toggle('is-fullscreen', nextState);
+    document.body.style.overflow = document.querySelector('.map-fullscreen-wrapper.is-fullscreen') ? 'hidden' : '';
+    if (btn) {
+        btn.innerHTML = nextState
+            ? '<i class="fa-solid fa-compress"></i> Thu nhỏ'
+            : `<i class="fa-solid fa-expand"></i> ${mode === 'team' ? 'Mở rộng toàn màn hình' : 'Mở rộng'}`;
+    }
+    setTimeout(() => {
+        if (st.map) {
+            st.map.invalidateSize(true);
+            renderTeamMapMarkersShared(mode, false);
+        }
+    }, 140);
+}
+
+if (!window.__dakmanMapEscBound) {
+    window.__dakmanMapEscBound = true;
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (document.getElementById('adminMenuMapWrapper')?.classList.contains('is-fullscreen')) {
+                toggleMapFullscreen('admin', false);
+            }
+            if (document.getElementById('teamGeoMapWrapper')?.classList.contains('is-fullscreen')) {
+                toggleMapFullscreen('team', false);
+            }
+        }
+    });
+}
+
+function renderTeamMapMarkersShared(mode, fitAll = false) {
+    const st = mapInteractiveState[mode];
+    if (!st || !st.map || !st.layerGroup) return;
+    const map = st.map;
+    const lg = st.layerGroup;
+    lg.clearLayers();
+    st.markersById = {};
+    st.clusterByMemberId = {};
+
+    const clusters = clusterTeamMembersForMap(map, st.members);
+    const bounds = [];
+
+    clusters.forEach((c) => {
+        bounds.push([c.lat, c.lng]);
+        if (c.members.length === 1) {
+            const m = c.members[0];
+            const sid = String(m.surveyor_id).toUpperCase();
+            if (st.spiderAll || st.activeHighlightId === sid) {
+                const col = m.status === 'online' ? '#16a34a' : (m.status === 'recent' ? '#f59e0b' : '#0284c7');
+                drawSnowflakeBurst(lg, map, [m.lat, m.lng], col, 42);
+            }
+            const marker = L.marker([m.lat, m.lng], { icon: createTeamPinIcon(m) }).addTo(lg);
+            marker.bindPopup(buildTeamMemberPopupHtml(m));
+            marker.on('click', (ev) => {
+                L.DomEvent.stopPropagation(ev);
+                st.activeHighlightId = sid;
+                renderTeamMapMarkersShared(mode, false);
+                st.markersById[sid]?.openPopup();
+            });
+            st.markersById[sid] = marker;
+            return;
+        }
+
+        const isExpanded = st.spiderAll || (st.spiderKey === c.key);
+        c.members.forEach((m) => {
+            st.clusterByMemberId[String(m.surveyor_id).toUpperCase()] = c.key;
+        });
+
+        if (!isExpanded) {
+            const previewIds = c.members.map(m => m.surveyor_id).join(', ');
+            const hubIcon = L.divIcon({
+                className: 'team-pin-wrapper',
+                html: `<div class="snowflake-hub-badge" title="Bấm để tỏa bông tuyết tách từng điều tra viên">
+                    <i class="fa-solid fa-snowflake" style="color:#38bdf8;"></i>
+                    <span>${c.members.length} ĐTV (${escapeHtml(previewIds)}) • Bấm tỏa</span>
+                </div>`,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0]
+            });
+            const hubMarker = L.marker([c.lat, c.lng], { icon: hubIcon, zIndexOffset: 500 }).addTo(lg);
+            hubMarker.on('click', (ev) => {
+                L.DomEvent.stopPropagation(ev);
+                st.spiderKey = c.key;
+                renderTeamMapMarkersShared(mode, false);
+            });
+            c.members.forEach((m) => {
+                st.markersById[String(m.surveyor_id).toUpperCase()] = hubMarker;
+            });
+        } else {
+            const radiusPx = Math.max(82, 58 + c.members.length * 11);
+            const hubIcon = L.divIcon({
+                className: 'team-pin-wrapper',
+                html: `<div class="snowflake-hub-badge" style="background:#0369a1;border-color:#fff;" title="Bấm để gom lại">
+                    <i class="fa-solid fa-snowflake"></i>
+                    <span>Thu gọn (${c.members.length})</span>
+                </div>`,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0]
+            });
+            const centerPt = [c.lat, c.lng];
+            const centerHub = L.marker(centerPt, { icon: hubIcon, zIndexOffset: 400 }).addTo(lg);
+            centerHub.on('click', (ev) => {
+                L.DomEvent.stopPropagation(ev);
+                if (st.spiderKey === c.key) st.spiderKey = null;
+                if (st.spiderAll) st.spiderAll = false;
+                updateMapSpiderButtonState(mode);
+                renderTeamMapMarkersShared(mode, false);
+            });
+
+            c.members.forEach((m, idx) => {
+                const sid = String(m.surveyor_id).toUpperCase();
+                const angle = (Math.PI * 2 * idx) / c.members.length - Math.PI / 2;
+                const legTarget = projectSpiderfyLatLng(map, centerPt, angle, radiusPx);
+                const col = m.status === 'online' ? '#16a34a' : (m.status === 'recent' ? '#f59e0b' : '#0284c7');
+                L.polyline([centerPt, legTarget], { color: '#ffffff', weight: 4.5, opacity: 0.85 }).addTo(lg);
+                L.polyline([centerPt, legTarget], { color: col, weight: 2.2, dashArray: '5,4', opacity: 0.95 }).addTo(lg);
+
+                const petalMarker = L.marker(legTarget, { icon: createTeamPinIcon(m), zIndexOffset: 700 + idx }).addTo(lg);
+                petalMarker.bindPopup(buildTeamMemberPopupHtml(m));
+                petalMarker.on('click', (ev) => {
+                    L.DomEvent.stopPropagation(ev);
+                    st.activeHighlightId = sid;
+                    petalMarker.openPopup();
+                });
+                st.markersById[sid] = petalMarker;
+            });
+        }
+    });
+
+    if (mode === 'team') teamMarkersById = st.markersById;
+    else adminMenuMarkersById = st.markersById;
+
+    if (bounds.length > 0 && (fitAll || !map[st.boundsFlag])) {
+        map.fitBounds(bounds, { padding: [45, 45], maxZoom: 15 });
+        map[st.boundsFlag] = true;
+    }
+}
+
+function focusMemberOnSharedMap(mode, surveyorId) {
+    const st = mapInteractiveState[mode];
+    const sid = String(surveyorId || '').toUpperCase();
+    const targetMember = (st?.members || []).find(x => String(x.surveyor_id).toUpperCase() === sid && x.lat !== null && x.lng !== null);
+    if (!targetMember || !st?.map) {
         alert(`Điều tra viên ${surveyorId} hiện chưa ghi nhận tọa độ GPS nào trên máy chủ.`);
         return;
     }
-    const ll = marker.getLatLng();
-    teamGeoMap.setView(ll, 16, { animate: true });
-    marker.openPopup();
-    document.getElementById('teamGoogleEarthMap')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const cKey = st.clusterByMemberId[sid];
+    if (cKey) st.spiderKey = cKey;
+    st.activeHighlightId = sid;
+    st.map.setView([targetMember.lat, targetMember.lng], 17, { animate: false });
+    renderTeamMapMarkersShared(mode, false);
+    const marker = st.markersById[sid];
+    if (marker) marker.openPopup();
+    if (mode === 'team') {
+        document.getElementById('teamGoogleEarthMap')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function focusTeamMemberOnMap(surveyorId) {
+    focusMemberOnSharedMap('team', surveyorId);
+}
+
+function focusAdminMenuMember(surveyorId) {
+    focusMemberOnSharedMap('admin', surveyorId);
+}
+
+function startSharedTeamMapRefreshTimer() {
+    if (teamMapRefreshTimer) return;
+    teamMapRefreshTimer = setInterval(() => {
+        if (document.visibilityState !== 'visible') return;
+        if (document.getElementById('userLoginModal')?.classList.contains('active')) return;
+        if (typeof currentMainView !== 'undefined' && currentMainView === 'dashboard') {
+            loadTeamLocationsMap(false);
+        } else if (typeof currentMainView !== 'undefined' && currentMainView === 'menu' && currentUser?.role === 'admin') {
+            refreshAdminMenuLiveBoard(false);
+        }
+    }, 30000);
 }
 
 async function loadTeamLocationsMap(fitAll = false) {
@@ -6506,54 +6876,13 @@ async function loadTeamLocationsMap(fitAll = false) {
         const data = await fetchJsonWithTimeout(apiUrl('/api/team-locations'), 8000);
         const members = Array.isArray(data.members) ? data.members : [];
         if (summaryEl) {
-            summaryEl.innerHTML = `Cập nhật lúc <strong>${data.updated_at_vn || ''}</strong> • Đang online: <strong style="color:#15803d;">${data.online_count || 0}/6</strong> ĐTV • Đã có tọa độ GPS: <strong style="color:#0369a1;">${data.gps_count || 0}/6</strong> ĐTV`;
+            summaryEl.innerHTML = `Cập nhật lúc <strong>${data.updated_at_vn || ''}</strong> • Đang online: <strong style="color:#15803d;">${data.online_count || 0}/6</strong> ĐTV • Đã có tọa độ GPS: <strong style="color:#0369a1;">${data.gps_count || 0}/6</strong> ĐTV • <em>Bấm vào cụm/chốt để tỏa bông tuyết</em>`;
         }
 
         const map = ensureTeamGoogleHybridMap();
-        teamMarkersById = {};
-        const bounds = [];
-
-        if (map && teamGeoLayerGroup) {
-            teamGeoLayerGroup.clearLayers();
-            members.forEach((m) => {
-                if (m.lat === null || m.lng === null) return;
-                const color = m.status === 'online' ? '#16a34a' : (m.status === 'recent' ? '#f59e0b' : '#2563eb');
-                const markerIcon = L.divIcon({
-                    className: 'team-pin-wrapper',
-                    html: `<div style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);">
-                        <div style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;white-space:nowrap;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);">
-                            ${escapeHtml(m.surveyor_id)} • ${escapeHtml(m.full_name)}
-                        </div>
-                        <div style="width:12px;height:12px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.45);margin-top:2px;"></div>
-                    </div>`,
-                    iconSize: [0, 0],
-                    iconAnchor: [0, 0]
-                });
-                const marker = L.marker([m.lat, m.lng], { icon: markerIcon }).addTo(teamGeoLayerGroup);
-                const popupHtml = `
-                    <div style="min-width:220px;font-size:12.5px;line-height:1.45;">
-                        <div style="font-weight:800;color:#0f2a4a;font-size:13.5px;margin-bottom:4px;">[${escapeHtml(m.surveyor_id)}] ${escapeHtml(m.full_name)}</div>
-                        <div><strong>Trạng thái:</strong> ${escapeHtml(m.status_label)} (${escapeHtml(m.age_text || '')})</div>
-                        <div><strong>Địa bàn:</strong> ${escapeHtml(m.commune || '')}</div>
-                        <div><strong>Tọa độ:</strong> <code>${m.lat}, ${m.lng}</code></div>
-                        <div><strong>Thời gian GPS:</strong> ${escapeHtml(m.gps_time_vn || m.last_seen_vn || 'Chưa có')}</div>
-                        <div><strong>Hoạt động / Hộ:</strong> ${escapeHtml(m.last_survey_code || '—')} ${escapeHtml(m.last_household || '')}</div>
-                        <div><strong>Phiếu đã nộp:</strong> ${m.completed_count || 0} phiếu</div>
-                        <div style="margin-top:7px;display:flex;gap:8px;flex-wrap:wrap;">
-                            <a href="${m.google_earth_url}" target="_blank" style="color:#0369a1;font-weight:700;text-decoration:none;"><i class="fa-solid fa-earth-asia"></i> Google Earth Web</a>
-                            <a href="${m.google_maps_url}" target="_blank" style="color:#15803d;font-weight:700;text-decoration:none;"><i class="fa-solid fa-map-pin"></i> Google Maps</a>
-                        </div>
-                    </div>
-                `;
-                marker.bindPopup(popupHtml);
-                teamMarkersById[String(m.surveyor_id).toUpperCase()] = marker;
-                bounds.push([m.lat, m.lng]);
-            });
-
-            if (bounds.length > 0 && (fitAll || !map._teamBoundsFitted)) {
-                map.fitBounds(bounds, { padding: [45, 45], maxZoom: 15 });
-                map._teamBoundsFitted = true;
-            }
+        mapInteractiveState.team.members = members;
+        if (map) {
+            renderTeamMapMarkersShared('team', fitAll);
         }
 
         if (tbody) {
@@ -6589,70 +6918,12 @@ async function loadTeamLocationsMap(fitAll = false) {
                 `;
             }).join('');
         }
-
-        if (!teamMapRefreshTimer) {
-            teamMapRefreshTimer = setInterval(() => {
-                if (document.visibilityState !== 'visible') return;
-                if (typeof currentMainView !== 'undefined' && currentMainView === 'dashboard') {
-                    loadTeamLocationsMap(false);
-                } else if (typeof currentMainView !== 'undefined' && currentMainView === 'menu' && currentUser?.role === 'admin') {
-                    refreshAdminMenuLiveBoard(false);
-                }
-            }, 30000);
-        }
+        startSharedTeamMapRefreshTimer();
     } catch (e) {
         if (summaryEl) {
             summaryEl.textContent = 'Không thể tải dữ liệu vị trí trực tuyến từ máy chủ lúc này.';
         }
     }
-}
-
-let adminMenuMap = null;
-let adminMenuLayerGroup = null;
-let adminMenuMarkersById = {};
-
-function ensureAdminMenuMap() {
-    const mapEl = document.getElementById('adminMenuActivityMap');
-    if (!mapEl || typeof L === 'undefined') return null;
-    if (!adminMenuMap) {
-        adminMenuMap = L.map('adminMenuActivityMap', {
-            center: [12.885, 108.115],
-            zoom: 12,
-            zoomControl: true
-        });
-        const googleHybridLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            attribution: 'Google Satellite Hybrid'
-        });
-        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: 'OpenStreetMap'
-        });
-        googleHybridLayer.addTo(adminMenuMap);
-        L.control.layers(
-            {
-                'Google Map Hybrid': googleHybridLayer,
-                'OpenStreetMap': osmLayer
-            },
-            null,
-            { position: 'topright' }
-        ).addTo(adminMenuMap);
-        adminMenuLayerGroup = L.layerGroup().addTo(adminMenuMap);
-    }
-    setTimeout(() => {
-        if (adminMenuMap) adminMenuMap.invalidateSize();
-    }, 150);
-    return adminMenuMap;
-}
-
-function focusAdminMenuMember(surveyorId) {
-    const m = adminMenuMarkersById[String(surveyorId || '').toUpperCase()];
-    if (!m || !adminMenuMap) {
-        alert(`Điều tra viên ${surveyorId} hiện chưa ghi nhận tọa độ GPS trên hệ thống.`);
-        return;
-    }
-    adminMenuMap.setView(m.getLatLng(), 16, { animate: true });
-    m.openPopup();
 }
 
 async function refreshAdminMenuLiveBoard(fitAll = false) {
@@ -6672,7 +6943,7 @@ async function refreshAdminMenuLiveBoard(fitAll = false) {
             chipEl.textContent = `${data.online_count || 0}/6 online • ${data.gps_count || 0}/6 có GPS`;
         }
         if (metaEl) {
-            metaEl.innerHTML = `<span>Cập nhật lúc: <strong>${escapeHtml(data.updated_at_vn || '')}</strong></span><span>Nhấn vào từng nhân sự để định vị trên bản đồ</span>`;
+            metaEl.innerHTML = `<span>Cập nhật lúc: <strong>${escapeHtml(data.updated_at_vn || '')}</strong></span><span>Bấm cụm/chốt để tỏa bông tuyết hoặc bấm Mở rộng</span>`;
         }
 
         if (staffListEl) {
@@ -6705,53 +6976,11 @@ async function refreshAdminMenuLiveBoard(fitAll = false) {
         }
 
         const map = ensureAdminMenuMap();
-        adminMenuMarkersById = {};
-        const bounds = [];
-        if (map && adminMenuLayerGroup) {
-            adminMenuLayerGroup.clearLayers();
-            members.forEach((m) => {
-                if (m.lat === null || m.lng === null) return;
-                const color = m.status === 'online' ? '#16a34a' : (m.status === 'recent' ? '#f59e0b' : '#2563eb');
-                const icon = L.divIcon({
-                    className: 'team-pin-wrapper',
-                    html: `<div style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);">
-                        <div style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;white-space:nowrap;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);">
-                            ${escapeHtml(m.surveyor_id)} • ${escapeHtml(m.full_name)}
-                        </div>
-                        <div style="width:12px;height:12px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.45);margin-top:2px;"></div>
-                    </div>`,
-                    iconSize: [0, 0],
-                    iconAnchor: [0, 0]
-                });
-                const marker = L.marker([m.lat, m.lng], { icon }).addTo(adminMenuLayerGroup);
-                marker.bindPopup(`
-                    <div style="min-width:210px;font-size:12.5px;line-height:1.45;">
-                        <div style="font-weight:800;color:#0f2a4a;">[${escapeHtml(m.surveyor_id)}] ${escapeHtml(m.full_name)}</div>
-                        <div><strong>Trạng thái:</strong> ${escapeHtml(m.status_label)} (${escapeHtml(m.age_text || '')})</div>
-                        <div><strong>WGS84:</strong> <code>${m.lat}, ${m.lng}</code></div>
-                        <div><strong>Hoạt động:</strong> ${escapeHtml(m.last_survey_code || '—')} (${escapeHtml(m.gps_time_vn || m.last_seen_vn || '')})</div>
-                        <div style="margin-top:6px;"><a href="${m.google_earth_url}" target="_blank" style="color:#0369a1;font-weight:700;text-decoration:none;"><i class="fa-solid fa-earth-asia"></i> Mở Google Earth Web</a></div>
-                    </div>
-                `);
-                adminMenuMarkersById[String(m.surveyor_id).toUpperCase()] = marker;
-                bounds.push([m.lat, m.lng]);
-            });
-            if (bounds.length > 0 && (fitAll || !map._adminBoundsFitted)) {
-                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
-                map._adminBoundsFitted = true;
-            }
+        mapInteractiveState.admin.members = members;
+        if (map) {
+            renderTeamMapMarkersShared('admin', fitAll);
         }
-
-        if (!teamMapRefreshTimer) {
-            teamMapRefreshTimer = setInterval(() => {
-                if (document.visibilityState !== 'visible') return;
-                if (typeof currentMainView !== 'undefined' && currentMainView === 'dashboard') {
-                    loadTeamLocationsMap(false);
-                } else if (typeof currentMainView !== 'undefined' && currentMainView === 'menu' && currentUser?.role === 'admin') {
-                    refreshAdminMenuLiveBoard(false);
-                }
-            }, 30000);
-        }
+        startSharedTeamMapRefreshTimer();
     } catch (_) {
         if (staffListEl) {
             staffListEl.innerHTML = '<div style="color:#dc2626;font-size:0.82rem;text-align:center;padding:16px;">Không tải được trạng thái nhân sự từ VPS.</div>';
