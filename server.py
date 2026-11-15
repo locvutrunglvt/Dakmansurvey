@@ -3385,8 +3385,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 return
 
             role = str(data.get('role') or data.get('user_role') or 'editor').strip().lower()
-            if role in ('viewer', 'admin1') or is_admin1_actor(self, data=data):
-                self._send_json({'error': 'Tài khoản Chỉ Xem / Admin1 không được phép tải ảnh lên'}, 403)
+            if role == 'viewer':
+                self._send_json({'error': 'Tài khoản Chỉ Xem không được phép tải ảnh lên'}, 403)
                 return
 
             photo_data = data.get('photo_data') or ''
@@ -3942,8 +3942,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 return
 
             role = str(data.get('role') or 'editor').strip().lower()
-            if role in ('viewer', 'admin1') or is_admin1_actor(self, data=data):
-                self._send_json({'error': 'Chế độ chỉ xem / Admin1 không được phép sửa ghi chú ảnh!'}, 403)
+            if role == 'viewer':
+                self._send_json({'error': 'Chế độ chỉ xem không được phép sửa ghi chú ảnh!'}, 403)
                 return
 
             now_utc = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
