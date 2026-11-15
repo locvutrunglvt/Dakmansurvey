@@ -1995,6 +1995,7 @@
                     </span>
                     <span style="font-size: 0.76rem; color: #64748b; font-weight: 600;">Phỏng vấn thực địa Dakman</span>
                 </div>
+                <div id="editorAdminReminderBanner" style="display:none; margin-bottom:12px; padding:11px 14px; border-radius:10px; background:#fffbeb; border:1.5px solid #f59e0b; border-left:5px solid #d97706; color:#78350f; font-size:0.84rem; line-height:1.45;"></div>
 
                 <div class="app-launcher-grid">
                     <button type="button" id="menuTileCreate" class="app-tile-btn" onclick="switchMainView('pick-tool')">
@@ -2177,7 +2178,7 @@
                         </button>
                     </div>
                     <p style="font-size: 0.83rem; color: #475569; margin: 0 0 12px 0; line-height: 1.45;">
-                        Ảnh được giữ ở độ phân giải cao nhất tới <strong>2560px (JPEG 94%)</strong>, tự động đóng dấu tọa độ <strong>WGS84 &amp; thời gian thực</strong> rồi <strong>tải thẳng lên máy chủ VPS</strong> ngay sau khi chụp để không bị mất hoặc mờ ảnh khi mạng yếu.
+                        Ảnh được giữ ở độ phân giải HD sắc nét (tới <strong>1920px, JPEG 86%</strong>), tự động đóng dấu tọa độ <strong>WGS84 &amp; thời gian thực</strong> rồi <strong>tự động đẩy thẳng lên máy chủ VPS</strong> ngay sau khi chụp mà không cần bấm thêm nút nào.
                     </p>
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 12px;">
@@ -2217,7 +2218,7 @@
                     </div>
 
                     <input type="file" id="fieldQuickPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handleFieldQuickPhotoSelected(event)">
-                    <input type="file" id="fieldLibraryPhotoInput" accept="image/*" style="display:none;" onchange="handleFieldQuickPhotoSelected(event)">
+                    <input type="file" id="fieldLibraryPhotoInput" accept="image/*" multiple style="display:none;" onchange="handleFieldQuickPhotoSelected(event)">
 
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                         <button type="button" id="btnCaptureFieldPhotoCamera" onclick="triggerFieldQuickPhotoCapture('camera')"
@@ -2226,11 +2227,11 @@
                         </button>
                         <button type="button" id="btnCaptureFieldPhotoGallery" onclick="triggerFieldQuickPhotoCapture('gallery')"
                             style="background: #0f2a4a; color: #ffffff; border: none; border-radius: 8px; padding: 11px 16px; font-size: 0.88rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-images"></i> Chọn ảnh gốc từ thư viện
+                            <i class="fa-solid fa-images"></i> Chọn nhiều ảnh từ thư viện
                         </button>
-                        <button type="button" id="btnSyncPendingFieldPhotos" onclick="syncPendingFieldPhotosQueue(false)" class="qgis-btn-secondary" style="display:none; background:#fffbeb; color:#b45309; border-color:#fcd34d; padding:10px 14px; font-weight:700;">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> Đẩy lại ảnh chờ (<span id="pendingFieldPhotosCount">0</span>)
-                        </button>
+                        <span id="autoUploadPendingBadge" style="display:none; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; border-radius:8px; padding:10px 14px; font-size:0.84rem; font-weight:700; align-items:center; gap:7px;">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Đang đẩy lên (<span id="pendingFieldPhotosCount">0</span>)...
+                        </span>
                     </div>
 
                     <div id="fieldQuickPhotoStatus" style="margin-top: 10px; font-size: 0.84rem; font-weight: 600; color: #475569;">
@@ -2666,10 +2667,16 @@
                             </label>
                             <input type="file" id="householdPhotoInput" accept="image/*" capture="environment"
                                 style="display: none;" onchange="handlePhotoSelected(event)">
+                            <input type="file" id="householdPhotoGalleryInput" accept="image/*"
+                                style="display: none;" onchange="handlePhotoSelected(event)">
                             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                <button type="button" onclick="triggerHouseholdPhotoCapture()"
+                                <button type="button" id="btnTakeHouseholdPhoto" onclick="triggerHouseholdPhotoCapture('camera')"
                                     style="background: linear-gradient(180deg, #ffffff 0%, #e6e6e6 100%); color: #1e293b; border: 1px solid #b0b0b0; padding: 6px 14px; border-radius: 3px; cursor: pointer; font-size: 0.84rem; font-weight: 600; box-shadow: 0 1px 1px rgba(0,0,0,0.06);">
-                                    <i class="fa-solid fa-camera-retro" style="color: #15803d;"></i> Chụp / Chọn Ảnh Người Được Phỏng Vấn
+                                    <i class="fa-solid fa-camera-retro" style="color: #15803d;"></i> Chụp ảnh trực tiếp (Camera)
+                                </button>
+                                <button type="button" id="btnPickHouseholdGallery" onclick="triggerHouseholdPhotoCapture('gallery')"
+                                    style="background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 0.83rem; font-weight: 600;">
+                                    <i class="fa-solid fa-images" style="color: #0284c7;"></i> Chọn từ Thư viện ảnh
                                 </button>
                                 <button type="button" id="btnClearHouseholdPhoto" onclick="clearHouseholdPhoto()"
                                     style="display: none; background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 0.82rem; font-weight: 600;">
@@ -3058,7 +3065,7 @@
             <div id="view-history" class="view-pane" style="display: none;">
                 <div class="form-section">
                     <div class="section-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                        <span>DANH SÁCH PHIẾU KHẢO SÁT ĐÃ LƯU TRÊN MÁY CHỦ VPS</span>
+                        <span id="historyMainHeading">DANH SÁCH PHIẾU KHẢO SÁT ĐÃ LƯU TRÊN MÁY CHỦ VPS</span>
                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                             <button type="button" id="btnToggleHistoryTrash" onclick="toggleHistoryTrashPanel()" class="qgis-btn-secondary" style="font-size: 0.80rem; padding: 5px 10px; background: #fff7ed; color: #9a3412; border-color: #fed7aa;">
                                 <i class="fa-solid fa-trash-arrow-up"></i> Thùng rác / Phục hồi (<span id="historyTrashCount">0</span>)
@@ -3068,6 +3075,52 @@
                             </a>
                         </div>
                     </div>
+
+                    <div id="historyAdmin1NoticeBanner" style="display:none; background:#f5f3ff; border:1px solid #ddd6fe; border-left:4px solid #7c3aed; border-radius:6px; padding:10px 14px; margin-bottom:12px; font-size:0.83rem; color:#4c1d95;">
+                        <i class="fa-solid fa-shield-halved"></i> <strong>Chế độ Admin1 (Tổng hợp &amp; Điều hướng):</strong> Hiển thị đầy đủ khối lượng đã hoàn thành, đang lưu tạm, còn tồn lại của 06 Điều tra viên và liên kết điều hướng nhanh tới Bản đồ / Thư viện ảnh / Lịch trình. <strong>Không hiển thị nội dung câu trả lời chi tiết</strong> của từng phiếu phỏng vấn.
+                    </div>
+
+                    <!-- Khối tổng hợp 06 Điều tra viên & Điều hướng nhanh (Admin & Admin1) -->
+                    <div id="historyInterviewerSummarySection" style="display:none; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:12px 14px; margin-bottom:16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:0.92rem; font-weight:800; color:#0f2a4a; text-transform:uppercase;">
+                                    <i class="fa-solid fa-users-viewfinder" style="color:#0284c7;"></i> Khối Lượng 06 Điều Tra Viên (Hoàn Thành • Lưu Tạm • Tồn Lại &amp; Điều Hướng)
+                                </div>
+                                <div style="font-size:0.78rem; color:#475569; margin-top:2px;">
+                                    Phiếu đang phỏng vấn trên thực địa được đồng bộ tại <strong>Phiếu Lưu Tạm</strong> bên dưới cho đến khi ĐTV bấm <strong>Hoàn thành nộp chính thức</strong>. Bấm các nút điều hướng để mở dữ liệu liên quan.
+                                </div>
+                            </div>
+                            <button type="button" onclick="loadSurveysList()" class="qgis-btn-secondary" style="font-size:0.76rem; padding:4px 10px;">
+                                <i class="fa-solid fa-rotate"></i> Cập nhật số liệu
+                            </button>
+                        </div>
+                        <div id="historyWorkloadKpis" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; margin-bottom:12px;"></div>
+                        <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                            <table class="report-table history-mobile-cards" style="margin-top:0; background:#fff;">
+                                <thead>
+                                    <tr>
+                                        <th>Điều Tra Viên</th>
+                                        <th>Địa Bàn</th>
+                                        <th style="text-align:center;">Chỉ Tiêu P1</th>
+                                        <th style="text-align:center;">Hoàn Thành (Nộp)</th>
+                                        <th style="text-align:center;">Đang Lưu Tạm</th>
+                                        <th style="text-align:center;">Còn Tồn Lại</th>
+                                        <th style="text-align:center;">Điều Hướng Nhanh</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTeamWorkloadTbody">
+                                    <tr><td colspan="7" style="text-align:center; padding:12px; color:#64748b;">Đang tải khối lượng 06 Điều tra viên...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="historySurveyorFilterBar" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px; padding-top:8px; border-top:1px dashed #cbd5e1;">
+                            <span style="font-size:0.78rem; font-weight:700; color:#334155;">Lọc danh sách phiếu bên dưới theo ĐTV:</span>
+                            <div id="historySurveyorFilterPills" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
+                        </div>
+                    </div>
+
+                    <div id="historyFocusedInterviewerCard" style="display:none; margin-bottom:14px;"></div>
 
                     <div id="historyTrashPanel" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
@@ -3151,7 +3204,7 @@
                 <span>•</span>
                 <a href="/api/export/excel">Tải dữ liệu Excel</a>
                 <span>•</span>
-                <span>Tác giả hệ thống: <strong>Lộc Vũ Trung</strong></span>
+                <span>Tác giả hệ thống: <strong>Công ty TNHH Dịch vụ và Tư vấn Tân Cao Nguyên</strong></span>
             </div>
         </div>
     </div>
@@ -3921,7 +3974,7 @@
     <!-- Bundled Questions & Households Fallback + Application Logic -->
     <script src="questions_bundle.js?v=1"></script>
     <script src="sample_households_bundle.js?v=3"></script>
-    <script src="app.js?v=2.50"></script>
+    <script src="app.js?v=2.56"></script>
 
 </body>
 

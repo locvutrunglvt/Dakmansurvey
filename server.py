@@ -324,7 +324,7 @@ def _fmt_age_text(minutes_ago):
     return f"{days} ngày trước"
 
 
-def get_team_locations_data():
+def get_team_locations_data(stats_data=None):
     conn = get_db_conn()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
@@ -342,7 +342,30 @@ def get_team_locations_data():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS staff_reminders (
+            surveyor_id TEXT PRIMARY KEY,
+            reminder_text TEXT NOT NULL DEFAULT '',
+            reminder_level TEXT DEFAULT 'Nhắc nhở',
+            updated_by TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     now_utc = datetime.datetime.utcnow()
+    unified_stats = stats_data if stats_data is not None else _compute_dashboard_and_staff_stats(conn)
+    staff_stats_by_sid = {
+        str(sr.get('surveyor_id') or '').strip().upper(): sr
+        for sr in (unified_stats.get('staff_progress') or [])
+    }
+    conn.row_factory = sqlite3.Row
+    rem_cur = conn.cursor()
+    rem_cur.execute('SELECT surveyor_id, reminder_text, reminder_level, updated_by, updated_at FROM staff_reminders')
+    reminders_by_sid = {
+        str(r['surveyor_id'] or '').strip().upper(): dict(r)
+        for r in rem_cur.fetchall()
+    }
+    conn.row_factory = None
     members = []
 
     for m in FIELD_TEAM_ROSTER:
@@ -450,8 +473,14 @@ def get_team_locations_data():
             "last_survey_code": last_survey_code,
             "last_household": last_household,
             "last_activity": latest_act[4] if latest_act else "",
-            "completed_count": len(survey_rows),
-            "draft_count": len(draft_rows),
+            "completed_count": int(staff_stats_by_sid.get(m["surveyor_id"].upper(), {}).get("completed_count", len(survey_rows))),
+            "draft_count": int(staff_stats_by_sid.get(m["surveyor_id"].upper(), {}).get("draft_count", len(draft_rows))),
+            "assigned_target": int(staff_stats_by_sid.get(m["surveyor_id"].upper(), {}).get("assigned_target", 0)),
+            "remaining_count": int(staff_stats_by_sid.get(m["surveyor_id"].upper(), {}).get("remaining_count", 0)),
+            "reminder_text": reminders_by_sid.get(m["surveyor_id"].upper(), {}).get("reminder_text", ""),
+            "reminder_level": reminders_by_sid.get(m["surveyor_id"].upper(), {}).get("reminder_level", ""),
+            "reminder_updated_at": reminders_by_sid.get(m["surveyor_id"].upper(), {}).get("updated_at", ""),
+            "reminder_updated_by": reminders_by_sid.get(m["surveyor_id"].upper(), {}).get("updated_by", ""),
             "google_earth_url": ge_url,
             "google_maps_url": gm_url,
         })
@@ -687,11 +716,38 @@ def init_db():
     cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('pass_viewer', 'View123'))
     cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('admin_name', 'Quản Trị Viên (Admin)'))
     cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('smtp_sender', 'coffeedatavn@gmail.com'))
-    cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('smtp_password', 'maytinh123@TCN'))
+    cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('smtp_password', 'mvsszzzqwuhhpmxq'))
     cur.execute('INSERT OR IGNORE INTO system_settings (key, val) VALUES (?, ?)', ('report_recipients', 'dothanhduy21vn@gmail.com, locvutrung@gmail.com'))
     conn.commit()
     try:
         cur.execute('ALTER TABLE users ADD COLUMN password TEXT')
+    except Exception:
+        pass
+    for _tbl in ('surveys', 'survey_drafts'):
+        for _col_def in (
+            "admin_feedback TEXT DEFAULT ''",
+            "admin_status TEXT DEFAULT ''",
+            "admin_feedback_by TEXT DEFAULT ''",
+            "admin_feedback_at TEXT DEFAULT ''",
+        ):
+            try:
+                cur.execute(f'ALTER TABLE {_tbl} ADD COLUMN {_col_def}')
+            except Exception:
+                pass
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS survey_feedback_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            target_type TEXT,
+            target_id TEXT,
+            survey_code TEXT,
+            status TEXT,
+            comment TEXT,
+            author TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    try:
+        cur.execute('PRAGMA journal_mode=WAL')
     except Exception:
         pass
 
@@ -722,6 +778,16 @@ def init_db():
             current_view TEXT,
             survey_code TEXT,
             commune TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS staff_reminders (
+            surveyor_id TEXT PRIMARY KEY,
+            reminder_text TEXT NOT NULL DEFAULT '',
+            reminder_level TEXT DEFAULT 'Nhắc nhở',
+            updated_by TEXT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -799,6 +865,62 @@ def save_survey_photo(survey_code, photo_data, surveyor_id='', surveyor_name='',
     except Exception as e:
         print(f"Error saving photo: {e}")
         return ''
+
+def resolve_photo_on_disk(raw_rel):
+    """Resolve a stored or legacy/stale photo_path to (rel_posix, abs_path) under UPLOADS_DIR.
+    Returns (None, None) on path traversal, ('', '') if missing.
+    """
+    raw = str(raw_rel or '').replace('\\', '/').lstrip('/').strip()
+    if not raw:
+        return ('', '')
+    base_real = os.path.realpath(UPLOADS_DIR)
+    candidate = os.path.realpath(os.path.join(UPLOADS_DIR, raw))
+    if not (candidate == base_real or candidate.startswith(base_real + os.sep)):
+        return (None, None)
+    if os.path.isfile(candidate):
+        rel = os.path.relpath(candidate, base_real).replace('\\', '/')
+        return (rel, candidate)
+
+    base_name = os.path.basename(raw)
+    if not base_name:
+        return ('', '')
+
+    for root_dir, _, files in os.walk(UPLOADS_DIR):
+        if base_name in files:
+            found = os.path.join(root_dir, base_name)
+            rel = os.path.relpath(found, base_real).replace('\\', '/')
+            return (rel, found)
+
+    # Fallback for migrated draft filenames like DRAFT_ET-TBN-007_20261115_093545.jpg
+    stem = os.path.splitext(base_name)[0]
+    m_ts = re.search(r'_(?:20\d{6}_)?(\d{6})(?:_|$)', stem)
+    if m_ts:
+        hhmmss = m_ts.group(1)
+        code_raw = stem[:m_ts.start()]
+        code_raw = re.sub(r'^(?:DRAFT|FIELD)_+', '', code_raw, flags=re.IGNORECASE)
+        code_norm = re.sub(r'[^a-z0-9]+', '_', code_raw.lower()).strip('_')
+        if len(code_norm) >= 4:
+            matches = []
+            for root_dir, _, files in os.walk(UPLOADS_DIR):
+                for fn in files:
+                    fn_stem_norm = re.sub(r'[^a-z0-9]+', '_', os.path.splitext(fn)[0].lower()).strip('_')
+                    if f'_{hhmmss}' not in fn_stem_norm and not fn_stem_norm.endswith(hhmmss):
+                        continue
+                    if fn_stem_norm.startswith(code_norm + '_') or fn_stem_norm.startswith('draft_' + code_norm + '_'):
+                        full_p = os.path.join(root_dir, fn)
+                        try:
+                            fsize = os.path.getsize(full_p)
+                        except OSError:
+                            fsize = 0
+                        is_draft = fn_stem_norm.startswith('draft_')
+                        matches.append((0 if not is_draft else 1, -fsize, full_p))
+            if matches:
+                matches.sort()
+                best_p = matches[0][2]
+                rel = os.path.relpath(best_p, base_real).replace('\\', '/')
+                return (rel, best_p)
+
+    return ('', '')
 
 def build_survey_pdf(survey_row):
     import io
@@ -1063,6 +1185,164 @@ def build_survey_pdf(survey_row):
 
 DAILY_REPORT_RECIPIENTS = ["dothanhduy21vn@gmail.com", "locvutrung@gmail.com"]
 DAILY_REPORT_SENDER = "coffeedatavn@gmail.com"
+DAILY_REPORT_START_DATE = "2026-11-15"
+DAILY_REPORT_END_DATE = "2026-11-26"
+_SAMPLE_QUOTA_CACHE = None
+
+def _vn_now():
+    return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=7)))
+
+def _get_interviewer_quotas():
+    global _SAMPLE_QUOTA_CACHE
+    if _SAMPLE_QUOTA_CACHE is not None:
+        return _SAMPLE_QUOTA_CACHE
+    defaults = {
+        'TCN02': 42,
+        'TCN03': 37,
+        'TCN04': 34,
+        'TCN05': 36,
+        'TCN06': 36,
+        'TCN07': 35,
+        'TCN08': 0,
+    }
+    alias_to_sid = {
+        'vong': 'TCN02', 'phan doan vong': 'TCN02',
+        'thao': 'TCN03', 'pham van thao': 'TCN03',
+        'tru': 'TCN04', 'nguyen viet tru': 'TCN04',
+        'phuc': 'TCN05', 'cao thi phuc': 'TCN05',
+        'sinh': 'TCN06', 'hoang truong sinh': 'TCN06',
+        'duy': 'TCN07', 'le dinh duy': 'TCN07',
+        'nam': 'TCN08', 'dinh van nam': 'TCN08',
+    }
+    sample_file = os.path.join(PUBLIC_DIR, "sample_households.json")
+    try:
+        if os.path.exists(sample_file):
+            with open(sample_file, 'r', encoding='utf-8') as f:
+                arr = json.load(f)
+            if isinstance(arr, list) and arr:
+                counts = {k: 0 for k in defaults}
+                for row in arr:
+                    iv = _norm_vi_name(row.get('interviewer') or row.get('nv') or '')
+                    sid = alias_to_sid.get(iv)
+                    if sid:
+                        counts[sid] = counts.get(sid, 0) + 1
+                if sum(counts.values()) > 0:
+                    _SAMPLE_QUOTA_CACHE = counts
+                    return _SAMPLE_QUOTA_CACHE
+    except Exception:
+        pass
+    _SAMPLE_QUOTA_CACHE = defaults
+    return _SAMPLE_QUOTA_CACHE
+
+def _compute_dashboard_and_staff_stats(conn):
+    cur = conn.cursor()
+    cur.execute('SELECT tool_code, COUNT(*) FROM surveys GROUP BY tool_code')
+    submitted_tool_counts = dict(cur.fetchall())
+
+    cur.execute('SELECT COUNT(*) FROM surveys')
+    total_surveys = cur.fetchone()[0]
+    cur.execute('SELECT COUNT(*) FROM survey_drafts')
+    total_drafts = cur.fetchone()[0]
+
+    cur.execute('SELECT survey_code, tool_code, commune, surveyor_id, surveyor_name, photo_path FROM surveys')
+    survey_rows = cur.fetchall()
+    cur.execute('SELECT survey_code, tool_code, commune, surveyor_id, surveyor_name, photo_path FROM survey_drafts')
+    draft_rows = cur.fetchall()
+    cur.execute('SELECT surveyor_id, surveyor_name FROM field_photos WHERE photo_path IS NOT NULL AND TRIM(photo_path) != ""')
+    fp_rows = cur.fetchall()
+
+    combined_forms = {}
+    for sc, tc, comm, sid, sname, ppath in survey_rows:
+        t_norm = str(tc or 'P1').strip().upper()
+        c_norm = str(sc or '').strip().upper()
+        key = (t_norm, c_norm) if c_norm else ('SURVEY_ROW', str(len(combined_forms)))
+        combined_forms[key] = {
+            'status': 'completed', 'tool_code': t_norm, 'commune': comm or '',
+            'surveyor_id': sid or '', 'surveyor_name': sname or '', 'has_photo': bool((ppath or '').strip())
+        }
+
+    for sc, tc, comm, sid, sname, ppath in draft_rows:
+        t_norm = str(tc or 'P1').strip().upper()
+        c_norm = str(sc or '').strip().upper()
+        key = (t_norm, c_norm) if c_norm else ('DRAFT_ROW', str(len(combined_forms)))
+        if key not in combined_forms:
+            combined_forms[key] = {
+                'status': 'draft', 'tool_code': t_norm, 'commune': comm or '',
+                'surveyor_id': sid or '', 'surveyor_name': sname or '', 'has_photo': bool((ppath or '').strip())
+            }
+
+    quotas = _get_interviewer_quotas()
+    commune_display = {
+        'TCN02': 'Ea Kiết / Ea Tar',
+        'TCN03': "Ea Tul & Cư Dliê M'nông",
+        'TCN04': 'Ea Tul',
+        'TCN05': 'Ea Tul',
+        'TCN06': 'Ea Tul',
+        'TCN07': 'Ea Kiết',
+        'TCN08': 'Ea Kiết (Bổ sung)',
+    }
+    staff_map = {}
+    for m in FIELD_TEAM_ROSTER:
+        sid = m['surveyor_id']
+        q_target = quotas.get(sid, 0)
+        staff_map[sid] = {
+            'surveyor_id': sid,
+            'full_name': m['full_name'],
+            'commune': commune_display.get(sid, m['commune']),
+            'is_core_6': sid in ('TCN02', 'TCN03', 'TCN04', 'TCN05', 'TCN06', 'TCN07'),
+            'assigned_target': q_target,
+            'completed_count': 0,
+            'draft_count': 0,
+            'total_forms_done': 0,
+            'remaining_count': q_target,
+            'remaining_submitted': q_target,
+            'p1_count': 0,
+            'photo_count': 0,
+        }
+    # Reorder staff_map cleanly as TCN02..TCN08
+    ordered_ids = ['TCN02', 'TCN03', 'TCN04', 'TCN05', 'TCN06', 'TCN07', 'TCN08']
+    staff_map = {k: staff_map[k] for k in ordered_ids if k in staff_map}
+
+    tool_counts = {}
+    commune_counts = {}
+    for item in combined_forms.values():
+        t = item['tool_code']
+        tool_counts[t] = tool_counts.get(t, 0) + 1
+        if t == 'P1' and item['commune']:
+            commune_counts[item['commune']] = commune_counts.get(item['commune'], 0) + 1
+        m_canon = _resolve_canonical_member(item['surveyor_id'], item['surveyor_name'])
+        canon_sid = m_canon['surveyor_id'] if m_canon else ''
+        if canon_sid in staff_map:
+            st_rec = staff_map[canon_sid]
+            st_rec['total_forms_done'] += 1
+            if item['status'] == 'completed':
+                st_rec['completed_count'] += 1
+            else:
+                st_rec['draft_count'] += 1
+            if t == 'P1':
+                st_rec['p1_count'] += 1
+            if item.get('has_photo'):
+                st_rec['photo_count'] += 1
+
+    for sid_fp, sname_fp in fp_rows:
+        m_canon = _resolve_canonical_member(sid_fp, sname_fp)
+        if m_canon and m_canon['surveyor_id'] in staff_map:
+            staff_map[m_canon['surveyor_id']]['photo_count'] += 1
+
+    for st_rec in staff_map.values():
+        tgt = st_rec['assigned_target']
+        st_rec['remaining_count'] = max(0, tgt - st_rec['total_forms_done']) if tgt > 0 else 0
+        st_rec['remaining_submitted'] = max(0, tgt - st_rec['completed_count']) if tgt > 0 else 0
+
+    return {
+        'submitted_tool_counts': submitted_tool_counts,
+        'total_surveys': total_surveys,
+        'total_drafts': total_drafts,
+        'total_combined_forms': len(combined_forms),
+        'tool_counts': tool_counts,
+        'commune_counts': commune_counts,
+        'staff_progress': list(staff_map.values()),
+    }
 
 def _excel_safe_val(val, q_type="TX"):
     if isinstance(val, list):
@@ -1144,7 +1424,8 @@ def build_multisheet_excel(export_file=None):
         "Người Được Phỏng Vấn", "Giới Tính Người PV", "Năm Sinh Người PV", "Quan Hệ Với Chủ Hộ",
         "Số Điện Thoại", "Người Dẫn Đường",
         "Mã ĐTV", "Tên Điều Tra Viên", "Ngày Khảo Sát",
-        "Bắt Đầu", "Kết Thúc", "Vĩ Độ", "Kinh Độ", "Ảnh Watermark", "Thời Gian Gửi"
+        "Bắt Đầu", "Kết Thúc", "Vĩ Độ", "Kinh Độ", "Ảnh Watermark", "Thời Gian Gửi",
+        "Trạng Thái Góp Ý", "Góp Ý Của Admin"
     ]
     tool_col_letter = get_column_letter(headers_s1.index("Mã Công Cụ") + 1)
     sv_col_letter = get_column_letter(headers_s1.index("Mã ĐTV") + 1)
@@ -1187,7 +1468,8 @@ def build_multisheet_excel(export_file=None):
             ans.get('_started_at', '') or s.get('start_time', ''),
             ans.get('_completed_at', '') or s.get('end_time', ''),
             s.get('gps_lat', 0.0), s.get('gps_lng', 0.0),
-            p_name if p_name else 'Chưa có', s.get('created_at', '')
+            p_name if p_name else 'Chưa có', s.get('created_at', ''),
+            s.get('admin_status', '') or '', s.get('admin_feedback', '') or ''
         ]
         ws1.append(row_vals)
         for c_idx in range(1, len(row_vals) + 1):
@@ -1356,6 +1638,45 @@ def build_multisheet_excel(export_file=None):
         t_qs = (q_data.get(tc) or {}).get('questions') or []
         build_tool_sheet(stitle, tc, t_qs)
 
+    # Sheet Phieu_Luu_Tam_Drafts (bao gồm toàn bộ phiếu đang lưu tạm trên VPS để không sót dữ liệu khi sao lưu)
+    ws_drafts = wb.create_sheet(title="Phieu_Luu_Tam_Drafts")
+    ws_drafts.views.sheetView[0].showGridLines = True
+    draft_headers = [
+        "STT", "Mã Phiếu", "Mã Công Cụ", "Địa Bàn Xã", "Thôn/Buôn",
+        "Người Được PV / Chủ Hộ", "SĐT", "Người Dẫn Đường",
+        "Mã ĐTV", "Điều Tra Viên", "Số Câu Đã Nhập", "Tổng Câu",
+        "Vĩ Độ", "Kinh Độ", "Ảnh Watermark", "Trạng Thái Góp Ý", "Góp Ý Admin", "Cập Nhật Lúc"
+    ]
+    ws_drafts.append(draft_headers)
+    style_header_row(ws_drafts, 1, len(draft_headers))
+    conn_dr = get_db_conn()
+    cur_dr = conn_dr.cursor()
+    cur_dr.execute('''
+        SELECT survey_code, tool_code, commune, hamlet, respondent_name, respondent_phone,
+               guide_name, surveyor_id, surveyor_name, answered_count, total_count,
+               gps_lat, gps_lng, photo_path, admin_status, admin_feedback, updated_at
+        FROM survey_drafts
+        ORDER BY updated_at DESC, id DESC
+    ''')
+    for d_idx, dr in enumerate(cur_dr.fetchall(), 1):
+        d_vals = [
+            d_idx, dr[0] or '', dr[1] or 'P1', dr[2] or '', dr[3] or '',
+            dr[4] or '', dr[5] or '', dr[6] or '',
+            dr[7] or '', dr[8] or '', dr[9] or 0, dr[10] or 0,
+            dr[11] or 0.0, dr[12] or 0.0, dr[13] or 'Chưa có',
+            dr[14] or '', dr[15] or '', dr[16] or ''
+        ]
+        ws_drafts.append(d_vals)
+        for c_i in range(1, len(d_vals) + 1):
+            cell = ws_drafts.cell(d_idx + 1, c_i)
+            cell.font = font_normal
+            cell.border = thin_border
+            cell.alignment = Alignment(
+                horizontal="center" if c_i in (1, 2, 3, 9, 11, 12) else ("right" if c_i in (13, 14) else "left"),
+                vertical="center"
+            )
+    conn_dr.close()
+
     # Sheet Tu_Dien_Cau_Hoi
     ws_dict = wb.create_sheet(title="Tu_Dien_Cau_Hoi")
     ws_dict.views.sheetView[0].showGridLines = True
@@ -1388,12 +1709,19 @@ def build_multisheet_excel(export_file=None):
     with open(export_file, 'rb') as f:
         return export_file, f.read(), len(surveys_list)
 
-def send_daily_excel_report(recipients=None):
+def send_daily_excel_report(recipients=None, scheduled=False):
     import smtplib
     from email.mime.multipart import MIMEMultipart
     from email.mime.base import MIMEBase
     from email.mime.text import MIMEText
     from email import encoders
+
+    now_vn = _vn_now()
+    today_str = now_vn.strftime("%Y-%m-%d")
+    date_vn_str = now_vn.strftime("%d/%m/%Y")
+    time_vn_str = now_vn.strftime("%H:%M")
+    if scheduled and today_str > DAILY_REPORT_END_DATE:
+        return False, 0, [], f"Skipped scheduled backup: current date {today_str} is past cutoff {DAILY_REPORT_END_DATE}"
 
     cfg_recipients = get_setting("report_recipients", "")
     if recipients:
@@ -1408,9 +1736,27 @@ def send_daily_excel_report(recipients=None):
     smtp_sender = (get_setting("smtp_sender", DAILY_REPORT_SENDER) or DAILY_REPORT_SENDER).strip()
     smtp_password = (get_setting("smtp_password", "mvsszzzqwuhhpmxq") or "").strip()
 
-    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
     export_path = os.path.join(BASE_DIR, "export_surveys_latest.xlsx")
     _, file_bytes, total_count = build_multisheet_excel(export_path)
+
+    # Luu ban sao Excel an toan tren VPS theo moc thoi gian (chmod 600)
+    snap_dir = os.path.join(BASE_DIR, "backups", "excel_snapshots")
+    os.makedirs(snap_dir, mode=0o700, exist_ok=True)
+    snap_path = os.path.join(snap_dir, f"Dakman_Survey_KetQua_{now_vn.strftime('%Y%m%d_%H%M')}.xlsx")
+    try:
+        with open(snap_path, 'wb') as sf:
+            sf.write(file_bytes)
+        os.chmod(snap_path, 0o600)
+    except Exception as _snap_err:
+        print(f"Snapshot warning: {_snap_err}")
+
+    conn_cnt = get_db_conn()
+    stats_snap = _compute_dashboard_and_staff_stats(conn_cnt)
+    conn_cnt.close()
+    total_drafts = stats_snap.get('total_drafts', 0)
+    total_combined = stats_snap.get('total_combined_forms', total_count)
+
+    slot_label = "12h00" if now_vn.hour < 15 else ("18h00" if now_vn.hour >= 17 else time_vn_str)
 
     def _build_msg(from_addr, reply_to=None):
         m = MIMEMultipart()
@@ -1418,21 +1764,23 @@ def send_daily_excel_report(recipients=None):
         m["To"] = ", ".join(target_list)
         if reply_to and reply_to != from_addr:
             m["Reply-To"] = reply_to
-        m["Subject"] = f"[Dakman Cu M'gar] Bao cao tong hop phong van ngay {today_str} ({total_count} phieu)"
+        m["Subject"] = f"[Dakman Cu M'gar] Sao luu Excel ({slot_label}) ngay {date_vn_str} - {total_count} phieu nop / {total_drafts} phieu tam"
 
         body = (
             f"Kính gửi Ban Quản Lý Dự Án (Đỗ Thành Duy & Lộc Vũ Trung),\n\n"
-            f"Hệ thống Khảo Sát Dakman Cư M'gar gửi đính kèm file Excel tổng hợp kết quả phỏng vấn cuối ngày {today_str}.\n"
-            f"- Tổng số phiếu hiện có trên VPS: {total_count} phiếu\n"
-            f"- Cấu trúc file: Gồm sheet Tổng Hợp Tiến Độ, Danh Sách Phiếu, các sheet tách theo từng phần câu hỏi (P1 Phần A–G) và các công cụ (NT, CQ, HTX, TT, MH), cùng Từ Điển Câu Hỏi.\n\n"
-            f"Trân trọng,\nHệ thống Dakman Survey (https://dakmansurvey.coffeedata.it.com)"
+            f"Hệ thống Khảo Sát Dakman Cư M'gar gửi đính kèm file Excel sao lưu kết quả phỏng vấn lúc {time_vn_str} ngày {date_vn_str} (lịch định kỳ 12h00 & 18h00 từ 15/11/2026 đến 26/11/2026).\n"
+            f"- Phiếu đã hoàn thành (nộp chính thức): {total_count} phiếu\n"
+            f"- Phiếu đang lưu tạm trên VPS (Drafts): {total_drafts} phiếu\n"
+            f"- Tổng tiến độ ghi nhận (nộp + tạm): {total_combined} / 240 phiếu\n"
+            f"- Cấu trúc file: Gồm sheet Tổng Hợp Tiến Độ, Danh Sách Phiếu Hoàn Thành (kèm góp ý Admin), Phiếu Lưu Tạm (Drafts), các sheet câu hỏi (P1 Phần A–G, NT, CQ, HTX, TT, MH) và Từ Điển Câu Hỏi.\n\n"
+            f"Trân trọng,\nCông ty TNHH Dịch vụ và Tư vấn Tân Cao Nguyên — Hệ thống Dakman Survey (https://dakmansurvey.coffeedata.it.com)"
         )
         m.attach(MIMEText(body, "plain", "utf-8"))
 
         part = MIMEBase("application", "vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         part.set_payload(file_bytes)
         encoders.encode_base64(part)
-        attach_name = f"Dakman_Survey_KetQua_{today_str}.xlsx"
+        attach_name = f"Dakman_Survey_KetQua_{today_str}_{now_vn.strftime('%H%M')}.xlsx"
         part.add_header("Content-Disposition", f'attachment; filename="{attach_name}"')
         m.attach(part)
         return m
@@ -1573,6 +1921,32 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             self._send_json(get_team_locations_data())
             return
 
+        elif path == '/api/staff-reminders':
+            sid_q = (query.get('surveyor_id', [''])[0] or '').strip().upper()
+            conn = get_db_conn()
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS staff_reminders (
+                    surveyor_id TEXT PRIMARY KEY,
+                    reminder_text TEXT NOT NULL DEFAULT '',
+                    reminder_level TEXT DEFAULT 'Nhắc nhở',
+                    updated_by TEXT,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            if sid_q:
+                cur.execute('SELECT surveyor_id, reminder_text, reminder_level, updated_by, updated_at FROM staff_reminders WHERE UPPER(surveyor_id) = ?', (sid_q,))
+                row = cur.fetchone()
+                conn.close()
+                self._send_json(dict(row) if row else {'surveyor_id': sid_q, 'reminder_text': '', 'reminder_level': 'Nhắc nhở', 'updated_by': '', 'updated_at': ''})
+            else:
+                cur.execute('SELECT surveyor_id, reminder_text, reminder_level, updated_by, updated_at FROM staff_reminders ORDER BY surveyor_id')
+                rows = [dict(r) for r in cur.fetchall()]
+                conn.close()
+                self._send_json(rows)
+            return
+
         elif path == '/api/photo-library':
             conn = get_db_conn()
             conn.row_factory = sqlite3.Row
@@ -1590,6 +1964,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 d = dict(r)
                 m = _resolve_canonical_member(d.get('surveyor_id'), d.get('surveyor_name'))
                 items.append({
+                    'id': d['id'],
                     'uid': f"fp_{d['id']}",
                     'source_type': 'field_photo',
                     'source_label': 'Ảnh hiện trường HD',
@@ -1624,6 +1999,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 m = _resolve_canonical_member(d.get('surveyor_id'), d.get('surveyor_name'))
                 note_txt = f"Chủ hộ / PV: {d.get('respondent_name') or '—'}" + (f" ({d.get('hamlet')})" if d.get('hamlet') else '')
                 items.append({
+                    'id': f"sv_{d['id']}",
                     'uid': f"sv_{d['id']}",
                     'source_type': 'survey',
                     'source_label': f"Phiếu hoàn thành ({d.get('tool_code') or 'P1'})",
@@ -1657,6 +2033,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 m = _resolve_canonical_member(d.get('surveyor_id'), d.get('surveyor_name'))
                 note_txt = f"Phiếu tạm — {d.get('respondent_name') or 'Chưa nhập tên'}" + (f" ({d.get('hamlet')})" if d.get('hamlet') else '')
                 items.append({
+                    'id': f"dr_{d['id']}",
                     'uid': f"dr_{d['id']}",
                     'source_type': 'draft',
                     'source_label': f"Phiếu tạm ({d.get('tool_code') or 'P1'})",
@@ -1780,9 +2157,10 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             role_hdr = (query.get('role', [None])[0] or self.headers.get('X-User-Role', '')).strip().lower()
             sid_hdr = (query.get('surveyor_id', [None])[0] or self.headers.get('X-User-Id', '')).strip().upper()
             auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if role_hdr in ('viewer', 'admin1') or is_admin1_actor(self, query) or (not is_valid_admin_key(auth_key) and not sid_hdr):
+            if role_hdr in ('viewer', 'admin1') or is_admin1_actor(self, query):
                 self._send_json({'error': 'Tài khoản chỉ xem không có quyền xem thùng rác'}, 403)
                 return
+            if not is_valid_admin_key(auth_key) and not sid_hdr:
                 self._send_json({'error': 'Vui lòng đăng nhập tài khoản điều tra viên hoặc quản trị để xem dữ liệu đã xóa.'}, 403)
                 return
             conn = get_db_conn()
@@ -1878,65 +2256,10 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
         elif path == '/api/stats':
             conn = get_db_conn()
-            cur = conn.cursor()
-            cur.execute('SELECT tool_code, COUNT(*) FROM surveys GROUP BY tool_code')
-            submitted_tool_counts = dict(cur.fetchall())
-
-            cur.execute('SELECT COUNT(*) FROM surveys')
-            total_surveys = cur.fetchone()[0]
-            cur.execute('SELECT COUNT(*) FROM survey_drafts')
-            total_drafts = cur.fetchone()[0]
-
-            cur.execute('SELECT survey_code, tool_code, commune, surveyor_id, surveyor_name FROM surveys')
-            survey_rows = cur.fetchall()
-            cur.execute('SELECT survey_code, tool_code, commune, surveyor_id, surveyor_name FROM survey_drafts')
-            draft_rows = cur.fetchall()
-
-            # Đếm toàn bộ các phiếu tạm đã có + phiếu đã hoàn thành (loại trùng mã phiếu nếu có) / 240
-            combined_forms = {}
-            for sc, tc, comm, sid, sname in survey_rows:
-                t_norm = str(tc or 'P1').strip().upper()
-                c_norm = str(sc or '').strip().upper()
-                key = (t_norm, c_norm) if c_norm else ('SURVEY_ROW', str(len(combined_forms)))
-                combined_forms[key] = {'status': 'completed', 'tool_code': t_norm, 'commune': comm or '', 'surveyor_id': sid or '', 'surveyor_name': sname or ''}
-
-            for sc, tc, comm, sid, sname in draft_rows:
-                t_norm = str(tc or 'P1').strip().upper()
-                c_norm = str(sc or '').strip().upper()
-                key = (t_norm, c_norm) if c_norm else ('DRAFT_ROW', str(len(combined_forms)))
-                if key not in combined_forms:
-                    combined_forms[key] = {'status': 'draft', 'tool_code': t_norm, 'commune': comm or '', 'surveyor_id': sid or '', 'surveyor_name': sname or ''}
-
-            tool_counts = {}
-            commune_counts = {}
-            staff_map = {
-                'TCN02': {'surveyor_id': 'TCN02', 'full_name': 'Phan Doãn Vọng', 'commune': 'Ea Kiết', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
-                'TCN03': {'surveyor_id': 'TCN03', 'full_name': 'Phạm Văn Thảo', 'commune': 'Ea Tul', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
-                'TCN04': {'surveyor_id': 'TCN04', 'full_name': 'Nguyễn Viết Trụ', 'commune': 'Ea Tul', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
-                'TCN05': {'surveyor_id': 'TCN05', 'full_name': 'Cao Thị Phúc', 'commune': 'Ea Tul', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
-                'TCN06': {'surveyor_id': 'TCN06', 'full_name': 'Hoàng Trường Sinh', 'commune': 'Ea Tul', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
-                'TCN07': {'surveyor_id': 'TCN07', 'full_name': 'Lê Đình Duy', 'commune': 'Ea Kiết', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
-                'TCN08': {'surveyor_id': 'TCN08', 'full_name': 'Đinh Văn Nam', 'commune': 'Ea Kiết', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
-            }
-
-            for item in combined_forms.values():
-                t = item['tool_code']
-                tool_counts[t] = tool_counts.get(t, 0) + 1
-                if t == 'P1' and item['commune']:
-                    commune_counts[item['commune']] = commune_counts.get(item['commune'], 0) + 1
-                m_canon = _resolve_canonical_member(item['surveyor_id'], item['surveyor_name'])
-                canon_sid = m_canon['surveyor_id'] if m_canon else ''
-                if canon_sid in staff_map:
-                    st_rec = staff_map[canon_sid]
-                    st_rec['total_forms_done'] += 1
-                    if item['status'] == 'completed':
-                        st_rec['completed_count'] += 1
-                    else:
-                        st_rec['draft_count'] += 1
-                    if t == 'P1':
-                        st_rec['p1_count'] += 1
-
-            total_combined_forms = len(combined_forms)
+            st = _compute_dashboard_and_staff_stats(conn)
+            tool_counts = st['tool_counts']
+            commune_counts = st['commune_counts']
+            total_combined_forms = st['total_combined_forms']
 
             targets = {
                 'total_respondents': 240,
@@ -1982,15 +2305,143 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
             conn.close()
             self._send_json({
-                'total_completed': total_surveys,
-                'total_drafts': total_drafts,
+                'total_completed': st['total_surveys'],
+                'total_drafts': st['total_drafts'],
                 'total_combined_forms': total_combined_forms,
                 'total_unique_completed': total_combined_forms,
-                'submitted_tool_counts': submitted_tool_counts,
+                'submitted_tool_counts': st['submitted_tool_counts'],
                 'tool_counts': tool_counts,
                 'commune_counts': commune_counts,
-                'staff_progress': list(staff_map.values()),
+                'staff_progress': st['staff_progress'],
                 'targets': targets
+            })
+            return
+
+        elif path == '/api/history-overview':
+            # Tổng hợp tiến độ 06+ ĐTV (Hoàn thành / Lưu tạm / Còn tồn lại) & danh mục điều hướng không lộ câu trả lời chi tiết cho Admin1
+            role_param = (query.get('role', [''])[0] or self.headers.get('X-User-Role', '')).strip().lower()
+            is_admin1 = is_admin1_actor(self, query) or (role_param == 'admin1')
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            is_admin = (role_param == 'admin') and is_valid_admin_key(auth_key)
+
+            conn = get_db_conn()
+            conn.row_factory = sqlite3.Row
+            st = _compute_dashboard_and_staff_stats(conn)
+            cur = conn.cursor()
+
+            cur.execute('''
+                SELECT id, survey_code, tool_code, tool_name, surveyor_id, surveyor_name,
+                       survey_date, commune, hamlet, respondent_name, gps_lat, gps_lng,
+                       photo_path, created_at, admin_status, admin_feedback, admin_feedback_by, admin_feedback_at
+                FROM surveys
+                ORDER BY id DESC
+            ''')
+            completed_items = []
+            for r in cur.fetchall():
+                d = dict(r)
+                m = _resolve_canonical_member(d.get('surveyor_id'), d.get('surveyor_name'))
+                pp = (d.get('photo_path') or '').strip()
+                completed_items.append({
+                    'id': d['id'],
+                    'survey_code': d.get('survey_code') or '',
+                    'tool_code': d.get('tool_code') or 'P1',
+                    'tool_name': d.get('tool_name') or '',
+                    'surveyor_id': m['surveyor_id'] if m else (d.get('surveyor_id') or ''),
+                    'surveyor_name': m['full_name'] if m else (d.get('surveyor_name') or ''),
+                    'raw_surveyor_id': d.get('surveyor_id') or '',
+                    'survey_date': d.get('survey_date') or '',
+                    'commune': d.get('commune') or '',
+                    'hamlet': d.get('hamlet') or '',
+                    'respondent_name': d.get('respondent_name') or '',
+                    'gps_lat': d.get('gps_lat'),
+                    'gps_lng': d.get('gps_lng'),
+                    'has_photo': bool(pp),
+                    'photo_path': pp,
+                    'photo_url': f"/api/photos/{pp}" if pp else '',
+                    'created_at': d.get('created_at') or '',
+                    'admin_status': '' if is_admin1 else (d.get('admin_status') or ''),
+                    'admin_feedback': '' if is_admin1 else (d.get('admin_feedback') or ''),
+                    'admin_feedback_by': '' if is_admin1 else (d.get('admin_feedback_by') or ''),
+                    'admin_feedback_at': '' if is_admin1 else (d.get('admin_feedback_at') or ''),
+                    'source_status': 'completed',
+                })
+
+            cur.execute('''
+                SELECT id, draft_key, tool_code, survey_code, surveyor_id, surveyor_name,
+                       survey_date, commune, hamlet, respondent_name, guide_name,
+                       gps_lat, gps_lng, photo_path, answered_count, total_count, updated_at,
+                       admin_status, admin_feedback, admin_feedback_by, admin_feedback_at
+                FROM survey_drafts
+                ORDER BY updated_at DESC, id DESC
+            ''')
+            draft_items = []
+            for r in cur.fetchall():
+                d = dict(r)
+                m = _resolve_canonical_member(d.get('surveyor_id'), d.get('surveyor_name'))
+                pp = (d.get('photo_path') or '').strip()
+                draft_items.append({
+                    'id': d['id'],
+                    'draft_key': d.get('draft_key') or '',
+                    'survey_code': d.get('survey_code') or '',
+                    'tool_code': d.get('tool_code') or 'P1',
+                    'surveyor_id': m['surveyor_id'] if m else (d.get('surveyor_id') or ''),
+                    'surveyor_name': m['full_name'] if m else (d.get('surveyor_name') or ''),
+                    'raw_surveyor_id': d.get('surveyor_id') or '',
+                    'survey_date': d.get('survey_date') or '',
+                    'commune': d.get('commune') or '',
+                    'hamlet': d.get('hamlet') or '',
+                    'respondent_name': d.get('respondent_name') or '',
+                    'guide_name': d.get('guide_name') or '',
+                    'gps_lat': d.get('gps_lat'),
+                    'gps_lng': d.get('gps_lng'),
+                    'has_photo': bool(pp),
+                    'photo_path': pp,
+                    'photo_url': f"/api/photos/{pp}" if pp else '',
+                    'answered_count': d.get('answered_count') or 0,
+                    'total_count': d.get('total_count') or 0,
+                    'updated_at': d.get('updated_at') or '',
+                    'admin_status': '' if is_admin1 else (d.get('admin_status') or ''),
+                    'admin_feedback': '' if is_admin1 else (d.get('admin_feedback') or ''),
+                    'admin_feedback_by': '' if is_admin1 else (d.get('admin_feedback_by') or ''),
+                    'admin_feedback_at': '' if is_admin1 else (d.get('admin_feedback_at') or ''),
+                    'source_status': 'draft',
+                })
+            conn.close()
+
+            loc_data = get_team_locations_data(stats_data=st)
+            loc_by_sid = {x['surveyor_id']: x for x in (loc_data.get('members') or [])}
+            staff_summary = []
+            for sr in st['staff_progress']:
+                loc = loc_by_sid.get(sr['surveyor_id'], {})
+                merged = dict(sr)
+                merged['status'] = loc.get('status', 'none')
+                merged['status_label'] = loc.get('status_label', 'Chưa có dữ liệu')
+                merged['lat'] = loc.get('lat')
+                merged['lng'] = loc.get('lng')
+                merged['last_seen_vn'] = loc.get('last_seen_vn', '')
+                merged['age_text'] = loc.get('age_text', '')
+                merged['google_maps_url'] = loc.get('google_maps_url', '')
+                merged['reminder_text'] = loc.get('reminder_text', '')
+                merged['reminder_level'] = loc.get('reminder_level', '')
+                merged['reminder_updated_at'] = loc.get('reminder_updated_at', '')
+                merged['reminder_updated_by'] = loc.get('reminder_updated_by', '')
+                staff_summary.append(merged)
+
+            self._send_json({
+                'role_view': 'admin1' if is_admin1 else ('admin' if is_admin else role_param),
+                'can_view_details': (not is_admin1),
+                'can_feedback': is_admin,
+                'totals': {
+                    'target_total': 240,
+                    'target_p1': 220,
+                    'completed_count': st['total_surveys'],
+                    'draft_count': st['total_drafts'],
+                    'combined_count': st['total_combined_forms'],
+                    'remaining_total': max(0, 240 - st['total_combined_forms']),
+                },
+                'staff_summary': staff_summary,
+                'completed_items': completed_items,
+                'draft_items': draft_items,
             })
             return
 
@@ -2009,7 +2460,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 SELECT id, draft_key, tool_code, survey_code, surveyor_id, surveyor_name,
                        survey_date, commune, hamlet, respondent_name, respondent_phone,
                        guide_name, gps_lat, gps_lng, current_section, photo_path, photo_meta,
-                       answers_json, answered_count, total_count, updated_at
+                       answers_json, answered_count, total_count, updated_at,
+                       admin_status, admin_feedback, admin_feedback_by, admin_feedback_at
                 FROM survey_drafts
                 ORDER BY updated_at DESC, id DESC
             '''
@@ -2081,7 +2533,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             commune_filter = query.get('commune', [None])[0]
             surveyor_filter = query.get('surveyor', [None])[0]
 
-            sql = 'SELECT id, survey_code, tool_code, tool_name, surveyor_id, surveyor_name, survey_date, commune, hamlet, target_group, respondent_name, respondent_phone, gps_lat, gps_lng, start_time, end_time, photo_path, created_at FROM surveys WHERE 1=1'
+            sql = 'SELECT id, survey_code, tool_code, tool_name, surveyor_id, surveyor_name, survey_date, commune, hamlet, target_group, respondent_name, respondent_phone, gps_lat, gps_lng, start_time, end_time, photo_path, created_at, admin_status, admin_feedback, admin_feedback_by, admin_feedback_at FROM surveys WHERE 1=1'
             params = []
             if tool_filter:
                 sql += ' AND tool_code = ?'
@@ -2106,27 +2558,40 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
         elif path.startswith('/api/photos/'):
             raw_rel = urllib.parse.unquote(path.split('/api/photos/', 1)[1]).replace('\\', '/').lstrip('/')
-            base_real = os.path.realpath(UPLOADS_DIR)
-            candidate = os.path.realpath(os.path.join(UPLOADS_DIR, raw_rel))
-            if not (candidate == base_real or candidate.startswith(base_real + os.sep)):
+            rel_path, filepath = resolve_photo_on_disk(raw_rel)
+            if rel_path is None:
                 self._send_json({'error': 'Invalid photo path'}, 403)
                 return
-            filepath = candidate
-            if not os.path.isfile(filepath):
-                base_name = os.path.basename(raw_rel)
-                if base_name:
-                    for root_dir, _, files in os.walk(UPLOADS_DIR):
-                        if base_name in files:
-                            filepath = os.path.join(root_dir, base_name)
-                            break
-            if os.path.isfile(filepath):
-                with open(filepath, 'rb') as f:
+            if filepath and os.path.isfile(filepath):
+                want_thumb = str(query.get('thumb', [''])[0] or '').strip().lower() in ('1', 'true', 'yes')
+                serve_path = filepath
+                cache_control = 'public, max-age=86400'
+                if want_thumb:
+                    try:
+                        thumb_path = os.path.realpath(os.path.join(UPLOADS_DIR, '_thumbs', rel_path.lstrip('/') + '.jpg'))
+                        uploads_real = os.path.realpath(UPLOADS_DIR)
+                        if thumb_path.startswith(uploads_real + os.sep):
+                            if not os.path.isfile(thumb_path) or os.path.getmtime(thumb_path) < os.path.getmtime(filepath):
+                                os.makedirs(os.path.dirname(thumb_path), exist_ok=True)
+                                from PIL import Image, ImageOps
+                                with Image.open(filepath) as im:
+                                    im = ImageOps.exif_transpose(im)
+                                    if im.mode != 'RGB':
+                                        im = im.convert('RGB')
+                                    im.thumbnail((400, 400))
+                                    im.save(thumb_path, format='JPEG', quality=72, optimize=True)
+                            if os.path.isfile(thumb_path):
+                                serve_path = thumb_path
+                                cache_control = 'public, max-age=604800'
+                    except Exception:
+                        serve_path = filepath
+                with open(serve_path, 'rb') as f:
                     img_bytes = f.read()
                 self.send_response(200)
                 self.send_header('Content-Type', 'image/jpeg')
                 self.send_header('Content-Length', str(len(img_bytes)))
                 self.send_header('Access-Control-Allow-Origin', '*')
-                self.send_header('Cache-Control', 'public, max-age=86400')
+                self.send_header('Cache-Control', cache_control)
                 self.end_headers()
                 self.wfile.write(img_bytes)
             else:
@@ -2426,6 +2891,109 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 })
             except Exception as e:
                 self._send_json({'error': f'Lỗi gửi email báo cáo: {str(e)}'}, 500)
+            return
+
+        elif path.startswith('/api/surveys/') and path.endswith('/feedback'):
+            parts = [p for p in path.split('/') if p]
+            if len(parts) == 4 and parts[0] == 'api' and parts[1] == 'surveys' and parts[3] == 'feedback':
+                auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+                if is_admin1_actor(self) or not is_valid_admin_key(auth_key):
+                    self._send_json({'error': 'Chỉ tài khoản Admin (Quản trị viên) mới được phép góp ý kết quả phiếu phỏng vấn!'}, 403)
+                    return
+                length = int(self.headers.get('Content-Length', 0))
+                raw_body = read_request_body(self.rfile, length)
+                try:
+                    data = json.loads(raw_body)
+                except Exception as e:
+                    self._send_json({'error': f'Invalid JSON: {str(e)}'}, 400)
+                    return
+                if is_admin1_actor(self, data=data):
+                    self._send_json({'error': 'Tài khoản Admin1 không có quyền góp ý hoặc sửa đổi phiếu!'}, 403)
+                    return
+
+                survey_id = parts[2]
+                fb_status = str(data.get('admin_status', '') or '').strip()[:40]
+                fb_text = str(data.get('admin_feedback', '') or '').strip()[:2000]
+                fb_by = str(data.get('author') or get_setting('admin_name', 'Quản Trị Viên (Admin)') or 'Admin').strip()
+                fb_at = _vn_now().strftime('%d/%m/%Y %H:%M')
+
+                conn = get_db_conn()
+                cur = conn.cursor()
+                cur.execute('SELECT id, survey_code FROM surveys WHERE id = ?', (survey_id,))
+                s_row = cur.fetchone()
+                if not s_row:
+                    conn.close()
+                    self._send_json({'error': 'Không tìm thấy phiếu phỏng vấn!'}, 404)
+                    return
+                cur.execute('''
+                    UPDATE surveys
+                    SET admin_status = ?, admin_feedback = ?, admin_feedback_by = ?, admin_feedback_at = ?
+                    WHERE id = ?
+                ''', (fb_status, fb_text, fb_by, fb_at, survey_id))
+                cur.execute('''
+                    INSERT INTO survey_feedback_history (target_type, target_id, survey_code, status, comment, author)
+                    VALUES ('survey', ?, ?, ?, ?, ?)
+                ''', (str(survey_id), s_row[1] or '', fb_status, fb_text, fb_by))
+                conn.commit()
+                conn.close()
+                append_audit_event('ADMIN_FEEDBACK', {'survey_id': survey_id, 'survey_code': s_row[1], 'status': fb_status, 'author': fb_by})
+                self._send_json({
+                    'success': True,
+                    'survey_id': survey_id,
+                    'admin_status': fb_status,
+                    'admin_feedback': fb_text,
+                    'admin_feedback_by': fb_by,
+                    'admin_feedback_at': fb_at,
+                    'message': 'Đã lưu góp ý / đánh giá của Admin!'
+                })
+                return
+
+        elif path == '/api/drafts/feedback':
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if is_admin1_actor(self) or not is_valid_admin_key(auth_key):
+                self._send_json({'error': 'Chỉ tài khoản Admin mới được phép góp ý phiếu!'}, 403)
+                return
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+            except Exception as e:
+                self._send_json({'error': f'Invalid JSON: {str(e)}'}, 400)
+                return
+            draft_key = str(data.get('draft_key') or '').strip()
+            if not draft_key:
+                self._send_json({'error': 'Thiếu draft_key'}, 400)
+                return
+            fb_status = str(data.get('admin_status', '') or '').strip()[:40]
+            fb_text = str(data.get('admin_feedback', '') or '').strip()[:2000]
+            fb_by = str(data.get('author') or get_setting('admin_name', 'Quản Trị Viên (Admin)') or 'Admin').strip()
+            fb_at = _vn_now().strftime('%d/%m/%Y %H:%M')
+            conn = get_db_conn()
+            cur = conn.cursor()
+            cur.execute('SELECT id, survey_code FROM survey_drafts WHERE draft_key = ?', (draft_key,))
+            d_row = cur.fetchone()
+            if not d_row:
+                conn.close()
+                self._send_json({'error': 'Không tìm thấy phiếu tạm!'}, 404)
+                return
+            cur.execute('''
+                UPDATE survey_drafts
+                SET admin_status = ?, admin_feedback = ?, admin_feedback_by = ?, admin_feedback_at = ?
+                WHERE draft_key = ?
+            ''', (fb_status, fb_text, fb_by, fb_at, draft_key))
+            cur.execute('''
+                INSERT INTO survey_feedback_history (target_type, target_id, survey_code, status, comment, author)
+                VALUES ('draft', ?, ?, ?, ?, ?)
+            ''', (draft_key, d_row[1] or '', fb_status, fb_text, fb_by))
+            conn.commit()
+            conn.close()
+            append_audit_event('ADMIN_DRAFT_FEEDBACK', {'draft_key': draft_key, 'survey_code': d_row[1], 'status': fb_status, 'author': fb_by})
+            self._send_json({
+                'success': True, 'draft_key': draft_key,
+                'admin_status': fb_status, 'admin_feedback': fb_text,
+                'admin_feedback_by': fb_by, 'admin_feedback_at': fb_at,
+                'message': 'Đã lưu góp ý của Admin cho phiếu tạm!'
+            })
             return
 
         elif path == '/api/drafts':
@@ -2851,6 +3419,59 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': str(e)}, 400)
                 return
 
+        elif path == '/api/staff-reminders':
+            auth_key = (self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')).strip()
+            role_hdr = self.headers.get('X-User-Role', '').strip().lower()
+            if role_hdr in ('viewer', 'admin1') or is_admin1_actor(self) or not is_valid_admin_key(auth_key):
+                self._send_json({'error': 'Chỉ Quản trị viên (Admin) mới có quyền gửi hoặc cập nhật nhắc nhở điều tra viên!'}, 403)
+                return
+            length = int(self.headers.get('Content-Length', 0))
+            raw_body = read_request_body(self.rfile, length)
+            try:
+                data = json.loads(raw_body)
+                sid = str(data.get('surveyor_id') or '').strip().upper()
+                reminder_text = str(data.get('reminder_text') or '').strip()
+                reminder_level = str(data.get('reminder_level') or 'Nhắc nhở').strip() or 'Nhắc nhở'
+                updated_by = str(data.get('updated_by') or get_setting('admin_name', 'Quản Trị Viên (Admin)')).strip()
+                if not sid:
+                    self._send_json({'error': 'Thiếu mã Điều tra viên (surveyor_id)!'}, 400)
+                    return
+                conn = get_db_conn()
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                cur.execute('''
+                    CREATE TABLE IF NOT EXISTS staff_reminders (
+                        surveyor_id TEXT PRIMARY KEY,
+                        reminder_text TEXT NOT NULL DEFAULT '',
+                        reminder_level TEXT DEFAULT 'Nhắc nhở',
+                        updated_by TEXT,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                if reminder_text:
+                    cur.execute('''
+                        INSERT INTO staff_reminders (surveyor_id, reminder_text, reminder_level, updated_by, updated_at)
+                        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        ON CONFLICT(surveyor_id) DO UPDATE SET
+                            reminder_text = excluded.reminder_text,
+                            reminder_level = excluded.reminder_level,
+                            updated_by = excluded.updated_by,
+                            updated_at = CURRENT_TIMESTAMP
+                    ''', (sid, reminder_text, reminder_level, updated_by))
+                else:
+                    cur.execute('DELETE FROM staff_reminders WHERE UPPER(surveyor_id) = ?', (sid,))
+                conn.commit()
+                cur.execute('SELECT surveyor_id, reminder_text, reminder_level, updated_by, updated_at FROM staff_reminders WHERE UPPER(surveyor_id) = ?', (sid,))
+                row = cur.fetchone()
+                conn.close()
+                append_audit_event('STAFF_REMINDER_UPDATE', {'surveyor_id': sid, 'has_text': bool(reminder_text), 'level': reminder_level, 'by': updated_by})
+                res_obj = dict(row) if row else {'surveyor_id': sid, 'reminder_text': '', 'reminder_level': reminder_level, 'updated_by': updated_by, 'updated_at': ''}
+                self._send_json({'success': True, 'reminder': res_obj})
+                return
+            except Exception as e:
+                self._send_json({'error': str(e)}, 400)
+                return
+
         elif path.startswith('/api/admin/restore/survey/') or path.startswith('/api/trash/restore/survey/'):
             archive_id = path.split('/')[-1]
             auth_key = (self.headers.get('X-Admin-Key', '') or self.headers.get('X-Delete-Password', '') or self.headers.get('Authorization', '')).strip()
@@ -3092,7 +3713,10 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 note=(respondent_name or hamlet)
             )
             if not photo_path:
-                photo_path = (data.get('photo_path') or '').strip()
+                cand_photo = (data.get('photo_path') or '').strip()
+                if cand_photo:
+                    resolved_rel, _ = resolve_photo_on_disk(cand_photo)
+                    photo_path = resolved_rel or cand_photo
 
             conn = get_db_conn()
             cur = conn.cursor()
@@ -3100,8 +3724,11 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             cur.execute('SELECT photo_path, gps_lat, gps_lng, answers_json FROM survey_drafts WHERE draft_key = ?', (draft_key,))
             d_row = cur.fetchone()
             if d_row:
-                if not photo_path and d_row[0]:
-                    photo_path = d_row[0]
+                cur_resolved_rel, _ = resolve_photo_on_disk(photo_path) if photo_path else ('', '')
+                if not cur_resolved_rel and d_row[0]:
+                    draft_resolved_rel, _ = resolve_photo_on_disk(d_row[0])
+                    if draft_resolved_rel or not photo_path:
+                        photo_path = draft_resolved_rel or d_row[0]
                 if _is_valid_gps(d_row[1], d_row[2]):
                     gps_lat = float(d_row[1])
                     gps_lng = float(d_row[2])
@@ -3289,6 +3916,16 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                     surveyor_name=(data.get('surveyor_name') or old_dict.get('surveyor_name') or ''),
                     note=(data.get('respondent_name') or old_dict.get('respondent_name') or '')
                 )
+            if not photo_path:
+                cand_photo = (data.get('photo_path') or '').strip()
+                if cand_photo:
+                    resolved_rel, _ = resolve_photo_on_disk(cand_photo)
+                    if resolved_rel:
+                        photo_path = resolved_rel
+                if not photo_path and old_dict.get('photo_path'):
+                    resolved_rel, _ = resolve_photo_on_disk(old_dict.get('photo_path'))
+                    if resolved_rel and resolved_rel != old_dict.get('photo_path'):
+                        photo_path = resolved_rel
 
             if answers is not None and isinstance(answers, dict) and len(answers) > 0:
                 answers_json = json.dumps(answers, ensure_ascii=False)
@@ -3581,7 +4218,11 @@ def run():
 
 if __name__ == '__main__':
     if '--send-daily-report' in sys.argv:
-        ok, total, rcpts, via_note = send_daily_excel_report()
-        print(f"Daily Excel report ({total} surveys) sent to {', '.join(rcpts)} via {via_note}")
+        is_sched = ('--scheduled' in sys.argv)
+        ok, total, rcpts, via_note = send_daily_excel_report(scheduled=is_sched)
+        if ok:
+            print(f"Daily Excel report ({total} surveys) sent to {', '.join(rcpts)} via {via_note}")
+        else:
+            print(f"Daily Excel report skipped: {via_note}")
     else:
         run()

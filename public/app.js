@@ -1,7 +1,7 @@
 /**
  * Hệ Thống Khảo Sát & Phỏng Vấn Hiện Trường — Dakman Cư M'gar (2021–2026)
  * Đơn vị tư vấn & thực hiện: Công ty TNHH Dịch vụ và Tư vấn Tân Cao Nguyên
- * Tác giả hệ thống: Lộc Vũ Trung
+ * Tác giả hệ thống: Công ty TNHH Dịch vụ và Tư vấn Tân Cao Nguyên
  * BẢO MẬT TỐI ĐA: CHỐNG XÂM NHẬP & CHỐNG TRÍCH XUẤT MÃ NGUỒN
  */
 
@@ -496,10 +496,10 @@ function showLoginModal(isMandatory) {
     if (currentUser && curRole === 'editor') {
         document.getElementById('modalUserId').value = currentUser.surveyor_id || 'TCN01';
         document.getElementById('modalUserName').value = currentUser.full_name || '';
-        document.getElementById('modalUserDate').value = currentUser.survey_date || new Date().toISOString().split('T')[0];
+        document.getElementById('modalUserDate').value = currentUser.survey_date || getVnTodayIso();
         document.getElementById('modalUserCommune').value = currentUser.commune || 'Ea Kiết';
     } else {
-        document.getElementById('modalUserDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('modalUserDate').value = getVnTodayIso();
         if (!document.getElementById('modalUserId').value) {
             document.getElementById('modalUserId').value = 'TCN01';
         }
@@ -533,7 +533,7 @@ async function saveUserLogin(e) {
     const password = document.getElementById('modalUserPassword').value.trim();
     const userId = document.getElementById('modalUserId').value.trim();
     const userName = document.getElementById('modalUserName').value.trim();
-    const userDate = document.getElementById('modalUserDate').value || new Date().toISOString().split('T')[0];
+    const userDate = document.getElementById('modalUserDate').value || getVnTodayIso();
     const userCommune = document.getElementById('modalUserCommune').value;
     const errBox = document.getElementById('loginErrorMsg');
 
@@ -711,7 +711,7 @@ function updateUserDisplay() {
             tileCreateLabel.textContent = isAdmin ? '1. Tạo phiếu (Admin không điều tra)' : '1. Tạo phiếu';
         }
     }
-    if (tileHistory) tileHistory.style.display = isAdmin1 ? 'none' : 'flex';
+    if (tileHistory) tileHistory.style.display = 'flex';
     if (tileDrafts) tileDrafts.style.display = isAdmin1 ? 'none' : 'flex';
     if (btnDraftsBar) btnDraftsBar.style.display = isAdmin1 ? 'none' : '';
     if (tileBlankQ) tileBlankQ.style.display = (isAdmin1 || isAdmin) ? 'flex' : 'none';
@@ -778,7 +778,7 @@ function updateUserDisplay() {
 
     if (idInput) idInput.value = currentUser.surveyor_id || 'TCN01';
     if (nameInput) nameInput.value = currentUser.full_name || '';
-    if (dateInput) dateInput.value = currentUser.survey_date || new Date().toISOString().split('T')[0];
+    if (dateInput) dateInput.value = currentUser.survey_date || getVnTodayIso();
     if (communeSelect && currentUser.commune && currentUser.commune !== 'Toàn vùng') {
         communeSelect.value = currentUser.commune;
     }
@@ -787,6 +787,9 @@ function updateUserDisplay() {
         menuWelcome.textContent = `${currentUser.full_name || currentUser.surveyor_id} (${currentUser.surveyor_id || ''})`;
     }
     autoSelectSampleFilterForUser();
+    if (typeof refreshMyStaffReminderBanner === 'function') {
+        refreshMyStaffReminderBanner();
+    }
 }
 
 function updateNetworkStatus() {
@@ -808,8 +811,8 @@ let currentMainView = 'menu';
 
 function switchMainView(viewId, subTab = '', skipHistory = false) {
     const curRole = currentUser?.role || '';
-    if (curRole === 'admin1' && ['pick-tool', 'survey', 'history'].includes(viewId)) {
-        alert('Tài khoản Admin1 chỉ được xem: Tiến độ, Bản đồ nhân sự, Hệ thống bảng hỏi Blank và Thư viện ảnh hiện trường!');
+    if (curRole === 'admin1' && ['pick-tool', 'survey'].includes(viewId)) {
+        alert('Tài khoản Admin1 chỉ được xem: Tổng hợp ĐTV, Tiến độ, Bản đồ nhân sự, Hệ thống bảng hỏi Blank và Thư viện ảnh hiện trường!');
         viewId = 'menu';
     } else if (curRole === 'admin' && viewId === 'pick-tool') {
         alert('Tài khoản Admin dùng để quản lý & rà soát, không tạo mới phiếu điều tra!');
@@ -965,7 +968,18 @@ function updateMenuSummaryBadges() {
     const totalForms = (cached && cached.total_combined_forms !== undefined)
         ? cached.total_combined_forms
         : interviewedSurveyCodes.size;
-    if (hBadge) hBadge.textContent = `${interviewedSurveyCodes.size} phiếu`;
+    const completedCount = (cached && cached.total_completed !== undefined)
+        ? cached.total_completed
+        : ((cached && cached.total !== undefined) ? cached.total : interviewedSurveyCodes.size);
+    const draftCount = (cached && cached.total_drafts !== undefined) ? cached.total_drafts : 0;
+    const role = currentUser?.role || '';
+    if (hBadge) {
+        if (role === 'admin' || role === 'admin1') {
+            hBadge.textContent = `${completedCount} nộp • ${draftCount} tạm (${totalForms} tổng)`;
+        } else {
+            hBadge.textContent = `${interviewedSurveyCodes.size} phiếu`;
+        }
+    }
     if (dBadge) dBadge.textContent = `${totalForms} / 240`;
 }
 
@@ -2654,17 +2668,17 @@ function renderQuestionsForSection(secName) {
  * - selected(CP08, '2') or selected(CP08, '3')
  * - CS14!=5...
  */
-function matchesConditionValue(qCode, actualVal, expVal) {
+function matchesConditionValue(qCode, actualVal, expVal, toolCode = currentTool) {
     if (actualVal === undefined || actualVal === null || actualVal === '') return false;
     const checkOne = (v) => {
         const s = String(v).trim();
         if (s === expVal) return true;
         if (/^\d+$/.test(expVal)) {
-            const qList = allQuestionsData[currentTool]?.questions || [];
+            const qList = allQuestionsData[toolCode]?.questions || allQuestionsData[currentTool]?.questions || [];
             const refQ = qList.find(item => item.code === qCode);
             const opts = refQ?.options || [];
             if (opts.length === 2) {
-                const labels = opts.map(o => String(o.value).trim());
+                const labels = opts.map(o => String((o && typeof o === 'object') ? (o.value ?? o.label ?? '') : o).trim());
                 if (labels.includes('Không') && labels.includes('Có')) {
                     if (expVal === '0') return s === 'Không';
                     if (expVal === '1') return s === 'Có';
@@ -2672,7 +2686,9 @@ function matchesConditionValue(qCode, actualVal, expVal) {
                 }
             }
             const idx = parseInt(expVal, 10) - 1;
-            if (idx >= 0 && idx < opts.length && s === String(opts[idx].value).trim()) {
+            const optObj = (idx >= 0 && idx < opts.length) ? opts[idx] : null;
+            const optVal = (optObj && typeof optObj === 'object') ? String(optObj.value ?? optObj.label ?? '').trim() : String(optObj ?? '').trim();
+            if (optObj !== null && s === optVal) {
                 return true;
             }
         }
@@ -2682,9 +2698,52 @@ function matchesConditionValue(qCode, actualVal, expVal) {
     return checkOne(actualVal);
 }
 
-function checkConditionMet(condStr, answers) {
+function splitTopLevelLogical(expr, keyword) {
+    const parts = [];
+    const lower = expr.toLowerCase();
+    const target = ` ${keyword} `;
+    let depth = 0;
+    let last = 0;
+    for (let i = 0; i < expr.length; i++) {
+        const ch = expr[i];
+        if (ch === '(') depth++;
+        else if (ch === ')' && depth > 0) depth--;
+        else if (depth === 0 && lower.startsWith(target, i)) {
+            parts.push(expr.slice(last, i).trim());
+            last = i + target.length;
+            i = last - 1;
+        }
+    }
+    if (last > 0) {
+        parts.push(expr.slice(last).trim());
+        return parts.filter(Boolean);
+    }
+    return null;
+}
+
+function stripOuterParens(expr) {
+    let s = expr.trim();
+    while (s.startsWith('(') && s.endsWith(')')) {
+        let depth = 0;
+        let wrapsAll = true;
+        for (let i = 0; i < s.length; i++) {
+            if (s[i] === '(') depth++;
+            else if (s[i] === ')') depth--;
+            if (depth === 0 && i < s.length - 1) {
+                wrapsAll = false;
+                break;
+            }
+        }
+        if (!wrapsAll) break;
+        s = s.slice(1, -1).trim();
+    }
+    return s;
+}
+
+function checkConditionMet(condStr, answers, toolCode = currentTool) {
     if (!condStr || !condStr.trim()) return true;
-    const cond = condStr.trim();
+    const cond = stripOuterParens(condStr.trim());
+    if (!cond) return true;
 
     // 1. Kiểm tra điều kiện loại trừ Hộ Panel PPI:
     if (cond.includes('không thuộc panel') || cond.includes('A02 = 2, 3, 4') || cond.includes('A02=2,3,4')) {
@@ -2692,16 +2751,16 @@ function checkConditionMet(condStr, answers) {
         return ['2', '3', '4'].includes(a02);
     }
 
-    // 2. Logic OR
-    if (cond.toLowerCase().includes(' or ')) {
-        const parts = cond.split(/\s+or\s+/i);
-        return parts.some(p => checkConditionMet(p.trim(), answers));
+    // 2. Logic OR ở cấp ngoài ngoặc (precedence thấp hơn AND)
+    const orParts = splitTopLevelLogical(cond, 'or');
+    if (orParts && orParts.length > 1) {
+        return orParts.some(p => checkConditionMet(p, answers, toolCode));
     }
 
-    // 3. Logic AND
-    if (cond.toLowerCase().includes(' and ')) {
-        const parts = cond.split(/\s+and\s+/i);
-        return parts.every(p => checkConditionMet(p.trim(), answers));
+    // 3. Logic AND ở cấp ngoài ngoặc
+    const andParts = splitTopLevelLogical(cond, 'and');
+    if (andParts && andParts.length > 1) {
+        return andParts.every(p => checkConditionMet(p, answers, toolCode));
     }
 
     // 4. Không bằng (!= hoặc ≠)
@@ -2711,7 +2770,7 @@ function checkConditionMet(condStr, answers) {
         const expVal = ineqMatch[3].trim();
         const actualVal = answers[qCode];
         if (actualVal === undefined || actualVal === null || actualVal === '' || (Array.isArray(actualVal) && actualVal.length === 0)) return false;
-        return !matchesConditionValue(qCode, actualVal, expVal);
+        return !matchesConditionValue(qCode, actualVal, expVal, toolCode);
     }
 
     // 5. Bằng (=)
@@ -2719,7 +2778,7 @@ function checkConditionMet(condStr, answers) {
     if (eqMatch) {
         const qCode = eqMatch[1];
         const expVal = eqMatch[2].trim();
-        return matchesConditionValue(qCode, answers[qCode], expVal);
+        return matchesConditionValue(qCode, answers[qCode], expVal, toolCode);
     }
 
     // 6. selected(Q, 'val') hoặc Q có val
@@ -2727,7 +2786,7 @@ function checkConditionMet(condStr, answers) {
     if (selMatch && (selMatch[2] || selMatch[3])) {
         const qCode = selMatch[1];
         const expVal = (selMatch[2] || selMatch[3]).trim();
-        return matchesConditionValue(qCode, answers[qCode], expVal);
+        return matchesConditionValue(qCode, answers[qCode], expVal, toolCode);
     }
 
     return true;
@@ -3643,7 +3702,7 @@ function buildCurrentDraftRecord() {
         survey_code: surveyCode,
         surveyor_id: currentUser?.surveyor_id || 'DTV',
         surveyor_name: currentUser?.full_name || 'Điều tra viên',
-        survey_date: document.getElementById('surveyDateInput')?.value || new Date().toISOString().split('T')[0],
+        survey_date: document.getElementById('surveyDateInput')?.value || getVnTodayIso(),
         commune: document.getElementById('communeSelect')?.value || 'Ea Kiết',
         hamlet: (document.getElementById('hamletInput')?.value || '').trim(),
         respondent_name: respName || headName,
@@ -3761,6 +3820,9 @@ async function syncCurrentDraftToVps(rec, isAutoSync = false) {
             if (data.photo_path) {
                 currentDraftPhotoPath = data.photo_path;
                 rec.photo_path = data.photo_path;
+                // Giải phóng chuỗi base64 trong IndexedDB ngay khi ảnh đã lưu an toàn trên VPS
+                // để tránh tràn bộ nhớ / chậm khi chụp từ phiếu thứ 3-4 trở đi trên điện thoại
+                rec.photo_data = '';
             }
             rec.sync_pending = false;
             await putIdbDraft(rec);
@@ -4417,12 +4479,21 @@ function autoCaptureGPS() {
 // ========================================================
 // 7B. CHỤP ẢNH ĐẦU TIÊN CÙNG CHỦ HỘ & ĐÓNG WATERMARK THỜI GIAN + VỊ TRÍ
 // ========================================================
-function triggerHouseholdPhotoCapture() {
-    if (currentUser?.role === 'viewer') {
+function getVnTodayIso() {
+    return new Date(Date.now() + 7 * 3600000).toISOString().split('T')[0];
+}
+
+function triggerHouseholdPhotoCapture(sourceType = 'camera') {
+    if (currentUser?.role === 'viewer' || currentUser?.role === 'admin1') {
         alert('Tài khoản ở chế độ chỉ xem, không được phép chụp ảnh.');
         return;
     }
-    const input = document.getElementById('householdPhotoInput');
+    try {
+        saveActiveScreenState('survey');
+        saveDraftLocal(false);
+    } catch (_) {}
+    const inpId = (sourceType === 'gallery') ? 'householdPhotoGalleryInput' : 'householdPhotoInput';
+    const input = document.getElementById(inpId) || document.getElementById('householdPhotoInput');
     if (input) {
         input.value = '';
         input.click();
@@ -4660,7 +4731,8 @@ function drawFittedWatermarkLine(ctx, text, x, y, baseSize, isBold, maxWidth) {
 }
 
 async function handlePhotoSelected(event) {
-    const file = event.target.files && event.target.files[0];
+    const inputEl = event.target;
+    const file = inputEl?.files && inputEl.files[0];
     if (!file) return;
 
     saveActiveScreenState('survey');
@@ -4669,10 +4741,11 @@ async function handlePhotoSelected(event) {
     const status = document.getElementById('photoWatermarkStatus');
     if (status) {
         status.style.color = '#d97706';
-        status.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lấy tọa độ WGS84 &amp; đóng watermark...';
+        status.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý ảnh &amp; đóng watermark...';
     }
 
-    const gpsStr = await getFreshGpsString(5500);
+    const gpsTimeoutMs = (bgBestGps && bgBestGps.lat && bgBestGps.lng) ? 800 : 2500;
+    const gpsStr = await getFreshGpsString(gpsTimeoutMs);
     const wgs84Text = formatWgs84Display(gpsStr);
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
@@ -4691,12 +4764,12 @@ async function handlePhotoSelected(event) {
     const surveyorName = currentUser?.full_name || 'Điều tra viên';
     const surveyorId = currentUser?.surveyor_id || 'DTV';
 
-    const drawAndSaveSource = (source, rawW, rawH, cleanupFn) => {
+    const drawAndSaveSource = async (source, rawW, rawH, cleanupFn) => {
         const canvas = document.createElement('canvas');
         try {
-            const maxDim = 1280;
-            let w = rawW || 1280;
-            let h = rawH || 960;
+            const maxDim = 1024;
+            let w = rawW || 1024;
+            let h = rawH || 768;
             if (w > maxDim || h > maxDim) {
                 if (w >= h) {
                     h = Math.round((h * maxDim) / w);
@@ -4710,7 +4783,13 @@ async function handlePhotoSelected(event) {
             canvas.width = w;
             canvas.height = h;
             const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Không khởi tạo được bộ xử lý ảnh của trình duyệt');
             ctx.drawImage(source, 0, 0, w, h);
+            // Giải phóng bitmap camera ngay sau khi vẽ lên canvas để tránh tràn RAM trên iPhone/Android
+            if (typeof cleanupFn === 'function') {
+                cleanupFn();
+                cleanupFn = null;
+            }
 
             const fontSize = Math.max(13, Math.round(w * 0.020));
             const lineHeight = Math.round(fontSize * 1.45);
@@ -4739,16 +4818,36 @@ async function handlePhotoSelected(event) {
             ctx.fillStyle = '#e2e8f0';
             drawFittedWatermarkLine(ctx, line3, leftX, startY + lineHeight * 2, fontSize, false, maxTextW);
 
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.80);
+            let dataUrl = canvas.toDataURL('image/jpeg', 0.76);
+            if (!dataUrl || dataUrl.length < 1000 || dataUrl === 'data:,') {
+                dataUrl = canvas.toDataURL('image/jpeg', 0.68);
+            }
+            if (!dataUrl || dataUrl.length < 1000 || dataUrl === 'data:,') {
+                throw new Error('Thiết bị thiếu bộ nhớ tạm khi nén ảnh. Hãy thử Chọn từ Thư viện ảnh.');
+            }
             const metaText = `${timestampStr} | ${wgs84Text} | Người PV: ${respondentLabel} | ${surveyCode}`;
             setHouseholdPhotoPreview(dataUrl, metaText);
             startRealtimeInterviewClock();
             startBackgroundGpsTracker();
             saveDraftLocal(false);
             const fullRec = buildCurrentDraftRecord();
-            putIdbDraft(fullRec).catch(() => {});
-            if (navigator.onLine && currentUser?.role !== 'viewer') {
-                syncCurrentDraftToVps(fullRec).then(() => refreshDraftBadgeCount(true));
+            fullRec.sync_pending = true;
+            await putIdbDraft(fullRec).catch(() => {});
+            if (navigator.onLine && currentUser?.role !== 'viewer' && currentUser?.role !== 'admin1') {
+                if (status) {
+                    status.style.color = '#0369a1';
+                    status.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đã đóng watermark — Đang đẩy ảnh lên VPS...';
+                }
+                let ok = await syncCurrentDraftToVps(fullRec);
+                if (!ok) {
+                    await new Promise(r => setTimeout(r, 900));
+                    ok = await syncCurrentDraftToVps(fullRec);
+                }
+                await refreshDraftBadgeCount(false);
+                if (ok && status) {
+                    status.style.color = '#15803d';
+                    status.innerHTML = '<i class="fa-solid fa-circle-check"></i> Đã đóng watermark &amp; lưu ảnh lên VPS!';
+                }
             }
         } catch (err) {
             alert('Không thể xử lý ảnh watermark: ' + err.message);
@@ -4757,14 +4856,15 @@ async function handlePhotoSelected(event) {
             canvas.width = 0;
             canvas.height = 0;
             if (typeof cleanupFn === 'function') cleanupFn();
+            if (inputEl) inputEl.value = '';
         }
     };
 
-    // Ưu tiên createImageBitmap để giải mã ảnh độ phân giải lớn với RAM tối thiểu trên điện thoại Android/iOS
+    // Giải mã bitmap (không truyền resizeWidth để tránh tự phóng to ảnh nhỏ) và đóng ngay sau khi vẽ canvas
     if (typeof createImageBitmap === 'function') {
         try {
-            const bitmap = await createImageBitmap(file, { resizeWidth: 1280, resizeQuality: 'high' });
-            drawAndSaveSource(bitmap, bitmap.width, bitmap.height, () => {
+            const bitmap = await createImageBitmap(file);
+            await drawAndSaveSource(bitmap, bitmap.width, bitmap.height, () => {
                 try { bitmap.close(); } catch (_) {}
             });
             return;
@@ -4773,19 +4873,24 @@ async function handlePhotoSelected(event) {
         }
     }
 
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
-    img.onload = () => {
-        drawAndSaveSource(img, img.naturalWidth || img.width, img.naturalHeight || img.height, () => {
+    await new Promise((resolve) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = async () => {
+            await drawAndSaveSource(img, img.naturalWidth || img.width, img.naturalHeight || img.height, () => {
+                URL.revokeObjectURL(objectUrl);
+            });
+            resolve();
+        };
+        img.onerror = () => {
             URL.revokeObjectURL(objectUrl);
-        });
-    };
-    img.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
-        alert('Tệp ảnh không hợp lệ hoặc bị lỗi.');
-        clearHouseholdPhoto(true);
-    };
-    img.src = objectUrl;
+            if (inputEl) inputEl.value = '';
+            alert('Tệp ảnh không hợp lệ hoặc bị lỗi.');
+            clearHouseholdPhoto(true);
+            resolve();
+        };
+        img.src = objectUrl;
+    });
 }
 
 // ========================================================
@@ -4924,7 +5029,7 @@ async function handleSurveySubmit(e) {
         tool_name: toolObj.tool_name || currentTool,
         surveyor_id: currentUser?.surveyor_id || 'TCN01',
         surveyor_name: currentUser?.full_name || 'Điều tra viên',
-        survey_date: document.getElementById('surveyDateInput').value || new Date().toISOString().split('T')[0],
+        survey_date: document.getElementById('surveyDateInput').value || getVnTodayIso(),
         commune: commune,
         hamlet: hamlet,
         target_group: toolObj.group || 'Chung',
@@ -5380,63 +5485,497 @@ function isCurrentUserOwnerOf(recordSurveyorId, recordSurveyorName = '', isLocal
     return false;
 }
 
+function recordMatchesStaffId(rec, targetSid) {
+    const target = String(targetSid || '').trim().toUpperCase();
+    if (!target) return true;
+    const recSid = String(rec?.surveyor_id || '').trim().toUpperCase();
+    if (recSid === target) return true;
+    const recName = normViNameOwner(rec?.surveyor_name || '');
+    const grp = OWNER_ALIAS_GROUPS.find(g => g.ids.includes(target));
+    if (grp) {
+        if (recSid && grp.ids.includes(recSid)) return true;
+        if (recName && recName === grp.name) return true;
+    }
+    const staffObj = Array.isArray(_cachedHistoryOverview?.staff_summary)
+        ? _cachedHistoryOverview.staff_summary.find(s => String(s.surveyor_id || '').trim().toUpperCase() === target)
+        : null;
+    if (staffObj && recName && normViNameOwner(staffObj.full_name) === recName) {
+        return true;
+    }
+    return false;
+}
+
 let _cachedCompletedSurveysList = [];
+let _cachedHistoryDraftsList = [];
+let _cachedHistoryOverview = null;
+let _historyFilterSurveyorId = '';
+
+function notifyAdmin1NoSurveyDetail() {
+    alert('Tài khoản Admin1 chỉ được xem tổng hợp tiến độ hoàn thành, phiếu đang lưu tạm, tồn lại của 06 Điều tra viên và điều hướng sang Bản đồ / Thư viện ảnh. Không thể xem nội dung câu trả lời chi tiết của từng phiếu phỏng vấn!');
+}
+
+function getAdminStatusBadgeHtml(statusVal, noteText) {
+    const st = String(statusVal || '').trim();
+    const note = String(noteText || '').trim();
+    if (!st && !note) return '';
+    let bg = '#e0f2fe', fg = '#075985', border = '#bae6fd';
+    if (st === 'Đã duyệt') {
+        bg = '#dcfce7'; fg = '#166534'; border = '#86efac';
+    } else if (st === 'Cần bổ sung') {
+        bg = '#fef3c7'; fg = '#92400e'; border = '#fcd34d';
+    } else if (st === 'Lưu ý') {
+        bg = '#fce7f3'; fg = '#9d174d'; border = '#fbcfe8';
+    }
+    const label = st || 'Góp ý Admin';
+    const snippet = note ? `: ${note.length > 55 ? note.slice(0, 55) + '…' : note}` : '';
+    return `<div style="margin-top:3px;"><span style="display:inline-block; background:${bg}; color:${fg}; border:1px solid ${border}; padding:1px 6px; border-radius:4px; font-size:0.72rem; font-weight:700;" title="${escapeHtml(note || label)}"><i class="fa-solid fa-comment-dots"></i> ${escapeHtml(label)}${escapeHtml(snippet)}</span></div>`;
+}
+
+function extractItemDateKeyVN(item) {
+    const raw = String(item?.survey_date || item?.created_at || item?.updated_at || '').trim();
+    const isoMatch = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+        return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+    }
+    const vnMatch = raw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (vnMatch) {
+        return `${vnMatch[1]}/${vnMatch[2]}/${vnMatch[3]}`;
+    }
+    return 'Khác';
+}
+
+function extractItemSortTimestamp(item) {
+    const candidates = [item?.updated_at, item?.created_at, item?.survey_date];
+    for (const c of candidates) {
+        if (!c) continue;
+        const s = String(c).trim();
+        const iso = s.includes(' ') && !s.includes('T') ? s.replace(' ', 'T') : s;
+        const ms = Date.parse(iso);
+        if (!Number.isNaN(ms)) return ms;
+    }
+    return Number(item?.id || 0);
+}
+
+function renderFocusedInterviewerCard() {
+    const card = document.getElementById('historyFocusedInterviewerCard');
+    if (!card) return;
+    const sid = String(_historyFilterSurveyorId || '').trim().toUpperCase();
+    if (!sid) {
+        card.style.display = 'none';
+        card.innerHTML = '';
+        return;
+    }
+
+    const summary = Array.isArray(_cachedHistoryOverview?.staff_summary) ? _cachedHistoryOverview.staff_summary : [];
+    const m = summary.find(x => String(x.surveyor_id || '').toUpperCase() === sid) || {
+        surveyor_id: sid,
+        full_name: sid,
+        commune: '',
+        assigned_target: 0,
+        completed_count: 0,
+        draft_count: 0,
+        remaining_count: 0,
+        reminder_text: '',
+        reminder_level: 'Nhắc nhở',
+        reminder_updated_at: ''
+    };
+    const role = currentUser?.role || 'editor';
+    const isAdmin = (role === 'admin');
+    const comp = m.completed_count || 0;
+    const dft = m.draft_count || 0;
+    const tgt = m.assigned_target || 0;
+    const notSubmitted = tgt > 0 ? Math.max(0, tgt - comp) : 0;
+    const remLevel = m.reminder_level || 'Nhắc nhở';
+
+    card.style.display = 'block';
+    card.innerHTML = `
+        <div style="background:#f8fafc; border:1.5px solid #93c5fd; border-left:5px solid #002060; border-radius:8px; padding:12px 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <div style="font-size:0.94rem; font-weight:800; color:#002060;">
+                        <i class="fa-solid fa-user-check"></i> DANH SÁCH HỘ PHỎNG VẤN CỦA [${escapeHtml(sid)}] ${escapeHtml(m.full_name || sid)}
+                    </div>
+                    <div style="font-size:0.80rem; color:#475569; margin-top:3px;">
+                        Địa bàn: <strong>${escapeHtml(m.commune || '—')}</strong> •
+                        Đã nộp: <strong style="color:#15803d;">${comp}</strong> •
+                        Phiếu tạm: <strong style="color:#b45309;">${dft}</strong> •
+                        ${tgt > 0 ? `Còn thiếu theo chỉ tiêu (${tgt}): <strong style="color:${notSubmitted > 0 ? '#dc2626' : '#15803d'};">${notSubmitted} phiếu</strong>` : 'Nhóm phối hợp'}
+                    </div>
+                    <div style="font-size:0.74rem; color:#64748b; margin-top:2px;">
+                        <i class="fa-solid fa-arrow-down-wide-short"></i> Sắp xếp mới nhất lên trên cùng, cũ ở dưới cùng và nhóm theo ngày khảo sát.
+                    </div>
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button type="button" onclick="navigateToPhotoLibraryForMember('${escapeQuotes(sid)}')" class="qgis-btn-secondary" style="font-size:0.76rem; padding:4px 9px; color:#be185d; border-color:#fbcfe8; background:#fdf2f8;">
+                        <i class="fa-solid fa-images"></i> Ảnh ĐTV
+                    </button>
+                    <button type="button" onclick="navigateToMapForMember('${escapeQuotes(sid)}')" class="qgis-btn-secondary" style="font-size:0.76rem; padding:4px 9px; color:#0e7490; border-color:#a5f3fc; background:#ecfeff;">
+                        <i class="fa-solid fa-map-location-dot"></i> Bản đồ
+                    </button>
+                    <button type="button" onclick="setHistorySurveyorFilter('')" class="qgis-btn-secondary" style="font-size:0.76rem; padding:4px 9px;">
+                        <i class="fa-solid fa-users"></i> Xem tất cả 06 ĐTV
+                    </button>
+                </div>
+            </div>
+            ${isAdmin ? `
+                <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #cbd5e1;">
+                    <div style="font-size:0.80rem; font-weight:800; color:#92400e; margin-bottom:6px;">
+                        <i class="fa-solid fa-bell"></i> Gửi / Cập nhật Nhắc Nhở của Admin cho [${escapeHtml(sid)}] ${escapeHtml(m.full_name || '')}
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
+                        <select id="staffReminderLevelSelect" style="padding:7px 9px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.82rem; font-weight:700; color:#0f2a4a;">
+                            <option value="Nhắc nhở" ${remLevel === 'Nhắc nhở' ? 'selected' : ''}>Nhắc nhở</option>
+                            <option value="Cần bổ sung gấp" ${remLevel === 'Cần bổ sung gấp' ? 'selected' : ''}>Cần bổ sung gấp</option>
+                            <option value="Đạt tiến độ tốt" ${remLevel === 'Đạt tiến độ tốt' ? 'selected' : ''}>Đạt tiến độ tốt</option>
+                        </select>
+                        <textarea id="staffReminderTextInput" rows="2" placeholder="Nhập nội dung kiểm tra / nhắc nhở tiến độ hoặc bổ sung phiếu còn thiếu..."
+                            style="flex:1; min-width:240px; padding:7px 9px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.82rem; font-family:inherit; resize:vertical;">${escapeHtml(m.reminder_text || '')}</textarea>
+                        <button type="button" onclick="saveFocusedStaffReminder('${escapeQuotes(sid)}')" class="qgis-btn-primary" style="background:#b45309; border-color:#d97706; padding:7px 14px; font-size:0.82rem;">
+                            <i class="fa-solid fa-paper-plane"></i> Lưu &amp; Gửi nhắc nhở
+                        </button>
+                    </div>
+                    <div id="staffReminderSaveStatus" style="font-size:0.75rem; color:#64748b; margin-top:4px;">
+                        ${m.reminder_text ? `Đã ghi nhận lúc ${escapeHtml(m.reminder_updated_at || 'gần đây')}` : 'Chưa có nhắc nhở nào cho điều tra viên này.'}
+                    </div>
+                </div>
+            ` : (m.reminder_text ? `
+                <div style="margin-top:8px; padding:7px 10px; background:#fffbeb; border:1px solid #fcd34d; border-radius:6px; font-size:0.79rem; color:#92400e;">
+                    <strong><i class="fa-solid fa-bell"></i> ${escapeHtml(remLevel)}:</strong> ${escapeHtml(m.reminder_text)}
+                </div>
+            ` : '')}
+        </div>
+    `;
+}
+
+async function saveFocusedStaffReminder(sid) {
+    if (currentUser?.role !== 'admin') return;
+    const textEl = document.getElementById('staffReminderTextInput');
+    const levelEl = document.getElementById('staffReminderLevelSelect');
+    const statusEl = document.getElementById('staffReminderSaveStatus');
+    const reminderText = (textEl?.value || '').trim();
+    const reminderLevel = (levelEl?.value || 'Nhắc nhở').trim();
+    if (statusEl) {
+        statusEl.style.color = '#0369a1';
+        statusEl.textContent = 'Đang lưu nhắc nhở lên VPS...';
+    }
+    try {
+        const res = await fetch(apiUrl('/api/staff-reminders'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Key': currentUser?.key || currentUser?.password || localStorage.getItem('dakman_admin_key') || '',
+                'X-User-Role': currentUser?.role || ''
+            },
+            body: JSON.stringify({
+                surveyor_id: sid,
+                reminder_text: reminderText,
+                reminder_level: reminderLevel,
+                updated_by: currentUser?.full_name || 'Admin'
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+            throw new Error(data.error || `HTTP ${res.status}`);
+        }
+        if (Array.isArray(_cachedHistoryOverview?.staff_summary)) {
+            const target = _cachedHistoryOverview.staff_summary.find(x => String(x.surveyor_id || '').toUpperCase() === sid.toUpperCase());
+            if (target) {
+                target.reminder_text = data.reminder?.reminder_text || '';
+                target.reminder_level = data.reminder?.reminder_level || reminderLevel;
+                target.reminder_updated_at = data.reminder?.updated_at || '';
+            }
+        }
+        renderHistoryInterviewerSummary(_cachedHistoryOverview);
+        renderFocusedInterviewerCard();
+        showInstantActionToast(reminderText ? `Đã gửi nhắc nhở cho ${sid}!` : `Đã xóa nhắc nhở của ${sid}.`);
+    } catch (err) {
+        if (statusEl) {
+            statusEl.style.color = '#dc2626';
+            statusEl.textContent = 'Lỗi lưu nhắc nhở: ' + err.message;
+        }
+    }
+}
+
+async function refreshMyStaffReminderBanner() {
+    const el = document.getElementById('editorAdminReminderBanner');
+    if (!el) return;
+    const role = currentUser?.role || 'viewer';
+    const sid = String(currentUser?.surveyor_id || '').trim().toUpperCase();
+    if (role !== 'editor' || !sid) {
+        el.style.display = 'none';
+        el.innerHTML = '';
+        return;
+    }
+    try {
+        const data = await fetchJsonWithTimeout(apiUrl(`/api/staff-reminders?surveyor_id=${encodeURIComponent(sid)}`), 6000);
+        if (data && data.reminder_text) {
+            el.style.display = 'block';
+            el.innerHTML = `
+                <div style="font-weight:800; color:#b45309; margin-bottom:2px;">
+                    <i class="fa-solid fa-bell"></i> THÔNG BÁO / NHẮC NHỞ TỪ ADMIN (${escapeHtml(data.reminder_level || 'Nhắc nhở')})
+                </div>
+                <div>${escapeHtml(data.reminder_text)}</div>
+                ${data.updated_at ? `<div style="font-size:0.74rem; color:#92400e; margin-top:3px;">Cập nhật: ${escapeHtml(data.updated_at)}</div>` : ''}
+            `;
+        } else {
+            el.style.display = 'none';
+            el.innerHTML = '';
+        }
+    } catch (_) {
+        el.style.display = 'none';
+    }
+}
+
+async function openInterviewerHouseholdsView(surveyorId) {
+    const sid = String(surveyorId || '').trim().toUpperCase();
+    _historyFilterSurveyorId = sid;
+    switchMainView('history');
+    if (typeof loadSurveysList === 'function') {
+        await loadSurveysList();
+    }
+    setHistorySurveyorFilter(sid);
+    const card = document.getElementById('historyFocusedInterviewerCard');
+    if (card && card.style.display !== 'none') {
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function setHistorySurveyorFilter(sid = '') {
+    _historyFilterSurveyorId = String(sid || '').trim().toUpperCase();
+    renderHistorySurveyorFilterPills();
+    renderFocusedInterviewerCard();
+    filterCompletedSurveysTable();
+    const tableEl = document.getElementById('historyFocusedInterviewerCard') || document.getElementById('surveyHistoryTbody');
+    if (sid && tableEl) {
+        tableEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+async function navigateToMapForMember(surveyorId) {
+    switchMainView('map');
+    if (typeof refreshStandaloneTeamMap === 'function') {
+        await refreshStandaloneTeamMap(false);
+    }
+    if (typeof focusMemberOnSharedMap === 'function') {
+        focusMemberOnSharedMap('map', surveyorId);
+    }
+}
+
+async function navigateToPhotoLibraryForMember(surveyorId) {
+    const sid = String(surveyorId || '').trim().toUpperCase();
+    switchMainView('field-photos');
+    if (typeof loadFieldPhotosGallery === 'function') {
+        await loadFieldPhotosGallery(false);
+    }
+    const sel = document.getElementById('fpGalleryFilterSurveyor');
+    if (sel) {
+        if (sid && !Array.from(sel.options).some(o => o.value.toUpperCase() === sid)) {
+            const opt = document.createElement('option');
+            opt.value = sid;
+            opt.textContent = sid;
+            sel.appendChild(opt);
+        }
+        sel.value = sid;
+        if (typeof renderFieldPhotosGallery === 'function') {
+            renderFieldPhotosGallery();
+        }
+    }
+}
+
+function navigateToTeamSchedule() {
+    switchMainView('schedule', 'team6');
+}
+
+function renderHistorySurveyorFilterPills() {
+    const pillsEl = document.getElementById('historySurveyorFilterPills');
+    if (!pillsEl) return;
+    const summary = Array.isArray(_cachedHistoryOverview?.staff_summary) ? _cachedHistoryOverview.staff_summary : [];
+    const active = _historyFilterSurveyorId;
+    const makeBtn = (sid, label, countText) => {
+        const isOn = active === sid;
+        const bg = isOn ? '#002060' : '#ffffff';
+        const fg = isOn ? '#ffffff' : '#1e293b';
+        const bd = isOn ? '#002060' : '#cbd5e1';
+        return `<button type="button" onclick="setHistorySurveyorFilter('${escapeQuotes(sid)}')" style="background:${bg}; color:${fg}; border:1px solid ${bd}; padding:4px 9px; border-radius:999px; font-size:0.75rem; font-weight:700; cursor:pointer;">${escapeHtml(label)}${countText ? ` (${escapeHtml(countText)})` : ''}</button>`;
+    };
+    let html = makeBtn('', 'Tất cả 06 ĐTV', '');
+    summary.forEach(m => {
+        const sid = String(m.surveyor_id || '').toUpperCase();
+        const shortName = String(m.full_name || sid).split(' ').slice(-2).join(' ');
+        html += makeBtn(sid, `${sid} • ${shortName}`, `${m.completed_count || 0}+${m.draft_count || 0}`);
+    });
+    pillsEl.innerHTML = html;
+}
+
+function renderHistoryInterviewerSummary(overview) {
+    const sec = document.getElementById('historyInterviewerSummarySection');
+    const kpiEl = document.getElementById('historyWorkloadKpis');
+    const tbody = document.getElementById('historyTeamWorkloadTbody');
+    const role = currentUser?.role || 'editor';
+    const show = (role === 'admin' || role === 'admin1') && overview && Array.isArray(overview.staff_summary);
+    if (sec) sec.style.display = show ? 'block' : 'none';
+    if (!show) return;
+
+    const totals = overview.totals || {};
+    if (kpiEl) {
+        const kpis = [
+            { label: 'Tổng Chỉ Tiêu Dự Án', value: `${totals.target_total || 240} phiếu`, sub: `P1 nông hộ: ${totals.target_p1 || 220}`, bg: '#f1f5f9', fg: '#0f172a', bd: '#cbd5e1' },
+            { label: 'Đã Hoàn Thành (Nộp Xong)', value: `${totals.completed_count || 0} phiếu`, sub: 'Đã bấm Hoàn thành nộp VPS', bg: '#dcfce7', fg: '#166534', bd: '#86efac' },
+            { label: 'Đang Lưu Tạm (VPS)', value: `${totals.draft_count || 0} phiếu`, sub: 'ĐTV đang phỏng vấn thực địa', bg: '#fef3c7', fg: '#92400e', bd: '#fcd34d' },
+            { label: 'Tổng Đã Mở Thực Hiện', value: `${totals.combined_count || 0} / ${totals.target_total || 240}`, sub: 'Hoàn thành + Đang lưu tạm', bg: '#dbeafe', fg: '#1e40af', bd: '#93c5fd' },
+            { label: 'Còn Tồn Lại Chưa Xong', value: `${Math.max(0, (totals.target_total || 240) - (totals.completed_count || 0))} phiếu`, sub: `Chưa mở: ${totals.remaining_total ?? Math.max(0, (totals.target_total || 240) - (totals.combined_count || 0))}`, bg: '#fee2e2', fg: '#991b1b', bd: '#fecaca' }
+        ];
+        kpiEl.innerHTML = kpis.map(k => `
+            <div style="background:${k.bg}; border:1px solid ${k.bd}; border-radius:6px; padding:8px 10px;">
+                <div style="font-size:0.72rem; font-weight:700; color:${k.fg}; opacity:0.85;">${escapeHtml(k.label)}</div>
+                <div style="font-size:1.12rem; font-weight:800; color:${k.fg}; margin:2px 0;">${escapeHtml(k.value)}</div>
+                <div style="font-size:0.71rem; color:${k.fg}; opacity:0.9;">${escapeHtml(k.sub)}</div>
+            </div>
+        `).join('');
+    }
+
+    if (tbody) {
+        tbody.innerHTML = overview.staff_summary.map(m => {
+            const sid = String(m.surveyor_id || '').toUpperCase();
+            const dotColor = m.status === 'online' ? '#16a34a' : (m.status === 'recent' ? '#f59e0b' : (m.lat !== null && m.lng !== null ? '#2563eb' : '#94a3b8'));
+            const remP1 = m.remaining_count || 0;
+            const notFinished = m.assigned_target > 0 ? Math.max(0, m.assigned_target - (m.completed_count || 0)) : 0;
+            return `
+                <tr>
+                    <td data-label="Điều Tra Viên">
+                        <div onclick="setHistorySurveyorFilter('${escapeQuotes(sid)}')" style="font-weight:800; color:#002060; cursor:pointer; text-decoration:underline;" title="Bấm để mở danh sách hộ phỏng vấn của ĐTV này">
+                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-right:5px;"></span>
+                            [${escapeHtml(sid)}] ${escapeHtml(m.full_name || sid)}
+                        </div>
+                        <div style="font-size:0.73rem; color:#64748b;">${escapeHtml(m.status_label || '')}${m.last_seen_vn ? ` • ${escapeHtml(m.last_seen_vn)}` : ''}</div>
+                        ${m.reminder_text ? `<div style="font-size:0.71rem; color:#b45309; font-weight:700; margin-top:2px;"><i class="fa-solid fa-bell"></i> ${escapeHtml(m.reminder_text.slice(0, 42))}${m.reminder_text.length > 42 ? '…' : ''}</div>` : ''}
+                    </td>
+                    <td data-label="Địa Bàn">${escapeHtml(m.commune || '—')}</td>
+                    <td data-label="Chỉ Tiêu P1" style="text-align:center; font-weight:700;">${m.assigned_target > 0 ? m.assigned_target : 'Phối hợp'}</td>
+                    <td data-label="Hoàn Thành (Nộp)" style="text-align:center;">
+                        <span style="background:#dcfce7; color:#166534; padding:2px 8px; border-radius:999px; font-weight:800; font-size:0.82rem;">${m.completed_count || 0}</span>
+                    </td>
+                    <td data-label="Đang Lưu Tạm" style="text-align:center;">
+                        <span style="background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:999px; font-weight:800; font-size:0.82rem;">${m.draft_count || 0}</span>
+                    </td>
+                    <td data-label="Còn Tồn Lại" style="text-align:center;">
+                        <strong style="color:${remP1 > 0 ? '#b91c1c' : '#15803d'};">${m.assigned_target > 0 ? `${notFinished} chưa nộp` : '—'}</strong>
+                        ${m.assigned_target > 0 ? `<div style="font-size:0.71rem; color:#64748b;">Chưa mở: ${remP1}</div>` : ''}
+                    </td>
+                    <td data-label="Điều Hướng Nhanh" style="text-align:center; white-space:nowrap;">
+                        <button type="button" onclick="setHistorySurveyorFilter('${escapeQuotes(sid)}')" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:3px 7px; border-radius:4px; font-size:0.74rem; font-weight:700; cursor:pointer; margin-right:3px;" title="Lọc danh sách phiếu của ĐTV này">
+                            <i class="fa-solid fa-filter"></i> Phiếu (${(m.completed_count || 0) + (m.draft_count || 0)})
+                        </button>
+                        <button type="button" onclick="navigateToMapForMember('${escapeQuotes(sid)}')" style="background:#ecfeff; color:#0e7490; border:1px solid #a5f3fc; padding:3px 7px; border-radius:4px; font-size:0.74rem; font-weight:700; cursor:pointer; margin-right:3px;" title="Định vị ĐTV trên Bản đồ">
+                            <i class="fa-solid fa-map-location-dot"></i> Bản đồ
+                        </button>
+                        <button type="button" onclick="navigateToPhotoLibraryForMember('${escapeQuotes(sid)}')" style="background:#fdf2f8; color:#be185d; border:1px solid #fbcfe8; padding:3px 7px; border-radius:4px; font-size:0.74rem; font-weight:700; cursor:pointer; margin-right:3px;" title="Mở Thư viện ảnh hiện trường của ĐTV">
+                            <i class="fa-solid fa-images"></i> Ảnh (${m.photo_count || 0})
+                        </button>
+                        <button type="button" onclick="navigateToTeamSchedule()" style="background:#f5f3ff; color:#6d28d9; border:1px solid #ddd6fe; padding:3px 7px; border-radius:4px; font-size:0.74rem; font-weight:700; cursor:pointer;" title="Xem lịch trình công tác">
+                            <i class="fa-solid fa-calendar-days"></i> Lịch
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+    renderHistorySurveyorFilterPills();
+    renderFocusedInterviewerCard();
+}
 
 function renderCompletedSurveysRows(list) {
     const tbody = document.getElementById('surveyHistoryTbody');
     if (!tbody) return;
     const role = currentUser?.role || 'editor';
+    const isAdmin1 = (role === 'admin1');
     if (!Array.isArray(list) || list.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--slate-500);">Chưa có phiếu khảo sát nào phù hợp trên hệ thống.</td></tr>';
         return;
     }
-    tbody.innerHTML = list.map(item => {
+    const sorted = list.slice().sort((a, b) => {
+        const dt = extractItemSortTimestamp(b) - extractItemSortTimestamp(a);
+        return dt !== 0 ? dt : (Number(b.id || 0) - Number(a.id || 0));
+    });
+    const dateCounts = {};
+    sorted.forEach(item => {
+        const dk = extractItemDateKeyVN(item);
+        dateCounts[dk] = (dateCounts[dk] || 0) + 1;
+    });
+    let lastDateKey = '';
+    tbody.innerHTML = sorted.map(item => {
+        const dateKey = extractItemDateKeyVN(item);
+        let groupHeaderHtml = '';
+        if (dateKey !== lastDateKey) {
+            lastDateKey = dateKey;
+            groupHeaderHtml = `
+                <tr class="history-date-group-row" style="background: #e2e8f0; cursor: default;">
+                    <td colspan="7" style="padding: 6px 10px; font-weight: 800; font-size: 0.78rem; color: #002060;">
+                        <i class="fa-solid fa-calendar-day"></i> Ngày ${escapeHtml(dateKey)} — ${dateCounts[dateKey]} phiếu đã hoàn thành
+                    </td>
+                </tr>
+            `;
+        }
         const isOwner = isCurrentUserOwnerOf(item.surveyor_id, item.surveyor_name);
-        const canEdit = (role === 'admin') || isOwner;
-        const canDelete = (role === 'admin') || isOwner;
+        const canEdit = !isAdmin1 && ((role === 'admin') || isOwner);
+        const canDelete = !isAdmin1 && ((role === 'admin') || isOwner);
         const photoBadge = item.photo_path ? ' <i class="fa-solid fa-camera" style="color: #15803d;" title="Có ảnh người PV (Watermark WGS84)"></i>' : '';
+        const feedbackHtml = isAdmin1 ? '' : getAdminStatusBadgeHtml(item.admin_status, item.admin_feedback);
+        const rowClick = isAdmin1 ? 'notifyAdmin1NoSurveyDetail()' : `viewSurveyDetail(${item.id})`;
+        const sid = String(item.surveyor_id || '').toUpperCase();
 
-        return `
-            <tr onclick="viewSurveyDetail(${item.id})" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor=''">
-                <td data-label="Mã phiếu" style="font-family: monospace; font-weight: 700; color: var(--primary);">${escapeHtml(item.survey_code)}${photoBadge}</td>
+        return groupHeaderHtml + `
+            <tr onclick="${rowClick}" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor=''">
+                <td data-label="Mã phiếu" style="font-family: monospace; font-weight: 700; color: var(--primary);">${escapeHtml(item.survey_code)}${photoBadge}${feedbackHtml}</td>
                 <td data-label="Công cụ"><span style="background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 0.78rem;">${escapeHtml(item.tool_code)}</span></td>
                 <td data-label="Địa bàn">${escapeHtml(item.commune)} ${item.hamlet ? `(${escapeHtml(item.hamlet)})` : ''}</td>
                 <td data-label="Người được PV" style="font-weight: 600;">${escapeHtml(item.respondent_name || '—')}</td>
                 <td data-label="Điều tra viên" style="font-size: 0.82rem;">${escapeHtml(item.surveyor_name)} (${escapeHtml(item.surveyor_id)})</td>
                 <td data-label="Ngày khảo sát" style="text-align: center; font-family: monospace; font-size: 0.82rem;">${formatDateVN(item.survey_date)}</td>
                 <td data-label="Thao tác" style="text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
-                    <button type="button"
-                            onclick="event.stopPropagation(); viewSurveyDetail(${item.id})"
-                            style="background: #eff6ff; border: 1px solid #93c5fd; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: #1d4ed8; margin-right: 4px;" title="Mở xem chi tiết &amp; chọn sửa/bổ sung/xóa">
-                        <i class="fa-solid fa-eye"></i> Mở xem
-                    </button>
-                    ${canEdit ? `
-                        <button type="button"
-                                onclick="event.stopPropagation(); reloadSurveyIntoForm(${item.id})"
-                                style="background: #fffbeb; border: 1px solid #fcd34d; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: #92400e; margin-right: 4px;" title="Mở ra Form để phỏng vấn lại / bổ sung câu hỏi">
-                            <i class="fa-solid fa-pen-to-square"></i> Sửa / Bổ sung
+                    ${isAdmin1 ? `
+                        <button type="button" onclick="event.stopPropagation(); navigateToPhotoLibraryForMember('${escapeQuotes(sid)}')"
+                                style="background:#fdf2f8; border:1px solid #fbcfe8; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.76rem; font-weight:700; color:#be185d; margin-right:4px;" title="Xem thư viện ảnh của ĐTV">
+                            <i class="fa-solid fa-images"></i> Ảnh ĐTV
                         </button>
-                    ` : ''}
-                    ${canEdit ? `
-                        <a href="${getPdfExportUrl(item.id)}" target="_blank" onclick="event.stopPropagation()"
-                           style="display: inline-block; background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; font-size: 0.78rem; font-weight: 600; color: #b91c1c; text-decoration: none; margin-right: 4px;" title="Xuất báo cáo phỏng vấn PDF">
-                            <i class="fa-solid fa-file-pdf"></i> PDF
-                        </a>
-                    ` : ''}
-                    ${canEdit ? `
-                        <button type="button"
-                                onclick="event.stopPropagation(); openEditSurveyModal(${item.id})"
-                                style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #166534; margin-right: 4px;" title="Sửa nhanh mã phiếu, địa bàn, tên, SĐT, GPS">
-                            <i class="fa-solid fa-sliders"></i> Sửa nhanh
+                        <button type="button" onclick="event.stopPropagation(); navigateToMapForMember('${escapeQuotes(sid)}')"
+                                style="background:#ecfeff; border:1px solid #a5f3fc; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:0.76rem; font-weight:700; color:#0e7490;" title="Xem vị trí trên Bản đồ">
+                            <i class="fa-solid fa-location-dot"></i> Bản đồ
                         </button>
-                    ` : ''}
-                    ${canDelete ? `
+                    ` : `
                         <button type="button"
-                                onclick="event.stopPropagation(); deleteSurveyConfirm(${item.id}, '${escapeQuotes(item.survey_code)}')"
-                                style="background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #b91c1c;" title="Xóa phiếu (vẫn bảo lưu trên VPS để khôi phục)">
-                            <i class="fa-solid fa-trash-can"></i> Xóa
+                                onclick="event.stopPropagation(); viewSurveyDetail(${item.id})"
+                                style="background: #eff6ff; border: 1px solid #93c5fd; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: #1d4ed8; margin-right: 4px;" title="${role === 'admin' ? 'Mở xem chi tiết &amp; góp ý phiếu' : 'Mở xem chi tiết &amp; chọn sửa/bổ sung/xóa'}">
+                            <i class="fa-solid fa-eye"></i> ${role === 'admin' ? 'Mở xem / Góp ý' : 'Mở xem'}
                         </button>
-                    ` : ''}
+                        ${canEdit ? `
+                            <button type="button"
+                                    onclick="event.stopPropagation(); reloadSurveyIntoForm(${item.id})"
+                                    style="background: #fffbeb; border: 1px solid #fcd34d; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: #92400e; margin-right: 4px;" title="Mở ra Form để phỏng vấn lại / bổ sung câu hỏi">
+                                <i class="fa-solid fa-pen-to-square"></i> Sửa / Bổ sung
+                            </button>
+                        ` : ''}
+                        ${canEdit ? `
+                            <a href="${getPdfExportUrl(item.id)}" target="_blank" onclick="event.stopPropagation()"
+                               style="display: inline-block; background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; font-size: 0.78rem; font-weight: 600; color: #b91c1c; text-decoration: none; margin-right: 4px;" title="Xuất báo cáo phỏng vấn PDF">
+                                <i class="fa-solid fa-file-pdf"></i> PDF
+                            </a>
+                        ` : ''}
+                        ${canEdit ? `
+                            <button type="button"
+                                    onclick="event.stopPropagation(); openEditSurveyModal(${item.id})"
+                                    style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #166534; margin-right: 4px;" title="Sửa nhanh mã phiếu, địa bàn, tên, SĐT, GPS">
+                                <i class="fa-solid fa-sliders"></i> Sửa nhanh
+                            </button>
+                        ` : ''}
+                        ${canDelete ? `
+                            <button type="button"
+                                    onclick="event.stopPropagation(); deleteSurveyConfirm(${item.id}, '${escapeQuotes(item.survey_code)}')"
+                                    style="background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #b91c1c;" title="Xóa phiếu (vẫn bảo lưu trên VPS để khôi phục)">
+                                <i class="fa-solid fa-trash-can"></i> Xóa
+                            </button>
+                        ` : ''}
+                    `}
                 </td>
             </tr>
         `;
@@ -5445,11 +5984,12 @@ function renderCompletedSurveysRows(list) {
 
 function filterCompletedSurveysTable() {
     const kw = normViNameOwner(document.getElementById('historySurveySearchInput')?.value || '');
-    if (!kw) {
-        renderCompletedSurveysRows(_cachedCompletedSurveysList);
-        return;
-    }
+    const sidFilter = _historyFilterSurveyorId;
     const filtered = _cachedCompletedSurveysList.filter(item => {
+        if (sidFilter && !recordMatchesStaffId(item, sidFilter)) {
+            return false;
+        }
+        if (!kw) return true;
         const hay = normViNameOwner([
             item.survey_code,
             item.tool_code,
@@ -5458,19 +5998,76 @@ function filterCompletedSurveysTable() {
             item.respondent_name,
             item.surveyor_name,
             item.surveyor_id,
-            item.survey_date
+            item.survey_date,
+            item.admin_status,
+            item.admin_feedback
         ].join(' '));
         return hay.includes(kw);
     });
     renderCompletedSurveysRows(filtered);
+    renderHistoryDraftsTableFromCache();
 }
 
 async function loadSurveysList() {
-    if (currentUser?.role === 'admin1') {
-        _cachedCompletedSurveysList = [];
-        updateMenuSummaryBadges();
-        return;
+    const role = currentUser?.role || 'editor';
+    const isAdmin = (role === 'admin');
+    const isAdmin1 = (role === 'admin1');
+    const isReadOnly = (role === 'viewer' || isAdmin1);
+    const admin1Banner = document.getElementById('historyAdmin1NoticeBanner');
+    const btnTrash = document.getElementById('btnToggleHistoryTrash');
+    const headingEl = document.getElementById('historyMainHeading');
+    if (admin1Banner) admin1Banner.style.display = isAdmin1 ? 'block' : 'none';
+    if (btnTrash) btnTrash.style.display = isReadOnly ? 'none' : 'inline-flex';
+    document.querySelectorAll('#view-history a[href*="/api/export/excel"]').forEach(el => {
+        el.style.display = isReadOnly ? 'none' : 'inline-flex';
+    });
+    if (headingEl) {
+        headingEl.textContent = isAdmin1
+            ? 'TỔNG HỢP KHỐI LƯỢNG 06 ĐTV & TIẾN ĐỘ PHIẾU (CHẾ ĐỘ ADMIN1 — KHÓA CHI TIẾT)'
+            : 'DANH SÁCH PHIẾU KHẢO SÁT ĐÃ LƯU TRÊN MÁY CHỦ VPS';
     }
+
+    if (isAdmin || isAdmin1) {
+        const sumSec = document.getElementById('historyInterviewerSummarySection');
+        if (sumSec) sumSec.style.display = 'block';
+        try {
+            const ov = await fetchJsonWithTimeout(
+                apiUrl(`/api/history-overview?role=${encodeURIComponent(role)}&surveyor_id=${encodeURIComponent(currentUser?.surveyor_id || '')}`),
+                15000
+            );
+            _cachedHistoryOverview = ov;
+            if (ov && ov.totals) {
+                window._cachedDashStats = Object.assign({}, window._cachedDashStats || {}, {
+                    total: ov.totals.completed_count,
+                    total_drafts: ov.totals.draft_count,
+                    total_combined_forms: ov.totals.combined_count
+                });
+            }
+            renderHistoryInterviewerSummary(ov);
+            if (isAdmin1) {
+                _cachedCompletedSurveysList = Array.isArray(ov.completed_items) ? ov.completed_items : [];
+                _cachedHistoryDraftsList = Array.isArray(ov.draft_items) ? ov.draft_items : [];
+                interviewedSurveyCodes = new Set(
+                    _cachedCompletedSurveysList.map(s => String(s.survey_code || '').trim().toUpperCase()).filter(Boolean)
+                );
+                updateMenuSummaryBadges();
+                filterCompletedSurveysTable();
+                return;
+            }
+        } catch (eOv) {
+            console.warn('Không tải được tổng hợp 06 ĐTV:', eOv);
+            if (isAdmin1) {
+                _cachedCompletedSurveysList = [];
+                _cachedHistoryDraftsList = [];
+                filterCompletedSurveysTable();
+                return;
+            }
+        }
+    } else {
+        _cachedHistoryOverview = null;
+        renderHistoryInterviewerSummary(null);
+    }
+
     try {
         if (!surveysListFetchPromise) {
             surveysListFetchPromise = fetchJsonWithTimeout(apiUrl('/api/surveys'), 8000)
@@ -5490,21 +6087,116 @@ async function loadSurveysList() {
             filterSampleHouseholds(sampleListPinnedOpen || Boolean(guideVal || kwVal));
         }
 
-        const role = currentUser?.role || 'editor';
-        const btnTrash = document.getElementById('btnToggleHistoryTrash');
-        if (btnTrash) {
-            btnTrash.style.display = (role === 'viewer') ? 'none' : 'inline-flex';
-        }
-
+        await renderHistoryDraftsTable();
         filterCompletedSurveysTable();
-
-        renderHistoryDraftsTable();
         if (role !== 'viewer') {
             loadMyHistoryTrash(true);
         }
     } catch (e) {
         console.warn('Không tải được danh sách phiếu đã nộp:', e);
     }
+}
+
+function renderHistoryDraftsTableFromCache() {
+    const dBody = document.getElementById('historyDraftsTbody');
+    const sec = document.getElementById('historyDraftsSection');
+    if (!dBody) return;
+
+    const role = currentUser?.role || 'viewer';
+    const isAdmin = (role === 'admin');
+    const isAdmin1 = (role === 'admin1');
+    if (sec) sec.style.display = (role === 'viewer') ? 'none' : 'block';
+    if (role === 'viewer') return;
+
+    const kw = normViNameOwner(document.getElementById('historySurveySearchInput')?.value || '');
+    const sidFilter = _historyFilterSurveyorId;
+    const filtered = _cachedHistoryDraftsList.filter(d => {
+        if (sidFilter && !recordMatchesStaffId(d, sidFilter)) {
+            return false;
+        }
+        if (!kw) return true;
+        const hay = normViNameOwner([
+            d.survey_code,
+            d.draft_key,
+            d.tool_code,
+            d.commune,
+            d.hamlet,
+            d.respondent_name,
+            d.surveyor_name,
+            d.surveyor_id,
+            d.admin_status,
+            d.admin_feedback
+        ].join(' '));
+        return hay.includes(kw);
+    });
+
+    const btnBulkHist = document.getElementById('btnDeleteAllMyHistoryDrafts');
+    if (btnBulkHist) {
+        btnBulkHist.style.display = (!isAdmin1 && !isAdmin && filtered.length > 0) ? 'inline-flex' : 'none';
+    }
+    if (filtered.length === 0) {
+        dBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:14px;color:var(--slate-500);">Chưa có phiếu nháp nào phù hợp đang lưu trên máy chủ.</td></tr>';
+        return;
+    }
+
+    const sortedDrafts = filtered.slice().sort((a, b) => {
+        const dt = extractItemSortTimestamp(b) - extractItemSortTimestamp(a);
+        return dt !== 0 ? dt : (Number(b.id || 0) - Number(a.id || 0));
+    });
+    const draftDateCounts = {};
+    sortedDrafts.forEach(d => {
+        const dk = extractItemDateKeyVN(d);
+        draftDateCounts[dk] = (draftDateCounts[dk] || 0) + 1;
+    });
+    let lastDraftDateKey = '';
+
+    dBody.innerHTML = sortedDrafts.map(d => {
+        const dateKey = extractItemDateKeyVN(d);
+        let groupHeaderHtml = '';
+        if (dateKey !== lastDraftDateKey) {
+            lastDraftDateKey = dateKey;
+            groupHeaderHtml = `
+                <tr class="history-date-group-row" style="background: #fef3c7;">
+                    <td colspan="7" style="padding: 5px 10px; font-weight: 800; font-size: 0.77rem; color: #92400e;">
+                        <i class="fa-solid fa-calendar-day"></i> Ngày ${escapeHtml(dateKey)} — ${draftDateCounts[dateKey]} phiếu tạm
+                    </td>
+                </tr>
+            `;
+        }
+        const hasPhoto = Boolean(d.photo_path || d.photo_url);
+        const photoBadge = hasPhoto ? ' <i class="fa-solid fa-camera" style="color:#0f766e;" title="Đã có ảnh"></i>' : '';
+        const feedbackHtml = isAdmin1 ? '' : getAdminStatusBadgeHtml(d.admin_status, d.admin_feedback);
+        const sid = String(d.surveyor_id || '').toUpperCase();
+        return groupHeaderHtml + `
+            <tr>
+                <td data-label="Mã phiếu" style="font-family:monospace;font-weight:700;color:#b45309;">${escapeHtml(d.survey_code || d.draft_key)}${photoBadge}${feedbackHtml}</td>
+                <td data-label="Công cụ"><span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:3px;font-weight:700;font-size:0.78rem;">${escapeHtml(d.tool_code || 'P1')}</span></td>
+                <td data-label="Địa bàn">${escapeHtml(d.commune || '')} ${d.hamlet ? `(${escapeHtml(d.hamlet)})` : ''}</td>
+                <td data-label="Người được PV" style="font-weight:600;">${escapeHtml(d.respondent_name || '—')}</td>
+                <td data-label="Điều tra viên" style="font-size:0.82rem;">${escapeHtml(d.surveyor_name || '')} (${escapeHtml(d.surveyor_id || '')})</td>
+                <td data-label="Tiến độ" style="font-size:0.78rem;text-align:center;">${d.answered_count || 0}/${d.total_count || '?'} câu</td>
+                <td data-label="Thao tác" style="text-align:center;white-space:nowrap;">
+                    ${isAdmin1 ? `
+                        <button type="button" onclick="navigateToPhotoLibraryForMember('${escapeQuotes(sid)}')" style="background:#fdf2f8;border:1px solid #fbcfe8;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.76rem;font-weight:700;color:#be185d;">
+                            <i class="fa-solid fa-images"></i> Ảnh ĐTV
+                        </button>
+                    ` : `
+                        ${isAdmin ? `
+                            <button type="button" onclick="openDraftAdminFeedbackPrompt('${escapeQuotes(d.draft_key)}', '${escapeQuotes(d.survey_code || d.draft_key)}')" style="background:#eff6ff;border:1px solid #93c5fd;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:700;color:#1d4ed8;margin-right:4px;">
+                                <i class="fa-solid fa-comment-dots"></i> Góp ý
+                            </button>
+                        ` : ''}
+                        <button type="button" onclick="loadDraftIntoForm('${escapeQuotes(d.draft_key)}')" style="background:#f0fdf4;border:1px solid #bbf7d0;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:600;color:#166534;margin-right:4px;">
+                            <i class="fa-solid fa-pen-to-square"></i> Mở Sửa
+                        </button>
+                        <button type="button" onclick="deleteHistoryDraftConfirm('${escapeQuotes(d.draft_key)}', '${escapeQuotes(d.survey_code || d.draft_key)}', '${escapeQuotes(d.respondent_name || '')}')" style="background:#fef2f2;border:1px solid #fecaca;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:600;color:#b91c1c;">
+                            <i class="fa-solid fa-trash-can"></i> Xóa Nháp
+                        </button>
+                    `}
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 async function renderHistoryDraftsTable() {
@@ -5515,43 +6207,51 @@ async function renderHistoryDraftsTable() {
     const role = currentUser?.role || 'viewer';
     if (sec) sec.style.display = (role === 'viewer') ? 'none' : 'block';
     if (role === 'viewer') return;
+    if (role === 'admin1') {
+        renderHistoryDraftsTableFromCache();
+        return;
+    }
 
     try {
         const res = await fetch(apiUrl(`/api/drafts?role=${encodeURIComponent(role)}&surveyor_id=${encodeURIComponent(currentUser?.surveyor_id || '')}`), { cache: 'no-store' });
         const allDrafts = res.ok ? await res.json() : [];
-        const visibleDrafts = (Array.isArray(allDrafts) ? allDrafts : []).filter(d => isDraftStrictlyOwnedByCurrentUser(d));
-        const btnBulkHist = document.getElementById('btnDeleteAllMyHistoryDrafts');
-        if (btnBulkHist) {
-            btnBulkHist.style.display = visibleDrafts.length > 0 ? 'inline-flex' : 'none';
-        }
-        if (visibleDrafts.length === 0) {
-            dBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:14px;color:var(--slate-500);">Chưa có phiếu nháp nào của tài khoản bạn đang lưu trên máy chủ.</td></tr>';
-            return;
-        }
-        dBody.innerHTML = visibleDrafts.map(d => {
-            const hasPhoto = Boolean(d.photo_path || d.photo_url);
-            const photoBadge = hasPhoto ? ' <i class="fa-solid fa-camera" style="color:#0f766e;" title="Đã có ảnh"></i>' : '';
-            return `
-                <tr>
-                    <td data-label="Mã phiếu" style="font-family:monospace;font-weight:700;color:#b45309;">${escapeHtml(d.survey_code || d.draft_key)}${photoBadge}</td>
-                    <td data-label="Công cụ"><span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:3px;font-weight:700;font-size:0.78rem;">${escapeHtml(d.tool_code || 'P1')}</span></td>
-                    <td data-label="Địa bàn">${escapeHtml(d.commune || '')} ${d.hamlet ? `(${escapeHtml(d.hamlet)})` : ''}</td>
-                    <td data-label="Người được PV" style="font-weight:600;">${escapeHtml(d.respondent_name || '—')}</td>
-                    <td data-label="Điều tra viên" style="font-size:0.82rem;">${escapeHtml(d.surveyor_name || '')} (${escapeHtml(d.surveyor_id || '')})</td>
-                    <td data-label="Tiến độ" style="font-size:0.78rem;text-align:center;">${d.answered_count || 0}/${d.total_count || '?'} câu</td>
-                    <td data-label="Thao tác" style="text-align:center;white-space:nowrap;">
-                        <button type="button" onclick="loadDraftIntoForm('${escapeQuotes(d.draft_key)}')" style="background:#f0fdf4;border:1px solid #bbf7d0;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:600;color:#166534;margin-right:4px;">
-                            <i class="fa-solid fa-pen-to-square"></i> Mở Sửa
-                        </button>
-                        <button type="button" onclick="deleteHistoryDraftConfirm('${escapeQuotes(d.draft_key)}', '${escapeQuotes(d.survey_code || d.draft_key)}', '${escapeQuotes(d.respondent_name || '')}')" style="background:#fef2f2;border:1px solid #fecaca;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:600;color:#b91c1c;">
-                            <i class="fa-solid fa-trash-can"></i> Xóa Nháp
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        _cachedHistoryDraftsList = (Array.isArray(allDrafts) ? allDrafts : []).filter(d => isDraftStrictlyOwnedByCurrentUser(d));
+        renderHistoryDraftsTableFromCache();
     } catch (_) {
         dBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:12px;color:#dc2626;">Không tải được danh sách phiếu nháp.</td></tr>';
+    }
+}
+
+async function openDraftAdminFeedbackPrompt(draftKey, labelCode) {
+    if (currentUser?.role !== 'admin') return;
+    const target = _cachedHistoryDraftsList.find(d => d.draft_key === draftKey);
+    const curStatus = target?.admin_status || 'Cần bổ sung';
+    const curNote = target?.admin_feedback || '';
+    const note = prompt(`Nhập nội dung góp ý của Admin cho phiếu tạm [${labelCode}] (ĐTV sẽ nhìn thấy để hoàn thiện):`, curNote);
+    if (note === null) return;
+    try {
+        const res = await fetch(apiUrl('/api/drafts/feedback'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Key': getAdminKey() || currentUser?.key || ''
+            },
+            body: JSON.stringify({
+                draft_key: draftKey,
+                admin_status: note.trim() ? curStatus : '',
+                admin_feedback: note.trim(),
+                author: currentUser?.name || 'Admin'
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || 'Không lưu được góp ý phiếu tạm.');
+            return;
+        }
+        showInstantActionToast(`Đã lưu góp ý Admin cho phiếu tạm ${labelCode}`);
+        await renderHistoryDraftsTable();
+    } catch (e) {
+        alert('Lỗi kết nối khi lưu góp ý: ' + e.message);
     }
 }
 
@@ -5733,6 +6433,10 @@ async function finishAfterCompletionFromDetail() {
 }
 
 async function viewSurveyDetail(id, options = {}) {
+    if (currentUser?.role === 'admin1') {
+        notifyAdmin1NoSurveyDetail();
+        return;
+    }
     try {
         const res = await fetch(apiUrl(`/api/surveys/${id}`));
         if (!res.ok) {
@@ -5753,10 +6457,11 @@ async function viewSurveyDetail(id, options = {}) {
         const qMap = {};
         qList.forEach(q => { qMap[q.code] = q.text; });
         const keys = Object.keys(answers).filter(k => !k.startsWith('_'));
-        const answeredBaseCount = qList.length
-            ? qList.filter(q => hasMeaningfulSurveyAnswer(answers[q.code])).length
+        const applicableQs = qList.filter(q => checkConditionMet(q.condition, answers, item.tool_code || 'P1') || hasMeaningfulSurveyAnswer(answers[q.code]));
+        const answeredBaseCount = applicableQs.length
+            ? applicableQs.filter(q => hasMeaningfulSurveyAnswer(answers[q.code])).length
             : keys.length;
-        const missingQs = qList.filter(q => !hasMeaningfulSurveyAnswer(answers[q.code]));
+        const missingQs = applicableQs.filter(q => !hasMeaningfulSurveyAnswer(answers[q.code]));
 
         let photoHtml = '';
         if (item.photo_url) {
@@ -5780,6 +6485,18 @@ async function viewSurveyDetail(id, options = {}) {
         if (qList.length > 0) {
             tableRowsHtml += qList.map(q => {
                 const answered = hasMeaningfulSurveyAnswer(answers[q.code]);
+                const condOk = checkConditionMet(q.condition, answers, item.tool_code || 'P1');
+                if (!condOk && !answered) {
+                    return `
+                        <tr class="detail-answered-row" style="background: #f8fafc; opacity: 0.72;">
+                            <td style="font-family: monospace; font-weight: 700; color: #64748b; vertical-align: top;">${escapeHtml(q.code)}</td>
+                            <td>
+                                <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 2px;">${escapeHtml(q.text || '')}</div>
+                                <div style="font-size: 0.76rem; font-style: italic; color: #64748b;">(Bỏ qua theo điều kiện: ${escapeHtml(q.condition || '')})</div>
+                            </td>
+                        </tr>
+                    `;
+                }
                 const noteVal = answers[`${q.code}_note`];
                 const detailVal = answers[`${q.code}_details`];
                 return `
@@ -5850,6 +6567,39 @@ async function viewSurveyDetail(id, options = {}) {
                    </div>`)
             : '';
 
+        const curAdminStatus = item.admin_status || '';
+        const curAdminNote = item.admin_feedback || '';
+        const adminFeedbackBoxHtml = (role === 'admin')
+            ? `
+                <div id="adminFeedbackBox" style="margin-bottom: 12px; padding: 11px 14px; background: #eff6ff; border: 1px solid #93c5fd; border-left: 4px solid #1d4ed8; border-radius: 6px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+                        <strong style="font-size:0.86rem; color:#1e3a8a;"><i class="fa-solid fa-comment-dots"></i> NHẬN XÉT &amp; GÓP Ý CỦA ADMIN ĐỐI VỚI PHIẾU NÀY</strong>
+                        ${item.admin_feedback_at ? `<span style="font-size:0.74rem; color:#475569;">Cập nhật bởi ${escapeHtml(item.admin_feedback_by || 'Admin')} lúc ${escapeHtml(typeof formatDateTimeVN === 'function' ? formatDateTimeVN(item.admin_feedback_at) : item.admin_feedback_at)}</span>` : ''}
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
+                        <select id="adminFeedbackStatusSelect" class="form-control" style="max-width:210px; font-size:0.82rem; font-weight:700; padding:6px 8px;">
+                            <option value="" ${curAdminStatus === '' ? 'selected' : ''}>-- Trạng thái rà soát --</option>
+                            <option value="Đã duyệt" ${curAdminStatus === 'Đã duyệt' ? 'selected' : ''}>Đã duyệt (Đạt yêu cầu)</option>
+                            <option value="Cần bổ sung" ${curAdminStatus === 'Cần bổ sung' ? 'selected' : ''}>Cần bổ sung / Sửa lại</option>
+                            <option value="Lưu ý" ${curAdminStatus === 'Lưu ý' ? 'selected' : ''}>Lưu ý hiện trường</option>
+                        </select>
+                        <textarea id="adminFeedbackTextarea" class="form-control" rows="2" placeholder="Nhập góp ý chi tiết cho Điều tra viên (ví dụ: bổ sung câu B3, kiểm tra lại sản lượng, xác nhận tọa độ...)" style="flex:1; min-width:220px; font-size:0.82rem; padding:6px 8px;">${escapeHtml(curAdminNote)}</textarea>
+                        <button type="button" id="btnSaveAdminFeedback" onclick="submitSurveyAdminFeedback(${item.id})" class="qgis-btn-primary" style="background:#1d4ed8; border-color:#1e40af; padding:7px 14px; font-size:0.82rem; font-weight:700;">
+                            <i class="fa-solid fa-paper-plane"></i> Lưu góp ý
+                        </button>
+                    </div>
+                </div>
+            `
+            : ((curAdminStatus || curAdminNote)
+                ? `
+                    <div id="adminFeedbackReadonlyBanner" style="margin-bottom: 12px; padding: 10px 14px; background: #fffbeb; border: 1px solid #fcd34d; border-left: 4px solid #d97706; border-radius: 6px; font-size: 0.83rem; color: #78350f;">
+                        <div style="font-weight:800; margin-bottom:3px;"><i class="fa-solid fa-comment-dots"></i> GÓP Ý TỪ ADMIN${curAdminStatus ? `: [${escapeHtml(curAdminStatus)}]` : ''}</div>
+                        ${curAdminNote ? `<div style="white-space:pre-wrap;">${escapeHtml(curAdminNote)}</div>` : ''}
+                        ${item.admin_feedback_at ? `<div style="font-size:0.74rem; color:#92400e; margin-top:4px;">Bởi ${escapeHtml(item.admin_feedback_by || 'Admin')} • ${escapeHtml(item.admin_feedback_at)}</div>` : ''}
+                    </div>
+                `
+                : '');
+
         body.innerHTML = `
             <div style="background: var(--slate-50); padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px;">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; font-size: 0.84rem;">
@@ -5864,6 +6614,7 @@ async function viewSurveyDetail(id, options = {}) {
                     <div><strong>Công cụ:</strong> ${escapeHtml(item.tool_code || '')} — ${escapeHtml(item.tool_name || '')}</div>
                 </div>
             </div>
+            ${adminFeedbackBoxHtml}
             ${completenessBanner}
             ${photoHtml}
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
@@ -5908,6 +6659,48 @@ async function viewSurveyDetail(id, options = {}) {
         document.getElementById('surveyDetailModal').classList.add('active');
     } catch (e) {
         alert('Không tải được chi tiết phiếu');
+    }
+}
+
+async function submitSurveyAdminFeedback(surveyId) {
+    if (currentUser?.role !== 'admin') return;
+    const statusSel = document.getElementById('adminFeedbackStatusSelect');
+    const noteArea = document.getElementById('adminFeedbackTextarea');
+    const btn = document.getElementById('btnSaveAdminFeedback');
+    const adminStatus = (statusSel?.value || '').trim();
+    const adminFeedback = (noteArea?.value || '').trim();
+    if (btn) btn.disabled = true;
+    try {
+        const res = await fetch(apiUrl(`/api/surveys/${surveyId}/feedback`), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Key': getAdminKey() || currentUser?.key || ''
+            },
+            body: JSON.stringify({
+                admin_status: adminStatus,
+                admin_feedback: adminFeedback,
+                author: currentUser?.name || 'Admin'
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || 'Không thể lưu góp ý của Admin.');
+            return;
+        }
+        showInstantActionToast('Đã lưu góp ý của Admin lên máy chủ VPS.');
+        const cachedIdx = _cachedCompletedSurveysList.findIndex(x => Number(x.id) === Number(surveyId));
+        if (cachedIdx >= 0) {
+            _cachedCompletedSurveysList[cachedIdx].admin_status = data.admin_status || '';
+            _cachedCompletedSurveysList[cachedIdx].admin_feedback = data.admin_feedback || '';
+            _cachedCompletedSurveysList[cachedIdx].admin_feedback_by = data.admin_feedback_by || '';
+            _cachedCompletedSurveysList[cachedIdx].admin_feedback_at = data.admin_feedback_at || '';
+        }
+        filterCompletedSurveysTable();
+    } catch (e) {
+        alert('Lỗi kết nối khi lưu góp ý: ' + e.message);
+    } finally {
+        if (btn) btn.disabled = false;
     }
 }
 
@@ -7642,11 +8435,12 @@ function renderTeamMapMarkersShared(mode, fitAll = false) {
             iconAnchor: [0, 0]
         });
         const imgUrl = fp.photo_url ? apiUrl(fp.photo_url) : '';
+        const thumbUrl = photoThumbUrl(imgUrl);
         const earthUrl = `https://earth.google.com/web/search/${lat.toFixed(6)},${lng.toFixed(6)}`;
         const popupHtml = `
             <div style="min-width:225px;max-width:270px;font-size:12.5px;line-height:1.45;">
                 <div style="font-weight:800;color:#9f1239;margin-bottom:4px;"><i class="fa-solid fa-camera"></i> ${escapeHtml(fp.photo_code || ('Ảnh #' + fp.id))}</div>
-                ${imgUrl ? `<a href="${imgUrl}" target="_blank" style="display:block;margin-bottom:6px;"><img src="${imgUrl}" alt="Ảnh hiện trường" style="width:100%;max-height:145px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1;"></a>` : ''}
+                ${imgUrl ? `<a href="${imgUrl}" target="_blank" style="display:block;margin-bottom:6px;"><img src="${thumbUrl}" alt="Ảnh hiện trường" style="width:100%;max-height:145px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1;"></a>` : ''}
                 <div><strong>Ghi chú:</strong> ${escapeHtml(fp.note || 'Chưa có ghi chú')}</div>
                 ${fp.survey_code ? `<div><strong>Mã hộ / Phiếu:</strong> ${escapeHtml(fp.survey_code)}</div>` : ''}
                 <div><strong>Địa bàn:</strong> ${escapeHtml(fp.commune || '—')} • <strong>ĐTV:</strong> ${escapeHtml(fp.surveyor_name || fp.surveyor_id || '—')}</div>
@@ -7739,21 +8533,29 @@ async function loadTeamLocationsMap(fitAll = false) {
                 const surveyHtml = m.last_survey_code
                     ? `<strong>${escapeHtml(m.last_survey_code)}</strong><div style="font-size:0.75rem;color:var(--slate-600);">${escapeHtml(m.last_household || m.last_activity || '')}</div>`
                     : `<span style="color:var(--slate-500);font-size:0.78rem;">${escapeHtml(m.last_activity || '—')}</span>`;
-                const actionHtml = (m.lat !== null && m.lng !== null)
-                    ? `<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
-                        <button type="button" onclick="focusTeamMemberOnMap('${escapeHtml(m.surveyor_id)}')" class="qgis-btn-secondary" style="padding:4px 8px;font-size:0.76rem;">
+                const reminderPill = m.reminder_text
+                    ? `<div style="margin-top:3px;"><span style="display:inline-block;background:#fffbeb;color:#92400e;border:1px solid #fcd34d;border-radius:4px;padding:1px 6px;font-size:0.71rem;font-weight:700;" title="${escapeHtml(m.reminder_text)}"><i class="fa-solid fa-bell"></i> ${escapeHtml(m.reminder_level || 'Nhắc nhở')}: ${escapeHtml(m.reminder_text.slice(0, 40))}${m.reminder_text.length > 40 ? '…' : ''}</span></div>`
+                    : '';
+                const actionHtml = `<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+                        <button type="button" onclick="openInterviewerHouseholdsView('${escapeHtml(m.surveyor_id)}')" class="qgis-btn-primary" style="padding:4px 8px;font-size:0.76rem;background:#002060;border-color:#002060;">
+                            <i class="fa-solid fa-list-check"></i> Hộ PV
+                        </button>
+                        ${(m.lat !== null && m.lng !== null) ? `<button type="button" onclick="focusTeamMemberOnMap('${escapeHtml(m.surveyor_id)}')" class="qgis-btn-secondary" style="padding:4px 8px;font-size:0.76rem;">
                             <i class="fa-solid fa-crosshairs"></i> Định vị
                         </button>
                         <a href="${m.google_earth_url}" target="_blank" class="qgis-btn-secondary" style="padding:4px 8px;font-size:0.76rem;text-decoration:none;color:#0369a1;">
                             <i class="fa-solid fa-earth-asia"></i> Earth
-                        </a>
-                       </div>`
-                    : `<span style="color:var(--slate-400);font-size:0.76rem;">—</span>`;
+                        </a>` : ''}
+                       </div>`;
 
                 return `
                     <tr>
                         <td><strong>${escapeHtml(m.surveyor_id)}</strong></td>
-                        <td><strong>${escapeHtml(m.full_name)}</strong><div style="font-size:0.74rem;color:var(--slate-500);">${escapeHtml(m.last_seen_vn || '')}</div></td>
+                        <td>
+                            <a href="javascript:void(0)" onclick="openInterviewerHouseholdsView('${escapeHtml(m.surveyor_id)}')" style="font-weight:800;color:#002060;text-decoration:underline;cursor:pointer;">${escapeHtml(m.full_name)}</a>
+                            <div style="font-size:0.74rem;color:var(--slate-500);">${escapeHtml(m.last_seen_vn || '')}</div>
+                            ${reminderPill}
+                        </td>
                         <td>${escapeHtml(m.commune || '')}</td>
                         <td>${getTeamStatusBadgeHtml(m)}</td>
                         <td>${coordHtml}</td>
@@ -7806,11 +8608,15 @@ async function refreshAdminMenuLiveBoard(fitAll = false) {
                 const hasGps = (m.lat !== null && m.lng !== null);
                 const dotColor = m.status === 'online' ? '#16a34a' : (m.status === 'recent' ? '#f59e0b' : (hasGps ? '#2563eb' : '#94a3b8'));
                 const coordStr = hasGps ? `${m.lat.toFixed(5)}, ${m.lng.toFixed(5)}` : 'Chưa có GPS';
+                const reminderBadge = m.reminder_text
+                    ? `<div style="font-size:0.72rem;color:#b45309;margin-top:2px;font-weight:700;"><i class="fa-solid fa-bell"></i> ${escapeHtml(m.reminder_level || 'Nhắc nhở')}: ${escapeHtml(m.reminder_text.slice(0, 50))}${m.reminder_text.length > 50 ? '…' : ''}</div>`
+                    : '';
                 return `
-                    <div onclick="focusAdminMenuMember('${escapeHtml(m.surveyor_id)}')" style="border: 1px solid #e2e8f0; border-left: 4px solid ${dotColor}; border-radius: 8px; padding: 8px 10px; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <div onclick="openInterviewerHouseholdsView('${escapeHtml(m.surveyor_id)}')" title="Bấm để xem danh sách các hộ đã phỏng vấn & gửi nhắc nhở" style="border: 1px solid #e2e8f0; border-left: 4px solid ${dotColor}; border-radius: 8px; padding: 8px 10px; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <div style="min-width: 170px; flex: 1;">
                             <div style="font-size: 0.85rem; font-weight: 800; color: #0f2a4a;">
                                 <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-right:5px;"></span>[${escapeHtml(m.surveyor_id)}] ${escapeHtml(m.full_name)}
+                                <span style="font-size:0.72rem;font-weight:700;color:#0369a1;margin-left:6px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Xem hộ PV</span>
                             </div>
                             <div style="font-size: 0.75rem; color: #475569; margin-top: 2px;">
                                 Xã: <strong>${escapeHtml(m.commune || '')}</strong> • ${escapeHtml(m.last_survey_code || m.last_activity || 'Chưa có phiếu')}
@@ -7818,12 +8624,14 @@ async function refreshAdminMenuLiveBoard(fitAll = false) {
                             <div style="font-size: 0.73rem; color: #64748b; font-family: monospace; margin-top: 2px;">
                                 WGS84: ${escapeHtml(coordStr)}${m.last_seen_vn ? ` • ${escapeHtml(m.last_seen_vn)}` : ''}
                             </div>
+                            ${reminderBadge}
                         </div>
                         <div style="text-align: right; flex-shrink: 0;">
                             <div>${getTeamStatusBadgeHtml(m)}</div>
                             <div style="font-size: 0.74rem; color: #334155; font-weight: 700; margin-top: 4px;">
                                 ${(m.completed_count || 0) + (m.draft_count || 0)} phiếu (${m.draft_count || 0} nháp • ${m.completed_count || 0} nộp)
                             </div>
+                            ${hasGps ? `<button type="button" onclick="event.stopPropagation(); focusAdminMenuMember('${escapeHtml(m.surveyor_id)}')" class="qgis-btn-secondary" style="font-size:0.71rem;padding:2px 7px;margin-top:4px;"><i class="fa-solid fa-crosshairs"></i> Định vị</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -8000,7 +8808,7 @@ function triggerFieldQuickPhotoCapture(sourceType = 'camera') {
 }
 
 async function createHighResWatermarkedFieldPhoto(file, meta) {
-    const maxDim = 2560;
+    const maxDim = 1920;
     const decodeSource = async () => {
         if (typeof createImageBitmap === 'function') {
             try {
@@ -8038,6 +8846,10 @@ async function createHighResWatermarkedFieldPhoto(file, meta) {
         canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(decoded.source, 0, 0, w, h);
+        if (typeof decoded.cleanup === 'function') {
+            decoded.cleanup();
+            decoded.cleanup = null;
+        }
 
         const fontSize = Math.max(16, Math.round(w * 0.020));
         const lineHeight = Math.round(fontSize * 1.45);
@@ -8068,9 +8880,9 @@ async function createHighResWatermarkedFieldPhoto(file, meta) {
         ctx.fillStyle = '#e2e8f0';
         drawFittedWatermarkLine(ctx, line3, leftX, startY + lineHeight * 2, fontSize, false, maxTextW);
 
-        let dataUrl = canvas.toDataURL('image/jpeg', 0.94);
-        if (dataUrl.length > 10 * 1024 * 1024) {
-            dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        let dataUrl = canvas.toDataURL('image/jpeg', 0.86);
+        if (dataUrl.length > 3.5 * 1024 * 1024) {
+            dataUrl = canvas.toDataURL('image/jpeg', 0.76);
         }
         return { dataUrl, width: w, height: h, wgs84Text };
     } finally {
@@ -8080,66 +8892,27 @@ async function createHighResWatermarkedFieldPhoto(file, meta) {
     }
 }
 
-async function handleFieldQuickPhotoSelected(event) {
-    const file = event.target?.files?.[0];
-    if (!file) return;
-    if (currentUser?.role === 'viewer' || currentUser?.role === 'admin1') {
-        alert('Tài khoản Chỉ Xem / Admin1 không được phép tải ảnh lên.');
-        return;
-    }
-
-    const statusEl = document.getElementById('fieldQuickPhotoStatus');
-    if (statusEl) {
-        statusEl.style.color = '#d97706';
-        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang giữ độ phân giải cao nhất &amp; lấy tọa độ GPS...';
-    }
-
-    try {
-        const coords = await getFieldPhotoGpsCoords(6000);
-        const now = new Date();
-        const pad = (n) => String(n).padStart(2, '0');
-        const timestampStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-        const surveyCode = (document.getElementById('fpSurveyCodeInput')?.value || '').trim();
-        const commune = (document.getElementById('fpCommuneSelect')?.value || currentUser?.commune || 'Ea Kiết').trim();
-        const noteEl = document.getElementById('fpNoteInput');
-        const note = (noteEl?.value || '').trim();
-        const surveyorId = currentUser?.surveyor_id || 'DTV';
-        const surveyorName = currentUser?.full_name || 'Điều tra viên';
-
-        const rendered = await createHighResWatermarkedFieldPhoto(file, {
-            lat: coords.lat,
-            lng: coords.lng,
-            timestampStr,
-            surveyCode,
-            commune,
-            note,
-            surveyorId,
-            surveyorName
-        });
-
-        const photoCode = `FP_${String(now.getFullYear()).slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}_${surveyorId}`;
-        const payload = {
-            photo_code: photoCode,
-            survey_code: surveyCode,
-            surveyor_id: surveyorId,
-            surveyor_name: surveyorName,
-            role: currentUser?.role || 'editor',
-            commune: commune,
-            note: note,
-            gps_lat: coords.lat,
-            gps_lng: coords.lng,
-            photo_data: rendered.dataUrl,
-            photo_meta: `${timestampStr} | ${rendered.wgs84Text} | ${rendered.width}x${rendered.height}`
-        };
-
-        if (statusEl) {
-            statusEl.style.color = '#0369a1';
-            statusEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-up fa-beat"></i> Đang đẩy ảnh HD (${rendered.width}x${rendered.height}) trực tiếp lên máy chủ VPS...`;
+let _fieldPhotoAutoSyncTimer = null;
+function scheduleAutoFieldPhotoSync() {
+    if (_fieldPhotoAutoSyncTimer) return;
+    _fieldPhotoAutoSyncTimer = setInterval(async () => {
+        if (!navigator.onLine || currentUser?.role === 'viewer' || currentUser?.role === 'admin1') return;
+        const left = await getAllPendingFieldPhotosIdb();
+        if (!left.length) {
+            clearInterval(_fieldPhotoAutoSyncTimer);
+            _fieldPhotoAutoSyncTimer = null;
+            return;
         }
+        await syncPendingFieldPhotosQueue(true);
+    }, 8000);
+}
 
+async function postFieldPhotoWithRetry(payload, maxRetries = 3) {
+    let lastErr = null;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 45000);
         try {
-            const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 30000);
             const res = await fetch(apiUrl('/api/field-photos'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -8149,26 +8922,122 @@ async function handleFieldQuickPhotoSelected(event) {
             clearTimeout(timer);
             const data = await res.json().catch(() => ({}));
             if (res.ok && data.success) {
-                if (noteEl) noteEl.value = '';
-                if (statusEl) {
-                    statusEl.style.color = '#15803d';
-                    statusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đã lưu &amp; tải ảnh HD <strong>[${escapeHtml(data.photo_code)}]</strong> (${rendered.width}x${rendered.height}) lên VPS!`;
-                }
-                showInstantActionToast(`Đã tải ảnh hiện trường HD [${data.photo_code}] lên VPS!`);
-                await loadFieldPhotosGallery(false);
-                return;
+                return data;
             }
-            throw new Error(data.error || `HTTP ${res.status}`);
-        } catch (netErr) {
-            const localRec = Object.assign({ local_id: `LOCAL_${Date.now()}`, saved_at: timestampStr }, payload);
-            await putPendingFieldPhotoIdb(localRec);
+            lastErr = new Error(data.error || `HTTP ${res.status}`);
+        } catch (err) {
+            clearTimeout(timer);
+            lastErr = err;
+        }
+        if (attempt < maxRetries) {
+            await new Promise(r => setTimeout(r, attempt * 1200));
+        }
+    }
+    throw lastErr || new Error('Upload failed');
+}
+
+async function handleFieldQuickPhotoSelected(event) {
+    const inputEl = event.target;
+    const files = Array.from(inputEl?.files || []);
+    if (!files.length) return;
+    if (currentUser?.role === 'viewer' || currentUser?.role === 'admin1') {
+        alert('Tài khoản Chỉ Xem / Admin1 không được phép tải ảnh lên.');
+        if (inputEl) inputEl.value = '';
+        return;
+    }
+
+    const totalFiles = files.length;
+    const statusEl = document.getElementById('fieldQuickPhotoStatus');
+    if (statusEl) {
+        statusEl.style.color = '#0369a1';
+        statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${totalFiles > 1 ? `Đang đẩy lên VPS (1/${totalFiles})...` : 'Đang đẩy lên VPS...'}`;
+    }
+
+    let uploadedCount = 0;
+    let queuedCount = 0;
+    let lastUploadedCode = '';
+
+    try {
+        const coords = await getFieldPhotoGpsCoords(3500);
+        const pad = (n) => String(n).padStart(2, '0');
+        const surveyCode = (document.getElementById('fpSurveyCodeInput')?.value || '').trim();
+        const commune = (document.getElementById('fpCommuneSelect')?.value || currentUser?.commune || 'Ea Kiết').trim();
+        const noteEl = document.getElementById('fpNoteInput');
+        const note = (noteEl?.value || '').trim();
+        const surveyorId = currentUser?.surveyor_id || 'DTV';
+        const surveyorName = currentUser?.full_name || 'Điều tra viên';
+
+        for (let idx = 0; idx < totalFiles; idx++) {
+            const file = files[idx];
             if (statusEl) {
-                statusEl.style.color = '#b45309';
-                statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Mạng đang yếu (${escapeHtml(netErr.message)}). Ảnh HD đã được giữ an toàn trong máy — bấm <strong>Đẩy lại ảnh chờ</strong> hoặc hệ thống sẽ tự đẩy khi có mạng.`;
+                statusEl.style.color = '#0369a1';
+                statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${totalFiles > 1 ? `Đang đẩy lên VPS (${idx + 1}/${totalFiles})...` : 'Đang đẩy lên VPS...'}`;
+            }
+
+            const now = new Date();
+            const timestampStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+            const rendered = await createHighResWatermarkedFieldPhoto(file, {
+                lat: coords.lat,
+                lng: coords.lng,
+                timestampStr,
+                surveyCode,
+                commune,
+                note,
+                surveyorId,
+                surveyorName
+            });
+
+            const seqSuffix = totalFiles > 1 ? `_${idx + 1}` : '';
+            const photoCode = `FP_${String(now.getFullYear()).slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}${seqSuffix}_${surveyorId}`;
+            const payload = {
+                photo_code: photoCode,
+                survey_code: surveyCode,
+                surveyor_id: surveyorId,
+                surveyor_name: surveyorName,
+                role: currentUser?.role || 'editor',
+                commune: commune,
+                note: note,
+                gps_lat: coords.lat,
+                gps_lng: coords.lng,
+                photo_data: rendered.dataUrl,
+                photo_meta: `${timestampStr} | ${rendered.wgs84Text} | ${rendered.width}x${rendered.height}`
+            };
+
+            try {
+                const data = await postFieldPhotoWithRetry(payload, 3);
+                uploadedCount += 1;
+                lastUploadedCode = data.photo_code || photoCode;
+            } catch (_netErr) {
+                const localRec = Object.assign({ local_id: `LOCAL_${Date.now()}_${idx}`, saved_at: timestampStr }, payload);
+                await putPendingFieldPhotoIdb(localRec);
+                queuedCount += 1;
+            }
+        }
+
+        if (inputEl) inputEl.value = '';
+        if (noteEl && uploadedCount > 0 && queuedCount === 0) noteEl.value = '';
+
+        if (queuedCount === 0 && uploadedCount > 0) {
+            const doneMsg = totalFiles > 1
+                ? `<strong>Done</strong> — Đã đẩy ${uploadedCount}/${totalFiles} ảnh lên VPS!`
+                : `<strong>Done</strong> — Đã đẩy ảnh <strong>[${escapeHtml(lastUploadedCode)}]</strong> lên VPS!`;
+            if (statusEl) {
+                statusEl.style.color = '#15803d';
+                statusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${doneMsg}`;
+            }
+            showInstantActionToast(totalFiles > 1 ? `Done — Đã đẩy ${uploadedCount}/${totalFiles} ảnh lên VPS!` : `Done — Đã đẩy ảnh [${lastUploadedCode}] lên VPS!`);
+            await loadFieldPhotosGallery(false);
+        } else {
+            if (statusEl) {
+                statusEl.style.color = '#0369a1';
+                statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang đẩy lên VPS (hệ thống tự động đồng bộ hoàn tất)...';
             }
             await loadFieldPhotosGallery(false);
+            scheduleAutoFieldPhotoSync();
+            setTimeout(() => { syncPendingFieldPhotosQueue(true); }, 1500);
         }
     } catch (err) {
+        if (inputEl) inputEl.value = '';
         if (statusEl) {
             statusEl.style.color = '#dc2626';
             statusEl.textContent = 'Lỗi xử lý ảnh hiện trường: ' + err.message;
@@ -8178,11 +9047,12 @@ async function handleFieldQuickPhotoSelected(event) {
 }
 
 async function syncPendingFieldPhotosQueue(silent = false) {
-    if (!navigator.onLine || currentUser?.role === 'viewer') return 0;
+    if (!navigator.onLine || currentUser?.role === 'viewer' || currentUser?.role === 'admin1') return 0;
     const pending = await getAllPendingFieldPhotosIdb();
     updatePendingFieldPhotosUi(pending.length);
     if (!pending.length) return 0;
 
+    const statusEl = document.getElementById('fieldQuickPhotoStatus');
     let uploaded = 0;
     for (const item of pending) {
         try {
@@ -8200,35 +9070,35 @@ async function syncPendingFieldPhotosQueue(silent = false) {
 
     const left = await getAllPendingFieldPhotosIdb();
     updatePendingFieldPhotosUi(left.length);
+    if (left.length > 0) scheduleAutoFieldPhotoSync();
     if (uploaded > 0) {
-        if (!silent) showInstantActionToast(`Đã đồng bộ ${uploaded} ảnh HD hiện trường lên VPS!`);
+        if (statusEl && left.length === 0) {
+            statusEl.style.color = '#15803d';
+            statusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> <strong>Done</strong> — Đã đẩy ảnh lên VPS!';
+        }
+        if (!silent) showInstantActionToast(`Done — Đã đẩy ${uploaded} ảnh lên VPS!`);
         if (currentMainView === 'field-photos') {
             await loadFieldPhotosGallery(false);
         } else {
             refreshFieldPhotosBadgeCount();
         }
-    } else if (!silent && left.length > 0) {
-        alert(`Vẫn còn ${left.length} ảnh chờ đồng bộ do mạng yếu, hệ thống sẽ tự thử lại.`);
     }
     return uploaded;
 }
 
 function updatePendingFieldPhotosUi(count) {
-    const btn = document.getElementById('btnSyncPendingFieldPhotos');
+    const badgeEl = document.getElementById('autoUploadPendingBadge');
     const span = document.getElementById('pendingFieldPhotosCount');
     if (span) span.textContent = String(count || 0);
-    if (btn) btn.style.display = (count > 0) ? 'inline-flex' : 'none';
+    if (badgeEl) badgeEl.style.display = (count > 0) ? 'inline-flex' : 'none';
 }
 
 async function refreshFieldPhotosBadgeCount() {
     try {
         const isAdmin1 = (currentUser?.role === 'admin1');
-        const endpoint = isAdmin1 ? '/api/photo-library' : '/api/field-photos';
-        const list = await fetchJsonWithTimeout(apiUrl(endpoint), 6000);
+        const list = await fetchJsonWithTimeout(apiUrl('/api/photo-library'), 8000);
         if (Array.isArray(list)) {
-            if (isAdmin1) {
-                window._cachedPhotoLibrary = list;
-            }
+            window._cachedPhotoLibrary = list;
             window._cachedFieldPhotos = list;
             const pending = isAdmin1 ? [] : await getAllPendingFieldPhotosIdb();
             if (!isAdmin1) updatePendingFieldPhotosUi(pending.length);
@@ -8261,12 +9131,12 @@ async function loadFieldPhotosGallery(showToast = false) {
     window._cachedPendingFieldPhotos = pending;
 
     try {
-        const endpoint = isAdmin1 ? '/api/photo-library' : '/api/field-photos';
-        const rows = await fetchJsonWithTimeout(apiUrl(endpoint), 10000);
+        const rows = await fetchJsonWithTimeout(apiUrl('/api/photo-library'), 12000);
         const list = Array.isArray(rows) ? rows : [];
+        window._cachedPhotoLibrary = list;
         window._cachedFieldPhotos = list;
         renderFieldPhotosGallery();
-        if (showToast) showInstantActionToast(`Đã tải ${list.length} ảnh hiện trường từ VPS.`);
+        if (showToast) showInstantActionToast(`Đã tải ${list.length} ảnh hiện trường & phiếu PV từ VPS.`);
     } catch (e) {
         const galleryEl = document.getElementById('fieldPhotosGallery');
         if (galleryEl && !pending.length) {
@@ -8283,7 +9153,7 @@ function renderFieldPhotosGallery() {
     const pending = Array.isArray(window._cachedPendingFieldPhotos) ? window._cachedPendingFieldPhotos : [];
 
     const list = filterSid
-        ? listAll.filter((fp) => String(fp.surveyor_id || '').trim().toUpperCase() === filterSid)
+        ? listAll.filter((fp) => recordMatchesStaffId(fp, filterSid))
         : listAll;
 
     if (countEl) countEl.textContent = String(list.length + (filterSid ? 0 : pending.length));
@@ -8295,40 +9165,38 @@ function renderFieldPhotosGallery() {
     const isReadOnly = (role === 'viewer' || role === 'admin1');
 
     const pendingCards = filterSid ? '' : pending.map((p) => `
-            <div style="border:1.5px dashed #f59e0b; border-radius:10px; background:#fffbeb; overflow:hidden; display:flex; flex-direction:column;">
-                <img src="${p.photo_data}" alt="Ảnh chờ đồng bộ" style="width:100%; height:190px; object-fit:cover; background:#0f172a;">
+            <div style="border:1.5px solid #bae6fd; border-radius:10px; background:#f0f9ff; overflow:hidden; display:flex; flex-direction:column;">
+                <img src="${p.photo_data}" alt="Ảnh đang đẩy lên VPS" style="width:100%; height:190px; object-fit:cover; background:#0f172a;">
                 <div style="padding:10px; font-size:0.82rem; display:flex; flex-direction:column; gap:6px; flex:1;">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
-                        <strong style="color:#b45309;">${escapeHtml(p.photo_code || 'Ảnh chờ đẩy VPS')}</strong>
-                        <span style="background:#fef3c7; color:#92400e; padding:2px 7px; border-radius:999px; font-size:0.72rem; font-weight:700;">Chờ mạng</span>
+                        <strong style="color:#0369a1;">${escapeHtml(p.photo_code || 'Ảnh hiện trường')}</strong>
+                        <span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:999px; font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-spinner fa-spin"></i> Đang đẩy lên VPS...</span>
                     </div>
                     <div style="color:#475569;">${escapeHtml(p.note || 'Chưa có ghi chú')}</div>
                     <div style="font-size:0.75rem; color:#64748b;">${escapeHtml(p.photo_meta || p.saved_at || '')}</div>
-                    <div style="margin-top:auto; display:flex; gap:6px; flex-wrap:wrap; padding-top:4px;">
-                        <button type="button" onclick="syncPendingFieldPhotosQueue(false)" class="qgis-btn-primary" style="font-size:0.75rem; padding:5px 9px; background:#b45309; border-color:#d97706;">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> Đẩy lên VPS
-                        </button>
-                    </div>
                 </div>
             </div>
         `).join('');
 
     const serverCards = list.map((fp) => {
         const imgUrl = apiUrl(fp.photo_url || `/api/photos/${fp.photo_path}`);
+        const thumbUrl = photoThumbUrl(imgUrl);
         const hasGps = (fp.gps_lat !== null && fp.gps_lng !== null && Math.abs(Number(fp.gps_lat)) > 0.01);
-        const isStandalone = (!fp.source || fp.source === 'field_photo');
+        const srcType = fp.source_type || fp.source || 'field_photo';
+        const isStandalone = (srcType === 'field_photo');
         const canEditOrDelete = !isReadOnly && isStandalone && (role === 'admin' || isCurrentUserOwnerOf(fp.surveyor_id, fp.surveyor_name, false));
-        const codeLabel = fp.photo_code || fp.survey_code || ('#' + fp.id);
-        const sourceTag = fp.source === 'survey' ? 'Phiếu hoàn thành' : (fp.source === 'draft' ? 'Phiếu tạm' : 'Ảnh hiện trường');
+        const cardId = String(fp.id ?? fp.uid ?? '');
+        const codeLabel = fp.photo_code || fp.survey_code || ('#' + cardId);
+        const sourceTag = fp.source_label || (srcType === 'survey' ? 'Phiếu hoàn thành' : (srcType === 'draft' ? 'Phiếu tạm' : 'Ảnh hiện trường'));
         return `
-                <div id="fp-card-${fp.id}" style="border:1px solid #cbd5e1; border-radius:10px; background:#ffffff; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 1px 3px rgba(15,23,42,0.05);">
+                <div id="fp-card-${escapeHtml(cardId)}" style="border:1px solid #cbd5e1; border-radius:10px; background:#ffffff; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 1px 3px rgba(15,23,42,0.05);">
                     <a href="${imgUrl}" target="_blank" title="Bấm để xem ảnh HD kích thước đầy đủ" style="display:block; background:#0f172a;">
-                        <img src="${imgUrl}" loading="lazy" alt="${escapeHtml(codeLabel)}" style="width:100%; height:195px; object-fit:cover; display:block;">
+                        <img src="${thumbUrl}" loading="lazy" decoding="async" alt="${escapeHtml(codeLabel)}" style="width:100%; height:195px; object-fit:cover; display:block;">
                     </a>
                     <div style="padding:10px; font-size:0.82rem; display:flex; flex-direction:column; gap:6px; flex:1;">
                         <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
                             <strong style="color:#0f2a4a; font-family:monospace;">${escapeHtml(codeLabel)}</strong>
-                            <span style="background:#dcfce7; color:#166534; padding:2px 7px; border-radius:999px; font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-cloud-check"></i> ${escapeHtml(sourceTag)}</span>
+                            <span style="background:#dcfce7; color:#166534; padding:2px 7px; border-radius:999px; font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-circle-check"></i> Done (${escapeHtml(sourceTag)})</span>
                         </div>
                         <div style="font-size:0.76rem; color:#475569;">
                             <strong>ĐTV:</strong> ${escapeHtml(fp.surveyor_name || fp.surveyor_id || '—')} (${escapeHtml(fp.surveyor_id || '—')}) • <strong>Xã:</strong> ${escapeHtml(fp.commune || '—')}
@@ -8346,7 +9214,7 @@ function renderFieldPhotosGallery() {
                             ${(!isReadOnly && isStandalone) ? `<button type="button" onclick="saveFieldPhotoNote(${fp.id})" class="qgis-btn-primary" style="font-size:0.75rem; padding:5px 9px; background:#0f2a4a; border-color:#1e3a8a;">
                                 <i class="fa-solid fa-floppy-disk"></i> Lưu ghi chú
                             </button>` : ''}
-                            ${(hasGps && isStandalone) ? `<button type="button" onclick="focusFieldPhotoOnStandaloneMap(${fp.id})" class="qgis-btn-secondary" style="font-size:0.75rem; padding:5px 9px; color:#0f766e; border-color:#99f6e4; background:#f0fdfa;">
+                            ${hasGps ? `<button type="button" onclick="focusFieldPhotoOnStandaloneMap('${escapeQuotes(cardId)}')" class="qgis-btn-secondary" style="font-size:0.75rem; padding:5px 9px; color:#0f766e; border-color:#99f6e4; background:#f0fdfa;">
                                 <i class="fa-solid fa-map-pin"></i> Bản đồ
                             </button>` : ''}
                             <a href="${imgUrl}" target="_blank" download class="qgis-btn-secondary" style="font-size:0.75rem; padding:5px 9px; text-decoration:none; color:#0369a1;">
@@ -8442,7 +9310,7 @@ async function refreshStandaloneTeamMap(fitAll = false) {
     try {
         const [teamData, photosData] = await Promise.all([
             fetchJsonWithTimeout(apiUrl('/api/team-locations'), 8000),
-            fetchJsonWithTimeout(apiUrl('/api/field-photos'), 8000).catch(() => null)
+            fetchJsonWithTimeout(apiUrl('/api/photo-library'), 10000).catch(() => null)
         ]);
 
         const members = Array.isArray(teamData?.members) ? teamData.members : [];
@@ -8489,12 +9357,15 @@ async function refreshStandaloneTeamMap(fitAll = false) {
 
         if (photoListEl) {
             photoListEl.innerHTML = gpsPhotos.length
-                ? gpsPhotos.slice(0, 20).map((fp) => `
-                    <div onclick="focusFieldPhotoOnStandaloneMap(${fp.id})" style="border: 1px solid #fecdd3; border-left: 4px solid #be123c; border-radius: 8px; padding: 8px 10px; background: #fff1f2; cursor: pointer; display: flex; align-items: center; gap: 10px;">
-                        <img src="${apiUrl(fp.photo_url || `/api/photos/${fp.photo_path}`)}" alt="" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid #fda4af; flex-shrink:0;">
+                ? gpsPhotos.slice(0, 30).map((fp) => {
+                    const pKey = String(fp.id ?? fp.uid ?? '');
+                    const thumbUrl = photoThumbUrl(apiUrl(fp.photo_url || `/api/photos/${fp.photo_path}`));
+                    return `
+                    <div onclick="focusFieldPhotoOnStandaloneMap('${escapeQuotes(pKey)}')" style="border: 1px solid #fecdd3; border-left: 4px solid #be123c; border-radius: 8px; padding: 8px 10px; background: #fff1f2; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                        <img src="${thumbUrl}" loading="lazy" decoding="async" alt="" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid #fda4af; flex-shrink:0;">
                         <div style="min-width: 0; flex: 1;">
                             <div style="font-size: 0.83rem; font-weight: 800; color: #9f1239; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                ${escapeHtml(fp.photo_code || ('Ảnh #' + fp.id))}${fp.survey_code ? ` (${escapeHtml(fp.survey_code)})` : ''}
+                                ${escapeHtml(fp.photo_code || ('Ảnh #' + pKey))}${fp.survey_code ? ` (${escapeHtml(fp.survey_code)})` : ''}
                             </div>
                             <div style="font-size: 0.76rem; color: #334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                 ${escapeHtml(fp.note || 'Không có ghi chú')}
@@ -8505,7 +9376,8 @@ async function refreshStandaloneTeamMap(fitAll = false) {
                         </div>
                         <i class="fa-solid fa-location-dot" style="color:#be123c;"></i>
                     </div>
-                `).join('')
+                `;
+                }).join('')
                 : '<div style="color:#64748b;font-size:0.82rem;text-align:center;padding:16px;">Chưa có ảnh hiện trường nào có tọa độ GPS. Hãy chụp ảnh ở mục <strong>5. Chụp ảnh hiện trường</strong>!</div>';
         }
 
@@ -8599,12 +9471,18 @@ async function loadAdminMenuPhotoGallery(forceRefresh = false) {
     }
 }
 
+function photoThumbUrl(url) {
+    const u = String(url || '');
+    if (!u || !u.includes('/api/photos/')) return u;
+    return u + (u.includes('?') ? '&' : '?') + 'thumb=1';
+}
+
 function renderAdminMenuPhotoGallery() {
     const gridEl = document.getElementById('adminMenuPhotoGallery');
     const chipEl = document.getElementById('adminMenuPhotoCountChip');
     const filterSid = (document.getElementById('adminMenuPhotoFilter')?.value || '').trim().toUpperCase();
     const all = Array.isArray(window._cachedPhotoLibrary) ? window._cachedPhotoLibrary : [];
-    const items = filterSid ? all.filter(x => String(x.surveyor_id || '').trim().toUpperCase() === filterSid) : all;
+    const items = filterSid ? all.filter(x => recordMatchesStaffId(x, filterSid)) : all;
     if (chipEl) chipEl.textContent = `${items.length} ảnh`;
     if (!gridEl) return;
 
@@ -8613,12 +9491,14 @@ function renderAdminMenuPhotoGallery() {
         return;
     }
 
-    gridEl.innerHTML = items.map((p) => {
+    const previewItems = items.slice(0, 12);
+    const cardsHtml = previewItems.map((p) => {
         const imgUrl = apiUrl(p.photo_url || `/api/photos/${p.photo_path}`);
+        const thumbUrl = photoThumbUrl(imgUrl);
         const title = p.photo_code || p.survey_code || ('#' + p.id);
         return `
             <a href="${imgUrl}" target="_blank" title="${escapeHtml(p.note || title)}" style="display:flex;flex-direction:column;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#f8fafc;text-decoration:none;color:inherit;">
-                <img src="${imgUrl}" loading="lazy" alt="${escapeHtml(title)}" style="width:100%;height:110px;object-fit:cover;background:#0f172a;">
+                <img src="${thumbUrl}" loading="lazy" decoding="async" alt="${escapeHtml(title)}" style="width:100%;height:110px;object-fit:cover;background:#0f172a;">
                 <div style="padding:6px 8px;font-size:0.73rem;">
                     <div style="font-weight:800;color:#0f2a4a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(title)}</div>
                     <div style="color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.surveyor_id || '')} • ${escapeHtml(p.surveyor_name || '')}</div>
@@ -8627,6 +9507,10 @@ function renderAdminMenuPhotoGallery() {
             </a>
         `;
     }).join('');
+    const moreBtn = items.length > previewItems.length
+        ? `<button type="button" onclick="switchMainView('field-photos')" style="grid-column:1/-1; background:#fdf2f8; color:#9d174d; border:1px solid #fbcfe8; border-radius:8px; padding:8px 12px; font-size:0.80rem; font-weight:700; cursor:pointer;"><i class="fa-solid fa-images"></i> Xem đầy đủ toàn bộ ${items.length} ảnh HD trong mục 5. Thư viện ảnh hiện trường</button>`
+        : '';
+    gridEl.innerHTML = cardsHtml + moreBtn;
 }
 
 async function openBlankQuestionsView() {
@@ -8658,10 +9542,16 @@ function renderBlankQuestionsViewer() {
     }
 
     const kw = (document.getElementById('blankQuestionSearch')?.value || '').trim().toLowerCase();
+    const optText = (o) => {
+        if (o && typeof o === 'object') {
+            return String(o.label ?? o.text ?? o.name ?? o.value ?? o.code ?? '').trim();
+        }
+        return String(o ?? '');
+    };
     // Hiển thị 100% toàn bộ câu hỏi của công cụ (bỏ qua mọi điều kiện chụp ảnh / ẩn câu hỏi)
     const questions = toolObj.questions.filter((q) => {
         if (!kw) return true;
-        const hay = `${q.code || ''} ${q.section || ''} ${q.text || q.question || ''} ${q.condition || ''} ${(q.options || []).join(' ')}`.toLowerCase();
+        const hay = `${q.code || ''} ${q.section || ''} ${q.text || q.question || ''} ${q.condition || ''} ${(q.options || []).map(optText).join(' ')}`.toLowerCase();
         return hay.includes(kw);
     });
 
@@ -8686,7 +9576,7 @@ function renderBlankQuestionsViewer() {
             blankInputHtml = `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">${q.options.map((o, i) => `
                 <label style="display:inline-flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:5px;padding:4px 9px;font-size:0.79rem;color:#334155;cursor:not-allowed;">
                     <input type="${isMulti ? 'checkbox' : 'radio'}" disabled style="margin:0;accent-color:#1e40af;">
-                    <span>${i + 1}. ${escapeHtml(String(o))}</span>
+                    <span>${i + 1}. ${escapeHtml(optText(o))}</span>
                 </label>`).join('')}</div>`;
         } else {
             const ph = qType.includes('number') || qType.includes('num')
