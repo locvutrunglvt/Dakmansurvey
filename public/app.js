@@ -1255,7 +1255,7 @@ function matchHouseholdScore(h, kwRaw) {
     const idNorm = normVn(h.id || '');
     const nameCompact = nameNorm.replace(/\s+/g, '');
     const kwCompact = kwNorm.replace(/\s+/g, '');
-    const hay = normVn(`${h.id} ${h.name} ${h.phone} ${h.hamlet} ${h.commune} ${h.guide} ${h.clb} ${h.ra || ''}`);
+    const hay = normVn(`${h.id} ${h.name} ${h.phone} ${h.hamlet} ${h.commune} ${h.guide} ${h.clb} ${h.ra || ''} ${h.note || ''}`);
 
     if (idNorm === kwNorm || nameNorm === kwNorm) return { matched: true, score: 500 };
     if (nameNorm.startsWith(kwNorm) || idNorm.includes(kwNorm)) return { matched: true, score: 400 };
@@ -1499,7 +1499,7 @@ function renderSampleResultItems(matched) {
                 ${h.ra ? '<span style="background:#dcfce7; color:#166534; border:1px solid #86efac; padding:1px 5px; border-radius:3px; font-size:0.70rem; font-weight:700; margin-left:4px;">RA</span>' : ''}
                 ${lockBadge}
                 <span style="color:#475569;"> — ${escapeHtml(h.address)}</span>
-                <div style="font-size:0.74rem; color:#64748b;">SĐT: ${escapeHtml(h.phone || '—')} • CLB: ${escapeHtml(h.clb || '—')} • Dẫn đường: <b style="color:${isMine ? '#002060' : '#0f172a'};">${escapeHtml(h.guide)}</b></div>
+                <div style="font-size:0.74rem; color:#64748b;">SĐT: ${escapeHtml(h.phone || '—')} • CLB: ${escapeHtml(h.clb || '—')} • Dẫn đường: <b style="color:${isMine ? '#002060' : '#0f172a'};">${escapeHtml(h.guide)}</b>${h.note ? ` • <span style="color:#0369a1;">${escapeHtml(h.note)}</span>` : ''}</div>
             </div>
             ${guideBadge}
         </div>
