@@ -840,6 +840,46 @@ def normalize_vn_str(text):
         return ''
     return ' '.join(unicodedata.normalize('NFC', str(text).strip()).lower().split())
 
+_AUTO_SURVEY_CODE_RE = re.compile(r'^P\d+_[A-Za-z0-9-]+_(?:\d{6}_\d+|\d{12})(?:_\d+)?$', re.I)
+
+def _generate_unique_fork_code(cur, tool_code, surveyor_id):
+    """Generate unique ddmmyyhhmmss survey code in VN timezone (UTC+7) avoiding drafts/surveys collisions."""
+    clean_tool = re.sub(r'[^A-Za-z0-9_-]', '', str(tool_code or 'P1')).strip() or 'P1'
+    clean_sid = re.sub(r'[^A-Za-z0-9-]', '', str(surveyor_id or 'DTV')).strip() or 'DTV'
+    vn_dt = datetime.datetime.utcnow() + datetime.timedelta(hours=7)
+    for offset in range(120):
+        dt = vn_dt + datetime.timedelta(seconds=offset)
+        cand = f"{clean_tool}_{clean_sid}_{dt.strftime('%d%m%y%H%M%S')}"
+        cur.execute('SELECT 1 FROM survey_drafts WHERE UPPER(survey_code) = UPPER(?) LIMIT 1', (cand,))
+        if cur.fetchone():
+            continue
+        cur.execute('SELECT 1 FROM surveys WHERE UPPER(survey_code) = UPPER(?) LIMIT 1', (cand,))
+        if cur.fetchone():
+            continue
+        return cand
+    return f"{clean_tool}_{clean_sid}_{vn_dt.strftime('%d%m%y%H%M%S')}_{os.getpid() % 1000}"
+
+def _snapshot_draft_revision(cur, draft_key):
+    """Archive current draft snapshot before material modification to guarantee zero silent data loss."""
+    try:
+        cols = [r[1] for r in cur.execute('PRAGMA table_info(survey_drafts)').fetchall()]
+        row = cur.execute('SELECT * FROM survey_drafts WHERE draft_key = ? LIMIT 1', (draft_key,)).fetchone()
+        if not row or not cols:
+            return
+        dr = dict(zip(cols, row))
+        cur.execute('''
+            INSERT INTO deleted_drafts_archive (
+                original_id, draft_key, survey_code, tool_code, surveyor_id,
+                respondent_name, deleted_by, row_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            dr.get('id'), dr.get('draft_key'), dr.get('survey_code'),
+            dr.get('tool_code'), dr.get('surveyor_id'), dr.get('respondent_name'),
+            'AutoRevisionSnapshot', json.dumps(dr, ensure_ascii=False)
+        ))
+    except Exception:
+        pass
+
 def save_survey_photo(survey_code, photo_data, surveyor_id='', surveyor_name='', note=''):
     """Decode base64 data URL and save JPEG photo into the interviewer's subfolder inside UPLOADS_DIR."""
     if not photo_data or not isinstance(photo_data, str) or ',' not in photo_data:
@@ -850,7 +890,7 @@ def save_survey_photo(survey_code, photo_data, surveyor_id='', surveyor_name='',
         folder_name = _resolve_interviewer_folder(surveyor_id, surveyor_name)
         target_dir = os.path.join(UPLOADS_DIR, folder_name)
         os.makedirs(target_dir, exist_ok=True)
-        safe_code = re.sub(r'[^A-Za-z0-9_-]', '_', str(survey_code or 'DKM')).strip('_')[:30] or 'DKM'
+        safe_code = re.sub(r'[^A-Za-z0-9_-]', '_', str(survey_code or 'DKM')).strip('_')[:44] or 'DKM'
         note_slug = _slugify_ascii(note, max_len=38)
         ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         parts = [safe_code]
@@ -3045,14 +3085,70 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 }, 409)
                 return
 
-            cur.execute('SELECT photo_path, photo_meta, gps_lat, gps_lng, answers_json FROM survey_drafts WHERE draft_key = ?', (draft_key,))
+            cur.execute('''
+                SELECT photo_path, photo_meta, gps_lat, gps_lng, answers_json, respondent_name, answered_count, id
+                FROM survey_drafts WHERE draft_key = ?
+            ''', (draft_key,))
             existing_draft = cur.fetchone()
 
             is_auto_sync = bool(data.get('is_auto_sync'))
             client_updated_iso = str(data.get('updated_iso') or '').strip()
+            new_name_chk = (data.get('respondent_name') or '').strip()
+            orig_name_chk = (data.get('original_respondent') or '').strip()
+            hamlet_chk = (data.get('hamlet') or '').strip()
+            new_ans_chk = int(data.get('answered_count', 0) or 0)
+            has_photo_in = bool((data.get('photo_path') or '').strip() or data.get('photo_data'))
+            is_empty_payload = (not new_name_chk and not hamlet_chk and new_ans_chk == 0 and not has_photo_in)
+
+            if existing_draft:
+                old_photo_chk = (existing_draft[0] or '').strip()
+                old_name_chk = (existing_draft[5] or '').strip()
+                old_ans_chk = int(existing_draft[6] or 0)
+                if is_empty_payload and (old_name_chk or old_ans_chk > 0 or old_photo_chk):
+                    conn.close()
+                    self._send_json({
+                        'success': True,
+                        'preserved_existing': True,
+                        'draft_id': existing_draft[7],
+                        'draft_key': draft_key,
+                        'survey_code': survey_code,
+                        'photo_path': old_photo_chk,
+                        'photo_url': f"/api/photos/{old_photo_chk}" if old_photo_chk else '',
+                        'message': 'Giữ nguyên phiếu tạm đã có trên máy chủ (tránh ghi đè rỗng).'
+                    })
+                    return
+            elif is_auto_sync and is_empty_payload:
+                conn.close()
+                self._send_json({
+                    'success': True,
+                    'skipped_empty': True,
+                    'draft_key': draft_key,
+                    'survey_code': survey_code
+                })
+                return
+
+            forked = False
+            if existing_draft:
+                old_name_chk = (existing_draft[5] or '').strip()
+                is_auto_code = bool(data.get('is_auto_code')) or bool(_AUTO_SURVEY_CODE_RE.match(survey_code))
+                should_fork_name = (
+                    old_name_chk and new_name_chk
+                    and normalize_vn_str(old_name_chk) != normalize_vn_str(new_name_chk)
+                    and is_auto_code
+                    and not (orig_name_chk and normalize_vn_str(orig_name_chk) == normalize_vn_str(old_name_chk))
+                )
+                should_fork_photo = (
+                    old_name_chk and not new_name_chk and bool(data.get('photo_data')) and is_auto_code
+                )
+                if should_fork_name or should_fork_photo:
+                    survey_code = _generate_unique_fork_code(cur, tool_code, surveyor_id)
+                    draft_key = f"{tool_code}::{survey_code}"
+                    existing_draft = None
+                    forked = True
+
             if not existing_draft:
                 cur.execute(
-                    'SELECT deleted_at FROM deleted_drafts_archive WHERE draft_key = ? ORDER BY id DESC LIMIT 1',
+                    "SELECT deleted_at FROM deleted_drafts_archive WHERE draft_key = ? AND COALESCE(deleted_by, '') != 'AutoRevisionSnapshot' ORDER BY id DESC LIMIT 1",
                     (draft_key,)
                 )
                 arch_del = cur.fetchone()
@@ -3068,6 +3164,16 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                             'message': 'Bản nháp đã bị xóa trước đó trên máy chủ.'
                         })
                         return
+            else:
+                old_photo_chk = (existing_draft[0] or '').strip()
+                old_name_chk = (existing_draft[5] or '').strip()
+                old_ans_chk = int(existing_draft[6] or 0)
+                if (
+                    (old_name_chk and new_name_chk and normalize_vn_str(old_name_chk) != normalize_vn_str(new_name_chk))
+                    or (old_photo_chk and bool(data.get('photo_data')))
+                    or (new_ans_chk + 2 < old_ans_chk)
+                ):
+                    _snapshot_draft_revision(cur, draft_key)
 
             photo_path = (data.get('photo_path') or '').strip()
             if data.get('photo_data'):
@@ -3153,6 +3259,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 'success': True,
                 'draft_id': d_row[0] if d_row else None,
                 'draft_key': draft_key,
+                'survey_code': survey_code,
+                'forked': forked,
                 'photo_path': photo_path,
                 'photo_url': f"/api/photos/{photo_path}" if photo_path else '',
                 'updated_at': d_row[1] if d_row else datetime.datetime.now().isoformat()
