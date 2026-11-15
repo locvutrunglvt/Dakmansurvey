@@ -28,11 +28,44 @@ let editingSurveyId = null;
 let deferredInstallPrompt = null;
 let mobilePwaDismissedInView = false;
 
-// Đăng ký Service Worker cho chế độ Cài App (PWA) & lưu phiên đăng nhập bền vững
+// Đăng ký Service Worker cho chế độ Cài App (PWA) & tự động cập nhật khi có bản SW mới thay thế bản cũ
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    const hadSwController = Boolean(navigator.serviceWorker.controller);
+    let _swRefreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadSwController || _swRefreshing) return;
+        const surveyViewActive = document.getElementById('view-survey')?.classList.contains('active');
+        if (!surveyViewActive) {
+            _swRefreshing = true;
+            window.location.reload();
+        }
     });
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(reg => {
+            try { reg.update(); } catch (_) {}
+        }).catch(() => {});
+    });
+}
+
+function showInstantActionToast(message, isError = false) {
+    const id = 'instantActionToastBox';
+    let el = document.getElementById(id);
+    if (!el) {
+        el = document.createElement('div');
+        el.id = id;
+        el.style.cssText = 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:10060;max-width:92vw;padding:10px 16px;border-radius:8px;font-size:0.86rem;font-weight:700;box-shadow:0 10px 25px rgba(0,0,0,0.28);display:flex;align-items:center;gap:8px;transition:opacity 0.25s ease;';
+        document.body.appendChild(el);
+    }
+    el.style.background = isError ? '#991b1b' : '#14532d';
+    el.style.color = '#ffffff';
+    el.style.opacity = '1';
+    el.style.display = 'flex';
+    el.innerHTML = `<i class="fa-solid ${isError ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i> <span>${escapeHtml(message)}</span>`;
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => { el.style.display = 'none'; }, 260);
+    }, 3200);
 }
 
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -3592,16 +3625,22 @@ function saveDraftLocal(isManual) {
     }
 }
 
-async function syncCurrentDraftToVps(rec) {
+async function syncCurrentDraftToVps(rec, isAutoSync = false) {
     if (!rec || currentUser?.role === 'viewer') return false;
     try {
         const res = await fetch(apiUrl('/api/drafts'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(Object.assign({ role: currentUser?.role || 'editor' }, rec))
+            body: JSON.stringify(Object.assign({ role: currentUser?.role || 'editor', is_auto_sync: Boolean(isAutoSync) }, rec))
         });
         if (res.ok) {
             const data = await res.json();
+            if (data.tombstoned) {
+                await deleteIdbDraft(rec.draft_key);
+                await loadHouseholdLocks();
+                await refreshDraftBadgeCount(false);
+                return false;
+            }
             if (data.photo_path) {
                 currentDraftPhotoPath = data.photo_path;
                 rec.photo_path = data.photo_path;
@@ -3626,7 +3665,7 @@ async function syncPendingDrafts(silent = true) {
     const list = await getIdbDrafts();
     for (const rec of list) {
         if (rec.sync_pending) {
-            await syncCurrentDraftToVps(rec);
+            await syncCurrentDraftToVps(rec, true);
         }
     }
     if (!silent) refreshDraftBadgeCount();
@@ -3781,9 +3820,10 @@ async function refreshAllDraftsList() {
     await refreshDraftBadgeCount(false, drafts);
 
     const role = currentUser?.role || 'viewer';
+    const isDraftLocal = (d) => Boolean(d?.source && String(d.source).startsWith('Thiết bị'));
     const btnBulkModal = document.getElementById('btnDeleteAllMyModalDrafts');
     if (btnBulkModal) {
-        const hasOwned = role !== 'viewer' && drafts.some(d => isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name));
+        const hasOwned = role !== 'viewer' && drafts.some(d => isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name, isDraftLocal(d)));
         btnBulkModal.style.display = hasOwned ? 'inline-flex' : 'none';
     }
 
@@ -3802,7 +3842,7 @@ async function refreshAllDraftsList() {
             : '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-weight:700;font-size:0.70rem;margin-left:4px;">Đang nhập dở</span>';
         const btnLabel = '<i class="fa-solid fa-pen-to-square"></i> Mở Phiếu Tạm';
         const borderLeftColor = isPaperPending ? '#0f766e' : '#d97706';
-        const canDeleteDraft = (role === 'admin') || isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name);
+        const canDeleteDraft = (role === 'admin') || isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name, isDraftLocal(d));
         return `
             <div style="border: 1px solid #cbd5e1; border-left: 4px solid ${borderLeftColor}; border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; background: #fff; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                 ${thumbSrc ? `<img src="${thumbSrc}" alt="Ảnh" style="width: 72px; height: 72px; object-fit: cover; border-radius: 3px; border: 1px solid #e2e8f0; flex-shrink: 0;">` : `<div style="width:72px; height:72px; background:#f1f5f9; border:1px dashed #cbd5e1; border-radius:3px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:0.72rem; text-align:center; flex-shrink:0;">Chưa ảnh</div>`}
@@ -4019,6 +4059,7 @@ async function deleteDraftItem(draftKey, labelCode = '', respondentName = '') {
     }
 
     await cleanupDeletedDraftLocally(draftKey, labelCode);
+    showInstantActionToast(`Đã xóa tức thì phiếu nháp [${labelCode}] (bản gốc vẫn bảo lưu trong Thùng rác VPS).`);
     await loadHouseholdLocks();
     await refreshAllDraftsList();
     if (typeof loadSurveysList === 'function') {
@@ -4033,7 +4074,7 @@ async function deleteAllMyDraftsConfirm() {
         return;
     }
     const drafts = await fetchMergedDraftsList(true);
-    const owned = (Array.isArray(drafts) ? drafts : []).filter(d => (role === 'admin') || isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name));
+    const owned = (Array.isArray(drafts) ? drafts : []).filter(d => (role === 'admin') || isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name, Boolean(d?.source && String(d.source).startsWith('Thiết bị'))));
     if (!owned.length) {
         alert('Không có phiếu nháp nào thuộc tài khoản của bạn để xóa.');
         return;
@@ -4087,7 +4128,7 @@ async function deleteAllMyDraftsConfirm() {
     if (errors.length) {
         alert(`Đã xóa ${deletedCount}/${owned.length} phiếu nháp.\nMột số phiếu gặp lỗi:\n- ${errors.slice(0, 5).join('\n- ')}`);
     } else {
-        alert(`Đã xóa sạch ${deletedCount} phiếu nháp (vẫn bảo lưu trong Thùng rác VPS).`);
+        showInstantActionToast(`Đã xóa sạch tức thì ${deletedCount} phiếu nháp (vẫn bảo lưu trong Thùng rác VPS).`);
     }
 }
 
@@ -5090,15 +5131,16 @@ function normViNameOwner(str) {
         .replace(/\s+/g, ' ');
 }
 
-function isCurrentUserOwnerOf(recordSurveyorId, recordSurveyorName = '') {
+function isCurrentUserOwnerOf(recordSurveyorId, recordSurveyorName = '', isLocalDeviceOnly = false) {
     const role = currentUser?.role || 'viewer';
     if (role === 'admin') return true;
     if (role !== 'editor') return false;
+    if (isLocalDeviceOnly) return true;
     const recSid = String(recordSurveyorId || '').trim().toUpperCase();
     const recName = normViNameOwner(recordSurveyorName);
     const mySid = String(currentUser?.surveyor_id || '').trim().toUpperCase();
-    const myName = normViNameOwner(currentUser?.surveyor_name || currentUser?.name || '');
-    if (!recSid && !recName) return true;
+    const myName = normViNameOwner(currentUser?.full_name || currentUser?.surveyor_name || currentUser?.name || '');
+    if (['', 'DTV', 'GUEST', 'USER'].includes(recSid)) return true;
     if (!mySid && !myName) return false;
     if (recSid && mySid && recSid === mySid) return true;
     for (const grp of OWNER_ALIAS_GROUPS) {
@@ -5276,9 +5318,12 @@ async function deleteHistoryDraftConfirm(draftKey, labelCode, respondentName = '
         return;
     }
     await cleanupDeletedDraftLocally(draftKey, labelCode);
-    alert(data.message || `Đã xóa phiếu nháp [${labelCode}]. Bạn vẫn có thể khôi phục trong mục Thùng rác / Phục hồi.`);
+    showInstantActionToast(data.message || `Đã xóa tức thì phiếu nháp [${labelCode}] (bản gốc bảo lưu trong Thùng rác VPS).`);
     await loadHouseholdLocks();
     await loadSurveysList();
+    if (typeof refreshDraftBadgeCount === 'function') {
+        refreshDraftBadgeCount(false);
+    }
 }
 
 function toggleHistoryTrashPanel() {
@@ -5700,7 +5745,7 @@ async function deleteSurveyConfirm(id, surveyCode) {
 
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
-            alert(data.message || `Đã chuyển phiếu ${surveyCode} vào Thùng rác lưu trữ trên VPS (có thể khôi phục khi cần)!`);
+            showInstantActionToast(data.message || `Đã xóa tức thì phiếu [${surveyCode}] (chuyển vào Thùng rác VPS để khôi phục khi cần).`);
             await loadSurveysList();
             if (typeof refreshDashboardData === 'function') {
                 refreshDashboardData();

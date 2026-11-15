@@ -154,8 +154,9 @@ def is_record_owned_by(sid_hdr, row_sid, row_name=""):
         return False
     r_sid = str(row_sid or "").strip().upper()
     r_name = _norm_vi_name(row_name)
-    if not r_sid and not r_name:
-        return True
+    if r_sid in ("", "DTV", "GUEST", "USER"):
+        if not r_name or r_name in ("dieu tra vien", "guest", "user"):
+            return True
     if r_sid and r_sid in _get_sid_aliases(s):
         return True
     roster_names = _get_roster_names_for_sid(s)
@@ -191,7 +192,7 @@ def _parse_utc_ts(ts_str):
     if not ts_str:
         return None
     s = str(ts_str).strip()
-    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%d %H:%M"):
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%d %H:%M"):
         try:
             return datetime.datetime.strptime(s[:26], fmt)
         except Exception:
@@ -1345,6 +1346,17 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=PUBLIC_DIR, **kwargs)
 
+    def end_headers(self):
+        req_path = urllib.parse.urlparse(getattr(self, 'path', '') or '').path.lower()
+        if not req_path.startswith('/api/') and (
+            req_path in ('', '/', '/index.html', '/sw.js', '/manifest.webmanifest')
+            or req_path.endswith(('.html', '.js', '.css', '.json'))
+        ):
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+        super().end_headers()
+
     def _send_json(self, data, status=200):
         body = json.dumps(data, ensure_ascii=False).encode('utf-8')
         self.send_response(status)
@@ -2103,6 +2115,27 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
 
             cur.execute('SELECT photo_path, photo_meta FROM survey_drafts WHERE draft_key = ?', (draft_key,))
             existing_draft = cur.fetchone()
+
+            is_auto_sync = bool(data.get('is_auto_sync'))
+            client_updated_iso = str(data.get('updated_iso') or '').strip()
+            if not existing_draft:
+                cur.execute(
+                    'SELECT deleted_at FROM deleted_drafts_archive WHERE draft_key = ? ORDER BY id DESC LIMIT 1',
+                    (draft_key,)
+                )
+                arch_del = cur.fetchone()
+                if arch_del:
+                    del_dt = _parse_utc_ts(arch_del[0])
+                    client_dt = _parse_utc_ts(client_updated_iso)
+                    if (del_dt and client_dt and client_dt <= del_dt) or (is_auto_sync and not client_dt):
+                        conn.close()
+                        self._send_json({
+                            'success': True,
+                            'tombstoned': True,
+                            'draft_key': draft_key,
+                            'message': 'Bản nháp đã bị xóa trước đó trên máy chủ.'
+                        })
+                        return
 
             photo_path = (data.get('photo_path') or '').strip()
             if data.get('photo_data'):
@@ -2890,7 +2923,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                             conn.close()
                             self._send_json({'error': 'Bạn chỉ có thể xóa phiếu nháp do tài khoản của bạn tạo!'}, 403)
                             return
-                    if delete_pwd and not verify_owner_password(sid_hdr, delete_pwd):
+                    if confirm_x != 'X' and delete_pwd and not verify_owner_password(sid_hdr, delete_pwd):
                         conn.close()
                         self._send_json({'error': 'Mật khẩu xác nhận không đúng!'}, 403)
                         return

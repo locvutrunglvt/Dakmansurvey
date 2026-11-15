@@ -1,10 +1,10 @@
-const CACHE_NAME = 'dakman-survey-shell-v38';
+const CACHE_NAME = 'dakman-survey-shell-v39';
 const SHELL_FILES = [
   './',
   './index.html',
   './questions_bundle.js?v=1',
   './sample_households_bundle.js?v=3',
-  './app.js?v=2.43',
+  './app.js?v=2.44',
   './sample_households.json',
   './manifest.webmanifest',
   './img/pwa-icon-192.png',
@@ -32,8 +32,11 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || url.pathname.includes('/api/')) {
     return;
   }
+  const fetchTarget = (url.origin === self.location.origin)
+    ? fetch(event.request.url, { cache: 'no-store', credentials: 'same-origin' })
+    : fetch(event.request);
   event.respondWith(
-    fetch(event.request)
+    fetchTarget
       .then((res) => {
         if (res && res.status === 200 && url.origin === self.location.origin) {
           const clone = res.clone();

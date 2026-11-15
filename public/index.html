@@ -3535,8 +3535,9 @@
                 <label for="confirmDeleteXInput" style="display:block; font-size:0.84rem; font-weight:700; color:#0f172a; margin-bottom:6px;">
                     Để xác nhận xóa, vui lòng nhập ký tự <span style="color:#dc2626; font-size:0.95rem;">X</span> vào ô bên dưới:
                 </label>
-                <input type="text" id="confirmDeleteXInput" autocomplete="off" maxlength="4" placeholder="Nhập X để mở khóa nút xóa..."
+                <input type="text" id="confirmDeleteXInput" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="4" placeholder="Nhập X để mở khóa nút xóa..."
                     oninput="onConfirmDeleteXInputChange()"
+                    onkeyup="onConfirmDeleteXInputChange()"
                     onkeydown="if(event.key==='Enter'){ event.preventDefault(); submitConfirmDeleteXModal(); } else if(event.key==='Escape'){ closeConfirmDeleteXModal(false); }"
                     style="width:100%; padding:10px 12px; border:2px solid #cbd5e1; border-radius:6px; font-size:1.05rem; font-weight:700; text-align:center; letter-spacing:2px; text-transform:uppercase; outline:none; box-sizing:border-box;">
                 <div id="confirmDeleteXHint" style="font-size:0.78rem; color:#64748b; margin-top:6px; text-align:center;">
@@ -3546,7 +3547,7 @@
             <div style="display:flex; justify-content:flex-end; gap:8px; padding:10px 16px; background:#f1f5f9; border-top:1px solid #e2e8f0;">
                 <button type="button" class="qgis-btn-secondary" onclick="closeConfirmDeleteXModal(false)">Hủy bỏ</button>
                 <button type="button" id="btnConfirmDeleteXSubmit" disabled onclick="submitConfirmDeleteXModal()" style="background:#dc2626; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-weight:700; cursor:not-allowed; opacity:0.5;">
-                    <i class="fa-solid fa-trash-can"></i> Xác nhận xóa (X)
+                    <i class="fa-solid fa-trash-can"></i> Xóa tức thì (X)
                 </button>
             </div>
         </div>
@@ -3555,7 +3556,7 @@
     <!-- Bundled Questions & Households Fallback + Application Logic -->
     <script src="questions_bundle.js?v=1"></script>
     <script src="sample_households_bundle.js?v=3"></script>
-    <script src="app.js?v=2.43"></script>
+    <script src="app.js?v=2.44"></script>
 
 </body>
 
