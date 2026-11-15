@@ -779,8 +779,9 @@ function updateUserDisplay() {
     if (idInput) idInput.value = currentUser.surveyor_id || 'TCN01';
     if (nameInput) nameInput.value = currentUser.full_name || '';
     if (dateInput) dateInput.value = currentUser.survey_date || getVnTodayIso();
-    if (communeSelect && currentUser.commune && currentUser.commune !== 'Toàn vùng') {
-        communeSelect.value = currentUser.commune;
+    const defCommune = getDefaultCommuneForCurrentUser();
+    if (communeSelect && defCommune) {
+        communeSelect.value = defCommune;
     }
     const menuWelcome = document.getElementById('menuWelcomeUser');
     if (menuWelcome) {
@@ -790,6 +791,19 @@ function updateUserDisplay() {
     if (typeof refreshMyStaffReminderBanner === 'function') {
         refreshMyStaffReminderBanner();
     }
+}
+
+function getDefaultCommuneForCurrentUser() {
+    if (currentUser?.commune && currentUser.commune !== 'Toàn vùng') {
+        return currentUser.commune;
+    }
+    const meta = (typeof findInterviewerMeta === 'function')
+        ? findInterviewerMeta(currentUser?.surveyor_id || currentUser?.full_name)
+        : null;
+    if (meta && meta.communes) {
+        return String(meta.communes).split(',')[0].trim();
+    }
+    return '';
 }
 
 function updateNetworkStatus() {
@@ -9156,7 +9170,7 @@ async function handleFieldQuickPhotoSelected(event) {
         const coords = await getFieldPhotoGpsCoords(3500);
         const pad = (n) => String(n).padStart(2, '0');
         const surveyCode = (document.getElementById('fpSurveyCodeInput')?.value || '').trim();
-        const commune = (document.getElementById('fpCommuneSelect')?.value || currentUser?.commune || 'Ea Kiết').trim();
+        const commune = (document.getElementById('fpCommuneSelect')?.value || getDefaultCommuneForCurrentUser() || 'Ea Kiết').trim();
         const noteEl = document.getElementById('fpNoteInput');
         const note = (noteEl?.value || '').trim();
         const surveyorId = currentUser?.surveyor_id || 'DTV';
@@ -9307,10 +9321,11 @@ async function refreshFieldPhotosBadgeCount() {
 }
 
 async function initFieldPhotosView() {
-    if (currentUser?.commune) {
+    const defCommune = getDefaultCommuneForCurrentUser();
+    if (defCommune) {
         const sel = document.getElementById('fpCommuneSelect');
-        if (sel && Array.from(sel.options).some(o => o.value === currentUser.commune)) {
-            sel.value = currentUser.commune;
+        if (sel && Array.from(sel.options).some(o => o.value === defCommune)) {
+            sel.value = defCommune;
         }
     }
     await syncPendingFieldPhotosQueue(true);
