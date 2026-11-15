@@ -5316,7 +5316,8 @@ const OWNER_ALIAS_GROUPS = [
     { ids: ['TCN03'], name: 'pham van thao' },
     { ids: ['TCN04'], name: 'nguyen viet tru' },
     { ids: ['TCN05'], name: 'cao thi phuc' },
-    { ids: ['TCN06', 'TCN-65-074755'], name: 'hoang truong sinh' }
+    { ids: ['TCN06', 'TCN-65-074755'], name: 'hoang truong sinh' },
+    { ids: ['TCN08'], name: 'dinh van nam' }
 ];
 
 function normViNameOwner(str) {
@@ -6926,7 +6927,10 @@ async function loadStaffList() {
             <tr>
                 <td style="text-align: center; color: var(--slate-500);">${idx + 1}</td>
                 <td style="font-family: monospace; font-weight: 700; color: var(--primary);">${escapeHtml(u.surveyor_id)}</td>
-                <td style="font-weight: 600;">${escapeHtml(u.full_name)}</td>
+                <td style="font-weight: 600;">
+                    ${escapeHtml(u.full_name)}
+                    ${u.phone ? `<div style="font-size: 0.72rem; color: #64748b; font-weight: 400;">SĐT: ${escapeHtml(u.phone)}</div>` : ''}
+                </td>
                 <td>${escapeHtml(u.commune_assigned || 'Ea Kiết')}</td>
                 <td style="font-family: monospace; font-size: 0.78rem; font-weight: 700; color: #dc2626; white-space: nowrap;">
                     <span id="staffPwdMask_${idx}" data-shown="0" data-pwd="${escapeHtml(u.password || '')}">••••••••</span>
@@ -6977,8 +6981,7 @@ function toggleStaffRowPassword(idx) {
 
 function copyZaloText(id, name, commune, pass, isNew = false) {
     const primaryLink = 'https://dakmansurvey.coffeedata.it.com';
-    const githubLink = 'https://locvutrunglvt.github.io/Dakmansurvey/public/index.html';
-    const text = `Kính gửi: ${name}\nBan Quản lý Dự án Dakman Cư M'gar (Đơn vị tư vấn Tân Cao Nguyên) gửi bạn thông tin tài khoản khảo sát:\n- Link chính (Máy chủ mới): ${primaryLink}\n- Link dự phòng (GitHub): ${githubLink}\n- Họ và Tên: ${name}\n- Mã Điều Tra Viên (bắt buộc đúng từng ký tự): ${id}\n- Địa bàn phụ trách: ${commune}\n- Mật khẩu truy cập cá nhân: ${pass}\n\nLưu ý: Cả 2 link đều dùng chung 1 tài khoản và tự đồng bộ dữ liệu về máy chủ. Mật khẩu là bảo mật cá nhân, không chia sẻ cho người khác. Chúc bạn hoàn thành tốt đợt điều tra!`;
+    const text = `Kính gửi: ${name}\nBan Quản lý Dự án Dakman Cư M'gar (Đơn vị tư vấn Tân Cao Nguyên) gửi bạn thông tin tài khoản khảo sát:\n- Link truy cập: ${primaryLink}\n- Họ và Tên: ${name}\n- Mã Điều Tra Viên (bắt buộc đúng từng ký tự): ${id}\n- Địa bàn phụ trách: ${commune}\n- Mật khẩu truy cập cá nhân: ${pass}\n\nLưu ý: Vui lòng mở bằng trình duyệt Chrome hoặc Safari để lưu nháp và đồng bộ dữ liệu ổn định. Mật khẩu là bảo mật cá nhân, không chia sẻ cho người khác. Chúc bạn hoàn thành tốt đợt điều tra!`;
     navigator.clipboard.writeText(text).then(() => {
         alert(`ĐÃ SAO CHÉP THÔNG TIN TÀI KHOẢN [${name} - ${id}] VÀO CLIPBOARD!\n\nBạn chỉ cần mở Zalo và dán (Ctrl+V) gửi cho bạn ấy.`);
     }).catch(err => {
@@ -7718,7 +7721,8 @@ async function loadTeamLocationsMap(fitAll = false) {
         const data = await fetchJsonWithTimeout(apiUrl('/api/team-locations'), 8000);
         const members = Array.isArray(data.members) ? data.members : [];
         if (summaryEl) {
-            summaryEl.innerHTML = `Cập nhật lúc <strong>${data.updated_at_vn || ''}</strong> • Đang online: <strong style="color:#15803d;">${data.online_count || 0}/6</strong> ĐTV • Đã có tọa độ GPS: <strong style="color:#0369a1;">${data.gps_count || 0}/6</strong> ĐTV • <em>Bấm vào cụm/chốt để tỏa bông tuyết</em>`;
+            const totalMembers = members.length || 7;
+            summaryEl.innerHTML = `Cập nhật lúc <strong>${data.updated_at_vn || ''}</strong> • Đang online: <strong style="color:#15803d;">${data.online_count || 0}/${totalMembers}</strong> ĐTV • Đã có tọa độ GPS: <strong style="color:#0369a1;">${data.gps_count || 0}/${totalMembers}</strong> ĐTV • <em>Bấm vào cụm/chốt để tỏa bông tuyết</em>`;
         }
 
         const map = ensureTeamGoogleHybridMap();
@@ -7790,7 +7794,8 @@ async function refreshAdminMenuLiveBoard(fitAll = false) {
         const data = await fetchJsonWithTimeout(apiUrl('/api/team-locations'), 8000);
         const members = Array.isArray(data.members) ? data.members : [];
         if (chipEl) {
-            chipEl.textContent = `${data.online_count || 0}/6 online • ${data.gps_count || 0}/6 có GPS`;
+            const totalMembers = members.length || 7;
+            chipEl.textContent = `${data.online_count || 0}/${totalMembers} online • ${data.gps_count || 0}/${totalMembers} có GPS`;
         }
         if (metaEl) {
             metaEl.innerHTML = `<span>Cập nhật lúc: <strong>${escapeHtml(data.updated_at_vn || '')}</strong></span><span>Bấm cụm/chốt để tỏa bông tuyết hoặc bấm Mở rộng</span>`;
@@ -8357,7 +8362,7 @@ function renderFieldPhotosGallery() {
     }).join('');
 
     if (!pendingCards && !serverCards) {
-        galleryEl.innerHTML = `<div style="color:#64748b; font-size:0.86rem; padding:26px; text-align:center; grid-column:1 / -1;">${isReadOnly ? 'Chưa có ảnh hiện trường nào được tải lên từ 06 điều tra viên.' : 'Chưa có ảnh hiện trường nào được tải lên. Hãy nhập ghi chú (nếu cần) và bấm <strong>Chụp ảnh HD ngay</strong> bên trên!'}</div>`;
+        galleryEl.innerHTML = `<div style="color:#64748b; font-size:0.86rem; padding:26px; text-align:center; grid-column:1 / -1;">${isReadOnly ? 'Chưa có ảnh hiện trường nào được tải lên từ đội ngũ điều tra viên.' : 'Chưa có ảnh hiện trường nào được tải lên. Hãy nhập ghi chú (nếu cần) và bấm <strong>Chụp ảnh HD ngay</strong> bên trên!'}</div>`;
     } else {
         galleryEl.innerHTML = pendingCards + serverCards;
     }
@@ -8449,7 +8454,8 @@ async function refreshStandaloneTeamMap(fitAll = false) {
         );
 
         if (summaryEl) {
-            summaryEl.innerHTML = `Cập nhật lúc <strong>${escapeHtml(teamData?.updated_at_vn || '')}</strong> • Đang online: <strong style="color:#15803d;">${teamData?.online_count || 0}/6</strong> ĐTV • Đã có GPS: <strong style="color:#0369a1;">${teamData?.gps_count || 0}/6</strong> ĐTV • Ảnh hiện trường có GPS: <strong style="color:#be123c;">${gpsPhotos.length}</strong> ảnh • <em>Bấm vào cụm/chốt để tỏa bông tuyết</em>`;
+            const totalMembers = members.length || 7;
+            summaryEl.innerHTML = `Cập nhật lúc <strong>${escapeHtml(teamData?.updated_at_vn || '')}</strong> • Đang online: <strong style="color:#15803d;">${teamData?.online_count || 0}/${totalMembers}</strong> ĐTV • Đã có GPS: <strong style="color:#0369a1;">${teamData?.gps_count || 0}/${totalMembers}</strong> ĐTV • Ảnh hiện trường có GPS: <strong style="color:#be123c;">${gpsPhotos.length}</strong> ảnh • <em>Bấm vào cụm/chốt để tỏa bông tuyết</em>`;
         }
 
         if (staffListEl) {

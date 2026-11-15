@@ -68,6 +68,7 @@ FIELD_TEAM_ROSTER = [
     {"surveyor_id": "TCN04", "aliases": ["TCN04"], "full_name": "Nguyễn Viết Trụ", "commune": "Ea Kiết"},
     {"surveyor_id": "TCN05", "aliases": ["TCN05"], "full_name": "Cao Thị Phúc", "commune": "Ea Kiết"},
     {"surveyor_id": "TCN06", "aliases": ["TCN06", "TCN-65-074755"], "full_name": "Hoàng Trường Sinh", "commune": "Ea Kiết"},
+    {"surveyor_id": "TCN08", "aliases": ["TCN08"], "full_name": "Đinh Văn Nam", "commune": "Ea Kiết"},
 ]
 
 ROSTER_ID_MAP = {}
@@ -82,6 +83,7 @@ INTERVIEWER_PHOTO_FOLDERS = {
     "TCN05": "TCN05_CaoThiPhuc",
     "TCN06": "TCN06_HoangTruongSinh",
     "TCN07": "TCN07_LeDinhDuy",
+    "TCN08": "TCN08_DinhVanNam",
 }
 
 
@@ -741,6 +743,14 @@ def init_db():
             INSERT INTO users (surveyor_id, full_name, phone, role, commune_assigned, password, last_login)
             VALUES ('TCN21', 'Admin1', '', 'Admin1', 'Toàn vùng', ?, CURRENT_TIMESTAMP)
         ''', (ADMIN1_PASS,))
+
+    # Bổ sung nhân sự TCN08 - Đinh Văn Nam nếu chưa tồn tại trong bảng users
+    cur.execute('SELECT id FROM users WHERE UPPER(surveyor_id) = UPPER(?)', ('TCN08',))
+    if not cur.fetchone():
+        cur.execute('''
+            INSERT INTO users (surveyor_id, full_name, phone, role, commune_assigned, password, last_login)
+            VALUES ('TCN08', 'Đinh Văn Nam', '0983572573', 'Điều tra viên', 'Ea Kiết', 'Nam573#x', CURRENT_TIMESTAMP)
+        ''')
 
     conn.commit()
     conn.close()
@@ -1906,6 +1916,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 'TCN05': {'surveyor_id': 'TCN05', 'full_name': 'Cao Thị Phúc', 'commune': 'Ea Tul', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
                 'TCN06': {'surveyor_id': 'TCN06', 'full_name': 'Hoàng Trường Sinh', 'commune': 'Ea Tul', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
                 'TCN07': {'surveyor_id': 'TCN07', 'full_name': 'Lê Đình Duy', 'commune': 'Ea Kiết', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
+                'TCN08': {'surveyor_id': 'TCN08', 'full_name': 'Đinh Văn Nam', 'commune': 'Ea Kiết', 'completed_count': 0, 'draft_count': 0, 'total_forms_done': 0, 'p1_count': 0},
             }
 
             for item in combined_forms.values():

@@ -2058,7 +2058,7 @@
                         </div>
                         <div class="app-tile-body">
                             <div class="app-tile-label">6. Bản đồ</div>
-                            <span class="app-tile-count" id="menuMapBadge" style="background:#f0fdfa;color:#0f766e;border-color:#99f6e4;">Vị trí 06 ĐTV &amp; Ảnh GPS</span>
+                            <span class="app-tile-count" id="menuMapBadge" style="background:#f0fdfa;color:#0f766e;border-color:#99f6e4;">Vị trí 07 ĐTV &amp; Ảnh GPS</span>
                         </div>
                         <i class="fa-solid fa-chevron-right app-tile-arrow"></i>
                     </button>
@@ -2080,9 +2080,9 @@
                     <div id="adminMenuStaffCard" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(15,23,42,0.06); display: flex; flex-direction: column;">
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
                             <div style="font-size: 0.92rem; font-weight: 800; color: #0f2a4a;">
-                                <i class="fa-solid fa-users" style="color: #15803d;"></i> Danh sách nhân sự (06 ĐTV)
+                                <i class="fa-solid fa-users" style="color: #15803d;"></i> Danh sách nhân sự (07 ĐTV)
                             </div>
-                            <div id="adminMenuOnlineChip" style="font-size: 0.76rem; font-weight: 700; color: #166534; background: #dcfce7; padding: 3px 9px; border-radius: 999px;">0/6 online</div>
+                            <div id="adminMenuOnlineChip" style="font-size: 0.76rem; font-weight: 700; color: #166534; background: #dcfce7; padding: 3px 9px; border-radius: 999px;">0/7 online</div>
                         </div>
                         <div id="adminMenuStaffList" style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
                             <div style="color: #64748b; font-size: 0.82rem; text-align: center; padding: 20px;">Đang tải trạng thái nhân sự...</div>
@@ -2092,19 +2092,20 @@
                     <div id="adminMenuPhotoGalleryCard" style="display: none; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(15,23,42,0.06); flex-direction: column;">
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap;">
                             <div style="font-size: 0.92rem; font-weight: 800; color: #0f2a4a;">
-                                <i class="fa-solid fa-photo-film" style="color: #be123c;"></i> Thư viện Ảnh hiện trường (06 ĐTV)
+                                <i class="fa-solid fa-photo-film" style="color: #be123c;"></i> Thư viện Ảnh hiện trường (07 ĐTV)
                             </div>
                             <span id="adminMenuPhotoCountChip" style="font-size: 0.76rem; font-weight: 700; color: #9f1239; background: #ffe4e6; padding: 3px 9px; border-radius: 999px;">0 ảnh</span>
                         </div>
                         <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;">
                             <select id="adminMenuPhotoFilter" onchange="renderAdminMenuPhotoGallery()" style="flex: 1; min-width: 160px; font-size: 0.78rem; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; color: #0f2a4a; font-weight: 600;">
-                                <option value="">Tất cả 06 điều tra viên</option>
+                                <option value="">Tất cả 07 điều tra viên</option>
                                 <option value="TCN02">TCN02 — Phan Doãn Vọng</option>
                                 <option value="TCN03">TCN03 — Phạm Văn Thảo</option>
                                 <option value="TCN04">TCN04 — Nguyễn Viết Trụ</option>
                                 <option value="TCN05">TCN05 — Cao Thị Phúc</option>
                                 <option value="TCN06">TCN06 — Hoàng Trường Sinh</option>
                                 <option value="TCN07">TCN07 — Lê Đình Duy</option>
+                                <option value="TCN08">TCN08 — Đinh Văn Nam</option>
                             </select>
                             <button type="button" onclick="loadAdminMenuPhotoGallery(true)" class="qgis-btn-secondary" style="font-size: 0.76rem; padding: 5px 9px;">
                                 <i class="fa-solid fa-rotate"></i> Tải lại
@@ -2244,13 +2245,14 @@
                         </div>
                         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                             <select id="fpGalleryFilterSurveyor" onchange="renderFieldPhotosGallery()" style="font-size: 0.78rem; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #0f2a4a; font-weight: 600;">
-                                <option value="">Tất cả điều tra viên (06 ĐTV)</option>
+                                <option value="">Tất cả điều tra viên (07 ĐTV)</option>
                                 <option value="TCN02">TCN02 — Phan Doãn Vọng</option>
                                 <option value="TCN03">TCN03 — Phạm Văn Thảo</option>
                                 <option value="TCN04">TCN04 — Nguyễn Viết Trụ</option>
                                 <option value="TCN05">TCN05 — Cao Thị Phúc</option>
                                 <option value="TCN06">TCN06 — Hoàng Trường Sinh</option>
                                 <option value="TCN07">TCN07 — Lê Đình Duy</option>
+                                <option value="TCN08">TCN08 — Đinh Văn Nam</option>
                             </select>
                             <button type="button" onclick="loadFieldPhotosGallery(true)" class="qgis-btn-secondary" style="font-size: 0.78rem; padding: 5px 10px;">
                                 <i class="fa-solid fa-rotate"></i> Tải lại
@@ -2297,12 +2299,12 @@
                     </div>
 
                     <div id="standaloneMapSummaryText" style="font-size: 0.82rem; color: #475569; margin-bottom: 10px;">
-                        Đang tải vị trí trực tuyến 06 điều tra viên &amp; ảnh hiện trường...
+                        Đang tải vị trí trực tuyến 07 điều tra viên &amp; ảnh hiện trường...
                     </div>
 
                     <div id="standaloneMapWrapper" class="map-fullscreen-wrapper">
                         <div id="standaloneMapFsBar" class="map-fullscreen-fsbar">
-                            <span style="font-size: 0.84rem; font-weight: 800;"><i class="fa-solid fa-earth-asia" style="color: #38bdf8;"></i> Bản đồ vị trí 06 ĐTV &amp; Ảnh hiện trường (Google Hybrid)</span>
+                            <span style="font-size: 0.84rem; font-weight: 800;"><i class="fa-solid fa-earth-asia" style="color: #38bdf8;"></i> Bản đồ vị trí 07 ĐTV &amp; Ảnh hiện trường (Google Hybrid)</span>
                             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                                 <button type="button" onclick="toggleSpiderfyAllForMap('map')" class="qgis-btn-secondary" style="font-size: 0.76rem; padding: 4px 10px; background: #0284c7; color: #fff; border-color: #38bdf8;">
                                     <i class="fa-solid fa-snowflake"></i> Tỏa bông tuyết / Gom
@@ -2862,7 +2864,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
                             <div>
                                 <h3 style="font-size: 0.96rem; font-weight: 700; color: var(--navy); margin: 0; text-transform: uppercase;">
-                                    <i class="fa-solid fa-earth-asia" style="color: #0284c7;"></i> 1. Bản đồ Google Hybrid — Vị trí cuối cùng &amp; Trực tuyến của 06 Điều tra viên
+                                    <i class="fa-solid fa-earth-asia" style="color: #0284c7;"></i> 1. Bản đồ Google Hybrid — Vị trí cuối cùng &amp; Trực tuyến của 07 Điều tra viên
                                 </h3>
                                 <div id="teamLocationSummaryText" style="font-size: 0.82rem; color: var(--slate-600); margin-top: 4px;">
                                     Đang tải tọa độ mới nhất từ máy chủ...
@@ -2893,7 +2895,7 @@
 
                         <div id="teamGeoMapWrapper" class="map-fullscreen-wrapper" style="margin-bottom: 14px;">
                             <div id="teamGeoMapFsBar" class="map-fullscreen-fsbar">
-                                <span style="font-size: 0.84rem; font-weight: 800;"><i class="fa-solid fa-earth-asia" style="color: #38bdf8;"></i> Bản đồ Google Hybrid — 06 Điều tra viên</span>
+                                <span style="font-size: 0.84rem; font-weight: 800;"><i class="fa-solid fa-earth-asia" style="color: #38bdf8;"></i> Bản đồ Google Hybrid — 07 Điều tra viên</span>
                                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                                     <button type="button" onclick="toggleSpiderfyAllForMap('team')" class="qgis-btn-secondary" style="font-size: 0.76rem; padding: 4px 10px; background: #0284c7; color: #fff; border-color: #38bdf8;">
                                         <i class="fa-solid fa-snowflake"></i> Tỏa bông tuyết / Gom
@@ -3229,7 +3231,7 @@
                             </div>
                             <div class="form-group" style="margin-bottom: 10px;">
                                 <label style="font-size: 0.83rem; font-weight: 700;">Mã Nhân Viên Được Cấp
-                                    (TCN02 – TCN07, TCN21) <span class="req">*</span></label>
+                                    (TCN02 – TCN08, TCN21) <span class="req">*</span></label>
                                 <input type="text" class="form-control" id="modalUserId"
                                     placeholder="Nhập đúng mã nhân viên được cấp qua Zalo...">
                             </div>
@@ -3247,7 +3249,7 @@
 
                         <div id="viewerQuickNotice"
                             style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 9px 12px; border-radius: 4px; font-size: 0.82rem; margin-top: 10px;">
-                            <strong>Chế độ Đối tác / Chỉ xem (mặc định):</strong> Có thể vào xem trực tiếp tiến độ, phiếu đã thu và bản đồ Google Hybrid vị trí 06 điều tra viên (không cần nhập mật khẩu).
+                            <strong>Chế độ Đối tác / Chỉ xem (mặc định):</strong> Có thể vào xem trực tiếp tiến độ, phiếu đã thu và bản đồ Google Hybrid vị trí 07 điều tra viên (không cần nhập mật khẩu).
                         </div>
 
                         <div id="loginErrorMsg"
@@ -3308,10 +3310,10 @@
                         </div>
                         <div class="grid-3" style="margin-bottom: 8px;">
                             <div class="form-group">
-                                <label>Mã Nhân Viên (TCN01 – TCN07) <span class="req">*</span></label>
+                                <label>Mã Nhân Viên (TCN02 – TCN08) <span class="req">*</span></label>
                                 <div style="display: flex; gap: 4px;">
                                     <input type="text" class="form-control" id="newStaffId" required
-                                        placeholder="TCN07">
+                                        placeholder="TCN08">
                                     <button type="button" class="qgis-btn-secondary" onclick="generateStaffId()"
                                         style="padding: 0 8px; font-size: 0.76rem;" title="Tạo mã tự động">
                                         <i class="fa-solid fa-wand-magic-sparkles"></i> Tạo
@@ -3362,7 +3364,7 @@
                             <thead>
                                 <tr>
                                     <th style="width: 38px; text-align: center;">STT</th>
-                                    <th>Mã NV (TCN01 – TCN07)</th>
+                                    <th>Mã NV (TCN02 – TCN08)</th>
                                     <th>Họ Và Tên</th>
                                     <th>Địa Bàn</th>
                                     <th>Mật Khẩu</th>
@@ -3919,7 +3921,7 @@
     <!-- Bundled Questions & Households Fallback + Application Logic -->
     <script src="questions_bundle.js?v=1"></script>
     <script src="sample_households_bundle.js?v=3"></script>
-    <script src="app.js?v=2.49"></script>
+    <script src="app.js?v=2.50"></script>
 
 </body>
 
