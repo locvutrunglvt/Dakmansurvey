@@ -2734,22 +2734,33 @@
                         <div id="historyTrashContent" style="font-size: 0.82rem; color: #475569;">Đang tải dữ liệu bảo lưu...</div>
                     </div>
 
-                    <table class="report-table">
-                        <thead>
-                            <tr>
-                                <th>Mã Phiếu</th>
-                                <th>Công Cụ</th>
-                                <th>Địa Bàn</th>
-                                <th>Người Được Phỏng Vấn</th>
-                                <th>Điều Tra Viên</th>
-                                <th>Ngày Khảo Sát</th>
-                                <th style="text-align: center;">Hành Động</th>
-                            </tr>
-                        </thead>
-                        <tbody id="surveyHistoryTbody">
-                            <!-- Rendered by JS -->
-                        </tbody>
-                    </table>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                        <input type="text" id="historySurveySearchInput" class="form-control" oninput="filterCompletedSurveysTable()"
+                            placeholder="Tìm nhanh phiếu đã hoàn thành (mã phiếu, tên chủ hộ, người PV, thôn/xã, ĐTV)..."
+                            style="flex: 1; min-width: 240px; padding: 7px 10px; font-size: 0.84rem;">
+                        <span style="font-size: 0.78rem; color: #0369a1; background: #f0f9ff; border: 1px solid #bae6fd; padding: 6px 10px; border-radius: 4px; font-weight: 600;">
+                            <i class="fa-solid fa-hand-pointer"></i> Bấm vào dòng phiếu bất kỳ để xem chi tiết, sửa, bổ sung hoặc xóa
+                        </span>
+                    </div>
+
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã Phiếu</th>
+                                    <th>Công Cụ</th>
+                                    <th>Địa Bàn</th>
+                                    <th>Người Được Phỏng Vấn</th>
+                                    <th>Điều Tra Viên</th>
+                                    <th>Ngày Khảo Sát</th>
+                                    <th style="text-align: center;">Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="surveyHistoryTbody">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
 
                     <div id="historyDraftsSection" style="margin-top: 22px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 8px 0;">
@@ -2760,22 +2771,24 @@
                                 <i class="fa-solid fa-trash-can"></i> Xóa tất cả nháp của tôi
                             </button>
                         </div>
-                        <table class="report-table" style="margin-top: 0;">
-                            <thead>
-                                <tr>
-                                    <th>Mã Phiếu</th>
-                                    <th>Công Cụ</th>
-                                    <th>Địa Bàn</th>
-                                    <th>Người Được Phỏng Vấn</th>
-                                    <th>Điều Tra Viên</th>
-                                    <th>Cập Nhật / Tiến Độ</th>
-                                    <th style="text-align: center;">Hành Động</th>
-                                </tr>
-                            </thead>
-                            <tbody id="historyDraftsTbody">
-                                <!-- Rendered by JS -->
-                            </tbody>
-                        </table>
+                        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <table class="report-table" style="margin-top: 0;">
+                                <thead>
+                                    <tr>
+                                        <th>Mã Phiếu</th>
+                                        <th>Công Cụ</th>
+                                        <th>Địa Bàn</th>
+                                        <th>Người Được Phỏng Vấn</th>
+                                        <th>Điều Tra Viên</th>
+                                        <th>Cập Nhật / Tiến Độ</th>
+                                        <th style="text-align: center;">Hành Động</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyDraftsTbody">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3449,29 +3462,34 @@
                 </div>
 
                 <div
-                    style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px;">
-                    <button type="submit" class="qgis-btn-primary">
-                        <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px;">
+                    <button type="button" onclick="reopenFullFormFromQuickEdit()" class="qgis-btn-secondary" style="background: #fef3c7; color: #92400e; border-color: #fcd34d; font-weight: 700;">
+                        <i class="fa-solid fa-list-check"></i> Mở toàn bộ câu hỏi để sửa / phỏng vấn bổ sung
                     </button>
-                    <button type="button" class="qgis-btn-secondary" onclick="hideEditSurveyModal()">
-                        Hủy Bỏ
-                    </button>
+                    <div style="display: flex; gap: 8px; margin-left: auto;">
+                        <button type="submit" class="qgis-btn-primary">
+                            <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+                        </button>
+                        <button type="button" class="qgis-btn-secondary" onclick="hideEditSurveyModal()">
+                            Hủy Bỏ
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Modal Xem Chi Tiết Phiếu Đã Nộp -->
-    <div id="surveyDetailModal" class="modal-overlay" style="z-index: 10030;">
+    <div id="surveyDetailModal" class="modal-overlay" style="z-index: 10030;" onclick="if(event.target===this) hideDetailModal()">
         <div class="modal-card qgis-dialog-card"
-            style="max-width: 720px; max-height: 85vh; display: flex; flex-direction: column;">
+            style="max-width: 820px; width: 96%; max-height: 90vh; display: flex; flex-direction: column;">
             <div class="qgis-dialog-titlebar">
                 <span id="detailModalTitle"><i class="fa-solid fa-file-lines"></i> CHI TIẾT PHIẾU KHẢO SÁT</span>
                 <button type="button" class="qgis-close-btn" onclick="hideDetailModal()">✕</button>
             </div>
             <div id="detailModalBody"
                 style="overflow-y: auto; flex-grow: 1; padding: 16px; font-size: 0.88rem; background: #ffffff;"></div>
-            <div style="text-align: right; padding: 10px 16px; background: #f1f5f9; border-top: 1px solid #cbd5e1;">
+            <div id="detailModalFooter" style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 16px; background: #f1f5f9; border-top: 1px solid #cbd5e1;">
                 <button type="button" class="qgis-btn-secondary" onclick="hideDetailModal()">Đóng cửa sổ</button>
             </div>
         </div>
@@ -3556,7 +3574,7 @@
     <!-- Bundled Questions & Households Fallback + Application Logic -->
     <script src="questions_bundle.js?v=1"></script>
     <script src="sample_households_bundle.js?v=3"></script>
-    <script src="app.js?v=2.44"></script>
+    <script src="app.js?v=2.45"></script>
 
 </body>
 

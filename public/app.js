@@ -1984,7 +1984,7 @@ function formatDateVN(dateStr) {
 // ========================================================
 // 4. CHỌN BỘ CÔNG CỤ (TOOL SELECTOR: P1 - TT)
 // ========================================================
-async function selectTool(toolCode) {
+async function selectTool(toolCode, options = {}) {
     currentTool = toolCode;
     editingSurveyId = null;
     currentDraftPhotoPath = '';
@@ -2037,9 +2037,9 @@ async function selectTool(toolCode) {
         applySharedDemographicsToForm(ans, respName, toolCode);
     };
 
-    // Khôi phục bản nháp gần nhất của công cụ nếu có
+    // Khôi phục bản nháp gần nhất của công cụ nếu có (bỏ qua khi đang mở phiếu đã hoàn thành để sửa/bổ sung)
     const draftKey = `dakman_draft_${toolCode}`;
-    const savedDraft = localStorage.getItem(draftKey);
+    const savedDraft = options?.skipDraftRestore ? null : localStorage.getItem(draftKey);
     if (savedDraft) {
         try {
             const parsed = JSON.parse(savedDraft);
@@ -4815,7 +4815,7 @@ function showCompletionModal(info) {
     if (btnRev) {
         btnRev.onclick = () => {
             modal.classList.remove('active');
-            viewSurveyDetail(info.id);
+            viewSurveyDetail(info.id, { fromCompletion: true });
         };
     }
     if (btnEdit) {
@@ -5154,6 +5154,91 @@ function isCurrentUserOwnerOf(recordSurveyorId, recordSurveyorName = '', isLocal
     return false;
 }
 
+let _cachedCompletedSurveysList = [];
+
+function renderCompletedSurveysRows(list) {
+    const tbody = document.getElementById('surveyHistoryTbody');
+    if (!tbody) return;
+    const role = currentUser?.role || 'editor';
+    if (!Array.isArray(list) || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--slate-500);">Chưa có phiếu khảo sát nào phù hợp trên hệ thống.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = list.map(item => {
+        const isOwner = isCurrentUserOwnerOf(item.surveyor_id, item.surveyor_name);
+        const canEdit = (role === 'admin') || isOwner;
+        const canDelete = (role === 'admin') || isOwner;
+        const photoBadge = item.photo_path ? ' <i class="fa-solid fa-camera" style="color: #15803d;" title="Có ảnh người PV (Watermark WGS84)"></i>' : '';
+
+        return `
+            <tr onclick="viewSurveyDetail(${item.id})" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor=''">
+                <td style="font-family: monospace; font-weight: 700; color: var(--primary);">${escapeHtml(item.survey_code)}${photoBadge}</td>
+                <td><span style="background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 0.78rem;">${escapeHtml(item.tool_code)}</span></td>
+                <td>${escapeHtml(item.commune)} ${item.hamlet ? `(${escapeHtml(item.hamlet)})` : ''}</td>
+                <td style="font-weight: 600;">${escapeHtml(item.respondent_name || '—')}</td>
+                <td style="font-size: 0.82rem;">${escapeHtml(item.surveyor_name)} (${escapeHtml(item.surveyor_id)})</td>
+                <td style="text-align: center; font-family: monospace; font-size: 0.82rem;">${formatDateVN(item.survey_date)}</td>
+                <td style="text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
+                    <button type="button"
+                            onclick="event.stopPropagation(); viewSurveyDetail(${item.id})"
+                            style="background: #eff6ff; border: 1px solid #93c5fd; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: #1d4ed8; margin-right: 4px;" title="Mở xem chi tiết &amp; chọn sửa/bổ sung/xóa">
+                        <i class="fa-solid fa-eye"></i> Mở xem
+                    </button>
+                    ${canEdit ? `
+                        <button type="button"
+                                onclick="event.stopPropagation(); reloadSurveyIntoForm(${item.id})"
+                                style="background: #fffbeb; border: 1px solid #fcd34d; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: #92400e; margin-right: 4px;" title="Mở ra Form để phỏng vấn lại / bổ sung câu hỏi">
+                            <i class="fa-solid fa-pen-to-square"></i> Sửa / Bổ sung
+                        </button>
+                    ` : ''}
+                    ${canEdit ? `
+                        <a href="${getPdfExportUrl(item.id)}" target="_blank" onclick="event.stopPropagation()"
+                           style="display: inline-block; background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; font-size: 0.78rem; font-weight: 600; color: #b91c1c; text-decoration: none; margin-right: 4px;" title="Xuất báo cáo phỏng vấn PDF">
+                            <i class="fa-solid fa-file-pdf"></i> PDF
+                        </a>
+                    ` : ''}
+                    ${canEdit ? `
+                        <button type="button"
+                                onclick="event.stopPropagation(); openEditSurveyModal(${item.id})"
+                                style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #166534; margin-right: 4px;" title="Sửa nhanh mã phiếu, địa bàn, tên, SĐT, GPS">
+                            <i class="fa-solid fa-sliders"></i> Sửa nhanh
+                        </button>
+                    ` : ''}
+                    ${canDelete ? `
+                        <button type="button"
+                                onclick="event.stopPropagation(); deleteSurveyConfirm(${item.id}, '${escapeQuotes(item.survey_code)}')"
+                                style="background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #b91c1c;" title="Xóa phiếu (vẫn bảo lưu trên VPS để khôi phục)">
+                            <i class="fa-solid fa-trash-can"></i> Xóa
+                        </button>
+                    ` : ''}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function filterCompletedSurveysTable() {
+    const kw = normViNameOwner(document.getElementById('historySurveySearchInput')?.value || '');
+    if (!kw) {
+        renderCompletedSurveysRows(_cachedCompletedSurveysList);
+        return;
+    }
+    const filtered = _cachedCompletedSurveysList.filter(item => {
+        const hay = normViNameOwner([
+            item.survey_code,
+            item.tool_code,
+            item.commune,
+            item.hamlet,
+            item.respondent_name,
+            item.surveyor_name,
+            item.surveyor_id,
+            item.survey_date
+        ].join(' '));
+        return hay.includes(kw);
+    });
+    renderCompletedSurveysRows(filtered);
+}
+
 async function loadSurveysList() {
     try {
         if (!surveysListFetchPromise) {
@@ -5162,6 +5247,7 @@ async function loadSurveysList() {
         }
         const list = await surveysListFetchPromise;
         if (!Array.isArray(list)) return;
+        _cachedCompletedSurveysList = list;
         interviewedSurveyCodes = new Set(
             list.map(s => String(s.survey_code || '').trim().toUpperCase()).filter(Boolean)
         );
@@ -5173,63 +5259,13 @@ async function loadSurveysList() {
             filterSampleHouseholds(sampleListPinnedOpen || Boolean(guideVal || kwVal));
         }
 
-        const tbody = document.getElementById('surveyHistoryTbody');
         const role = currentUser?.role || 'editor';
         const btnTrash = document.getElementById('btnToggleHistoryTrash');
         if (btnTrash) {
             btnTrash.style.display = (role === 'viewer') ? 'none' : 'inline-flex';
         }
 
-        if (tbody) {
-            if (list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--slate-500);">Chưa có phiếu khảo sát nào được nộp lên hệ thống.</td></tr>';
-            } else {
-                tbody.innerHTML = list.map(item => {
-                    const isOwner = isCurrentUserOwnerOf(item.surveyor_id, item.surveyor_name);
-                    const canEdit = (role === 'admin') || isOwner;
-                    const canDelete = (role === 'admin') || isOwner;
-                    const photoBadge = item.photo_path ? ' <i class="fa-solid fa-camera" style="color: #15803d;" title="Có ảnh người PV (Watermark WGS84)"></i>' : '';
-
-                    return `
-                        <tr>
-                            <td style="font-family: monospace; font-weight: 700; color: var(--primary);">${escapeHtml(item.survey_code)}${photoBadge}</td>
-                            <td><span style="background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 0.78rem;">${escapeHtml(item.tool_code)}</span></td>
-                            <td>${escapeHtml(item.commune)} ${item.hamlet ? `(${escapeHtml(item.hamlet)})` : ''}</td>
-                            <td style="font-weight: 600;">${escapeHtml(item.respondent_name || '—')}</td>
-                            <td style="font-size: 0.82rem;">${escapeHtml(item.surveyor_name)} (${escapeHtml(item.surveyor_id)})</td>
-                            <td style="text-align: center; font-family: monospace; font-size: 0.82rem;">${formatDateVN(item.survey_date)}</td>
-                            <td style="text-align: center; white-space: nowrap;">
-                                <button type="button" 
-                                        onclick="viewSurveyDetail(${item.id})" 
-                                        style="background: var(--slate-100); border: 1px solid var(--border); padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--primary); margin-right: 4px;" title="Xem nội dung chi tiết">
-                                    <i class="fa-solid fa-eye"></i> Xem
-                                </button>
-                                ${canEdit ? `
-                                    <a href="${getPdfExportUrl(item.id)}" target="_blank"
-                                       style="display: inline-block; background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; font-size: 0.78rem; font-weight: 600; color: #b91c1c; text-decoration: none; margin-right: 4px;" title="Xuất báo cáo phỏng vấn PDF">
-                                        <i class="fa-solid fa-file-pdf"></i> PDF
-                                    </a>
-                                ` : ''}
-                                ${canEdit ? `
-                                    <button type="button" 
-                                            onclick="openEditSurveyModal(${item.id})" 
-                                            style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #166534; margin-right: 4px;" title="Cập nhật sửa đổi phiếu">
-                                        <i class="fa-solid fa-pen-to-square"></i> Sửa
-                                    </button>
-                                ` : ''}
-                                ${canDelete ? `
-                                    <button type="button" 
-                                            onclick="deleteSurveyConfirm(${item.id}, '${escapeQuotes(item.survey_code)}')" 
-                                            style="background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #b91c1c;" title="Xóa phiếu (vẫn bảo lưu trên VPS để khôi phục)">
-                                        <i class="fa-solid fa-trash-can"></i> Xóa
-                                    </button>
-                                ` : ''}
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            }
-        }
+        filterCompletedSurveysTable();
 
         renderHistoryDraftsTable();
         if (role !== 'viewer') {
@@ -5437,20 +5473,59 @@ async function restoreMyDeletedDraft(archiveId, code) {
 // ========================================================
 // 11. XEM CHI TIẾT PHIẾU
 // ========================================================
-async function viewSurveyDetail(id) {
+function hasMeaningfulSurveyAnswer(val) {
+    if (val === null || val === undefined) return false;
+    if (Array.isArray(val)) return val.length > 0;
+    if (typeof val === 'object') return Object.keys(val).length > 0;
+    return String(val).trim() !== '';
+}
+
+function toggleDetailUnansweredFilter(showAll) {
+    const modalBody = document.getElementById('detailModalBody');
+    if (!modalBody) return;
+    modalBody.querySelectorAll('tr.detail-unanswered-row').forEach(tr => {
+        tr.style.display = showAll ? 'table-row' : 'none';
+    });
+    const btnAll = document.getElementById('btnDetailShowAllQ');
+    const btnAns = document.getElementById('btnDetailShowAnsQ');
+    if (btnAll && btnAns) {
+        btnAll.style.background = showAll ? '#002060' : '#f1f5f9';
+        btnAll.style.color = showAll ? '#fff' : '#334155';
+        btnAns.style.background = !showAll ? '#002060' : '#f1f5f9';
+        btnAns.style.color = !showAll ? '#fff' : '#334155';
+    }
+}
+
+async function finishAfterCompletionFromDetail() {
+    hideDetailModal();
+    await finishAfterCompletion();
+}
+
+async function viewSurveyDetail(id, options = {}) {
     try {
         const res = await fetch(apiUrl(`/api/surveys/${id}`));
-        if (!res.ok) return;
+        if (!res.ok) {
+            alert('Không tìm thấy dữ liệu phiếu trên máy chủ VPS.');
+            return;
+        }
         const item = await res.json();
+        if (item.tool_code && !allQuestionsData?.[item.tool_code]) {
+            await loadQuestions(true);
+        }
 
         document.getElementById('detailModalTitle').textContent = `CHI TIẾT PHIẾU: ${item.survey_code} (${item.tool_code})`;
 
         const body = document.getElementById('detailModalBody');
-        const answers = item.answers || {};
+        const footer = document.getElementById('detailModalFooter');
+        const answers = (item.answers && typeof item.answers === 'object') ? item.answers : {};
         const qList = (allQuestionsData[item.tool_code]?.questions) || [];
         const qMap = {};
         qList.forEach(q => { qMap[q.code] = q.text; });
         const keys = Object.keys(answers).filter(k => !k.startsWith('_'));
+        const answeredBaseCount = qList.length
+            ? qList.filter(q => hasMeaningfulSurveyAnswer(answers[q.code])).length
+            : keys.length;
+        const missingQs = qList.filter(q => !hasMeaningfulSurveyAnswer(answers[q.code]));
 
         let photoHtml = '';
         if (item.photo_url) {
@@ -5461,13 +5536,54 @@ async function viewSurveyDetail(id) {
                         <span><i class="fa-solid fa-camera"></i> ẢNH NGƯỜI ĐƯỢC PHỎNG VẤN (WATERMARK &amp; WGS84)</span>
                         <a href="${fullPhotoUrl}" target="_blank" style="color: var(--primary); text-decoration: none;">Mở ảnh gốc <i class="fa-solid fa-up-right-from-square"></i></a>
                     </div>
-                    <img src="${fullPhotoUrl}" alt="Ảnh hiện trường ${item.survey_code}" style="max-width: 100%; max-height: 360px; display: block; border: 1px solid #e2e8f0; border-radius: 2px;">
+                    <img src="${fullPhotoUrl}" alt="Ảnh hiện trường ${escapeHtml(item.survey_code)}" style="max-width: 100%; max-height: 360px; display: block; border: 1px solid #e2e8f0; border-radius: 2px;">
                 </div>
             `;
         }
 
+        const role = currentUser?.role || 'viewer';
+        const canModify = (role === 'admin') || isCurrentUserOwnerOf(item.surveyor_id, item.surveyor_name);
+
+        const extraKeys = keys.filter(k => !qMap[k]);
+        let tableRowsHtml = '';
+        if (qList.length > 0) {
+            tableRowsHtml += qList.map(q => {
+                const answered = hasMeaningfulSurveyAnswer(answers[q.code]);
+                const noteVal = answers[`${q.code}_note`];
+                const detailVal = answers[`${q.code}_details`];
+                return `
+                    <tr class="${answered ? 'detail-answered-row' : 'detail-unanswered-row'}" style="${answered ? '' : 'background: #fffbeb;'}">
+                        <td style="font-family: monospace; font-weight: 700; color: ${answered ? 'var(--primary)' : '#b45309'}; vertical-align: top;">${escapeHtml(q.code)}</td>
+                        <td>
+                            <div style="font-size: 0.78rem; color: #475569; margin-bottom: 3px;">${escapeHtml(q.text || '')}</div>
+                            ${answered
+                                ? `<div style="white-space: pre-wrap; font-weight: 600; color: #0f172a;">${escapeHtml(formatAnswerDisplay(answers[q.code]))}</div>`
+                                : `<div style="font-size: 0.80rem; font-weight: 700; color: #b45309;"><i class="fa-regular fa-circle-dot"></i> Chưa trả lời (có thể bấm Sửa / Phỏng vấn bổ sung)</div>`}
+                            ${hasMeaningfulSurveyAnswer(noteVal) ? `<div style="font-size: 0.78rem; color: #0369a1; margin-top: 3px;">Ghi chú: ${escapeHtml(formatAnswerDisplay(noteVal))}</div>` : ''}
+                            ${hasMeaningfulSurveyAnswer(detailVal) ? `<div style="font-size: 0.78rem; color: #0369a1; margin-top: 3px;">Chi tiết: ${escapeHtml(formatAnswerDisplay(detailVal))}</div>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        tableRowsHtml += extraKeys.filter(k => !(k.endsWith('_note') || k.endsWith('_details')) || !qMap[k.replace(/(_note|_details)$/, '')]).map(k => {
+            const baseCode = k.replace(/(_note|_details)$/, '');
+            const qLabel = k.endsWith('_note')
+                ? `<em>Ghi chú/Phương án khác (${escapeHtml(baseCode)})</em>`
+                : '';
+            return `
+                <tr class="detail-answered-row">
+                    <td style="font-family: monospace; font-weight: 700; color: var(--primary);">${escapeHtml(k)}</td>
+                    <td>
+                        ${qLabel ? `<div style="font-size: 0.78rem; color: #475569; margin-bottom: 3px;">${qLabel}</div>` : ''}
+                        <div style="white-space: pre-wrap; font-weight: 600; color: #0f172a;">${escapeHtml(formatAnswerDisplay(answers[k]))}</div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
         let ansHtml = '';
-        if (keys.length === 0) {
+        if (!tableRowsHtml) {
             ansHtml = '<p style="color: var(--slate-500); font-style: italic;">Không có nội dung câu trả lời nào được ghi.</p>';
         } else {
             ansHtml = `
@@ -5479,32 +5595,29 @@ async function viewSurveyDetail(id) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${keys.map(k => {
-                            const baseCode = k.replace(/(_note|_details)$/, '');
-                            const qLabel = k.endsWith('_note')
-                                ? `<em>Ghi chú/Phương án khác (${baseCode})</em>`
-                                : (qMap[k] ? escapeHtml(qMap[k]) : '');
-                            return `
-                            <tr>
-                                <td style="font-family: monospace; font-weight: 700; color: var(--primary);">${escapeHtml(k)}</td>
-                                <td>
-                                    ${qLabel ? `<div style="font-size: 0.78rem; color: #475569; margin-bottom: 3px;">${qLabel}</div>` : ''}
-                                    <div style="white-space: pre-wrap; font-weight: 600; color: #0f172a;">${formatAnswerDisplay(answers[k])}</div>
-                                </td>
-                            </tr>
-                        `;
-                        }).join('')}
+                        ${tableRowsHtml}
                     </tbody>
                 </table>
             `;
         }
 
-        const canExportItem = (currentUser?.role === 'admin') || (currentUser?.role === 'editor' && (item.surveyor_id === currentUser?.surveyor_id || !item.surveyor_id));
-
         const headSummary = answers._head_name
             ? `${escapeHtml(answers._head_name)}${answers._head_gender ? ` (${escapeHtml(answers._head_gender)}${answers._head_birth_year ? ', ' + escapeHtml(answers._head_birth_year) : ''})` : (answers._head_birth_year ? ` (${escapeHtml(answers._head_birth_year)})` : '')}`
             : '—';
         const respSummary = `${escapeHtml(item.respondent_name || '—')}${answers._resp_gender ? ` (${escapeHtml(answers._resp_gender)}${answers._resp_birth_year ? ', ' + escapeHtml(answers._resp_birth_year) : ''})` : (answers._resp_birth_year ? ` (${escapeHtml(answers._resp_birth_year)})` : '')}`;
+
+        const completenessBanner = qList.length > 0
+            ? (missingQs.length > 0
+                ? `<div style="margin-bottom: 10px; padding: 9px 12px; background: #fffbeb; border: 1px solid #fcd34d; border-left: 4px solid #d97706; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <div style="font-size: 0.83rem; color: #92400e;">
+                            <strong><i class="fa-solid fa-triangle-exclamation"></i> Đã trả lời ${answeredBaseCount}/${qList.length} câu</strong> — Còn <strong>${missingQs.length}</strong> câu chưa điền. Bạn có thể mở lại Form để phỏng vấn bổ sung ngay.
+                        </div>
+                        ${canModify ? `<button type="button" onclick="reloadSurveyIntoForm(${item.id})" style="background:#d97706;color:#fff;border:none;padding:5px 10px;border-radius:4px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fa-solid fa-plus-circle"></i> Phỏng vấn bổ sung</button>` : ''}
+                   </div>`
+                : `<div style="margin-bottom: 10px; padding: 9px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #15803d; border-radius: 4px; font-size: 0.83rem; color: #166534;">
+                        <strong><i class="fa-solid fa-circle-check"></i> Đã trả lời đủ ${answeredBaseCount}/${qList.length} câu hỏi.</strong> Nếu phát hiện điểm chưa ổn, vẫn có thể bấm nút <strong>Phỏng vấn lại / Sửa &amp; Bổ sung</strong> bên dưới để cập nhật.
+                   </div>`)
+            : '';
 
         body.innerHTML = `
             <div style="background: var(--slate-50); padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px;">
@@ -5520,17 +5633,46 @@ async function viewSurveyDetail(id) {
                     <div><strong>Công cụ:</strong> ${escapeHtml(item.tool_code || '')} — ${escapeHtml(item.tool_name || '')}</div>
                 </div>
             </div>
-            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <span>Xem lại dữ liệu từng câu hỏi (${keys.length} mục đã ghi):</span>
-                ${canExportItem ? `
-                <span style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <a href="${getPdfExportUrl(item.id)}" target="_blank" style="background:#b91c1c;color:#fff;border:none;padding:6px 10px;border-radius:3px;font-size:0.78rem;text-decoration:none;font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Xuất Báo Cáo PDF</a>
-                    <button type="button" onclick="reloadSurveyIntoForm(${item.id})" style="background:#d97706;color:#fff;border:none;padding:6px 12px;border-radius:3px;font-size:0.80rem;cursor:pointer;font-weight:700;"><i class="fa-solid fa-pen-to-square"></i> Quay lại sửa &amp; Cập nhật đầy đủ</button>
-                </span>` : ''}
-            </h4>
+            ${completenessBanner}
             ${photoHtml}
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
+                <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); text-transform: uppercase; margin: 0;">
+                    Kết quả phỏng vấn (${answeredBaseCount}${qList.length ? `/${qList.length}` : ''} câu đã ghi):
+                </h4>
+                ${qList.length > 0 ? `
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" id="btnDetailShowAllQ" onclick="toggleDetailUnansweredFilter(true)" style="background:#002060;color:#fff;border:1px solid #cbd5e1;padding:4px 9px;border-radius:4px;font-size:0.76rem;font-weight:600;cursor:pointer;">Tất cả (${qList.length})</button>
+                        <button type="button" id="btnDetailShowAnsQ" onclick="toggleDetailUnansweredFilter(false)" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:4px 9px;border-radius:4px;font-size:0.76rem;font-weight:600;cursor:pointer;">Chỉ câu đã nhập (${answeredBaseCount})</button>
+                    </div>
+                ` : ''}
+            </div>
             ${ansHtml}
         `;
+
+        if (footer) {
+            footer.innerHTML = `
+                ${canModify ? `
+                    <button type="button" onclick="reloadSurveyIntoForm(${item.id})" class="qgis-btn-primary" style="background:#d97706;border-color:#b45309;font-weight:700;">
+                        <i class="fa-solid fa-pen-to-square"></i> Phỏng vấn lại / Sửa &amp; Bổ sung
+                    </button>
+                    <button type="button" onclick="hideDetailModal(); openEditSurveyModal(${item.id});" class="qgis-btn-secondary" style="background:#f0fdf4;color:#166534;border-color:#bbf7d0;font-weight:600;">
+                        <i class="fa-solid fa-sliders"></i> Sửa nhanh thông tin
+                    </button>
+                    <button type="button" onclick="deleteSurveyConfirm(${item.id}, '${escapeQuotes(item.survey_code)}', true)" class="qgis-btn-secondary" style="background:#fef2f2;color:#b91c1c;border-color:#fecaca;font-weight:700;">
+                        <i class="fa-solid fa-trash-can"></i> Xóa phiếu (X)
+                    </button>
+                    <a href="${getPdfExportUrl(item.id)}" target="_blank" class="qgis-btn-secondary" style="text-decoration:none;background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;font-weight:600;">
+                        <i class="fa-solid fa-file-pdf"></i> Xuất PDF
+                    </a>
+                ` : ''}
+                ${options?.fromCompletion ? `
+                    <button type="button" onclick="finishAfterCompletionFromDetail()" class="qgis-btn-primary" style="background:#15803d;border-color:#166534;">
+                        <i class="fa-solid fa-forward"></i> Hoàn tất &amp; Hộ tiếp theo
+                    </button>
+                ` : ''}
+                <button type="button" class="qgis-btn-secondary" onclick="hideDetailModal()">Đóng cửa sổ</button>
+            `;
+        }
 
         document.getElementById('surveyDetailModal').classList.add('active');
     } catch (e) {
@@ -5543,16 +5685,26 @@ function hideDetailModal() {
     if (modal) modal.classList.remove('active');
 }
 
+async function cancelEditCompletedSurvey() {
+    editingSurveyId = null;
+    await finishAfterCompletion();
+    switchMainView('history');
+}
+
 async function reloadSurveyIntoForm(id) {
     try {
         const res = await fetch(apiUrl(`/api/surveys/${id}`));
-        if (!res.ok) return;
+        if (!res.ok) {
+            alert('Không tìm thấy phiếu trên máy chủ VPS để mở sửa.');
+            return;
+        }
         const item = await res.json();
         hideDetailModal();
         switchMainView('survey');
-        await selectTool(item.tool_code || 'P1');
+        await selectTool(item.tool_code || 'P1', { skipDraftRestore: true });
 
         editingSurveyId = item.id;
+        currentDraftPhotoPath = item.photo_path || '';
         document.getElementById('surveyCodeInput').value = item.survey_code || '';
         if (item.commune) document.getElementById('communeSelect').value = item.commune;
         document.getElementById('hamletInput').value = item.hamlet || '';
@@ -5575,8 +5727,36 @@ async function reloadSurveyIntoForm(id) {
             clearHouseholdPhoto(true);
         }
 
-        renderQuestionsForSection(currentSection);
+        const sections = getToolSections();
+        if (sections.length > 1) {
+            selectSection('__ALL__', 'ALL');
+        } else {
+            renderQuestionsForSection(currentSection);
+        }
+        updatePhotoLockState();
         updateAnsweredSummaryBadge();
+
+        const banner = document.getElementById('sampleSelectedBanner');
+        if (banner) {
+            banner.style.display = 'block';
+            banner.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <div>
+                        <i class="fa-solid fa-pen-to-square" style="color:#b45309;"></i>
+                        <strong>Đang mở PHIẾU ĐÃ HOÀN THÀNH [${escapeHtml(item.survey_code)}] (${escapeHtml(item.respondent_name || '')})</strong> —
+                        Hãy kiểm tra, sửa lại hoặc phỏng vấn bổ sung các câu còn thiếu rồi bấm <strong>CẬP NHẬT LẠI PHIẾU</strong> ở cuối trang.
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" onclick="jumpToFirstUnanswered()" style="background:#d97706;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:0.78rem;font-weight:700;cursor:pointer;">
+                            <i class="fa-solid fa-forward-step"></i> Đi tới câu chưa trả lời
+                        </button>
+                        <button type="button" onclick="cancelEditCompletedSurvey()" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:4px 10px;border-radius:4px;font-size:0.78rem;font-weight:600;cursor:pointer;">
+                            <i class="fa-solid fa-xmark"></i> Thoát chế độ sửa
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
 
         const btn = document.getElementById('btnSubmitForm');
         if (btn) {
@@ -5602,7 +5782,7 @@ async function openEditSurveyModal(id) {
         return;
     }
     try {
-        const res = await fetch(`/api/surveys/${id}`);
+        const res = await fetch(apiUrl(`/api/surveys/${id}`));
         if (!res.ok) {
             alert('Không tìm thấy dữ liệu phiếu trên máy chủ VPS.');
             return;
@@ -5639,6 +5819,13 @@ async function openEditSurveyModal(id) {
     } catch (err) {
         alert('Lỗi khi mở cửa sổ chỉnh sửa phiếu: ' + err.message);
     }
+}
+
+function reopenFullFormFromQuickEdit() {
+    const id = document.getElementById('editSurveyId')?.value;
+    if (!id) return;
+    hideEditSurveyModal();
+    reloadSurveyIntoForm(id);
 }
 
 function hideEditSurveyModal() {
@@ -5694,7 +5881,7 @@ async function handleEditSurveySubmit(e) {
 
         const data = await res.json();
         if (res.ok && data.success) {
-            alert(`Đã cập nhật chỉnh sửa phiếu [${code}] thành công!`);
+            showInstantActionToast(`Đã cập nhật chỉnh sửa phiếu [${code}] thành công!`);
             hideEditSurveyModal();
             await loadSurveysList();
             if (typeof refreshDashboardData === 'function') {
@@ -5708,7 +5895,7 @@ async function handleEditSurveySubmit(e) {
     }
 }
 
-async function deleteSurveyConfirm(id, surveyCode) {
+async function deleteSurveyConfirm(id, surveyCode, closeDetailOnSuccess = false) {
     const role = currentUser?.role || 'viewer';
     if (role === 'viewer') {
         alert('Tài khoản Chỉ Xem không có quyền xóa phiếu.');
@@ -5745,7 +5932,9 @@ async function deleteSurveyConfirm(id, surveyCode) {
 
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
+            if (closeDetailOnSuccess) hideDetailModal();
             showInstantActionToast(data.message || `Đã xóa tức thì phiếu [${surveyCode}] (chuyển vào Thùng rác VPS để khôi phục khi cần).`);
+            await loadHouseholdLocks();
             await loadSurveysList();
             if (typeof refreshDashboardData === 'function') {
                 refreshDashboardData();

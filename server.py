@@ -2794,7 +2794,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 ))
             conn.commit()
             conn.close()
-            self._send_json({'success': True, 'message': f'Đã cập nhật chỉnh sửa phiếu #{survey_id} thành công!'})
+            sid_out = int(survey_id) if str(survey_id).isdigit() else survey_id
+            self._send_json({'success': True, 'survey_id': sid_out, 'message': f'Đã cập nhật chỉnh sửa phiếu #{survey_id} thành công!'})
             return
         self._send_json({'error': 'Not found'}, 404)
 
