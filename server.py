@@ -62,13 +62,24 @@ PASS_VIEWER = "View123"
 PASS_EDITOR = "Edit123a#"
 
 FIELD_TEAM_ROSTER = [
-    {"surveyor_id": "TCN07", "aliases": ["TCN07", "TCN01"], "full_name": "Lê Đình Duy", "commune": "Ea Kiết"},
-    {"surveyor_id": "TCN02", "aliases": ["TCN02"], "full_name": "Phan Doãn Vọng", "commune": "Ea Tar"},
+    {"surveyor_id": "TCN07", "aliases": ["TCN07", "TCN01", "TCN-47-195006"], "full_name": "Lê Đình Duy", "commune": "Ea Kiết"},
+    {"surveyor_id": "TCN02", "aliases": ["TCN02", "TCN-55-195011"], "full_name": "Phan Doãn Vọng", "commune": "Ea Tar"},
     {"surveyor_id": "TCN03", "aliases": ["TCN03"], "full_name": "Phạm Văn Thao", "commune": "Ea Kiết"},
     {"surveyor_id": "TCN04", "aliases": ["TCN04"], "full_name": "Nguyễn Viết Trụ", "commune": "Ea Kiết"},
     {"surveyor_id": "TCN05", "aliases": ["TCN05"], "full_name": "Cao Thị Phúc", "commune": "Ea Kiết"},
-    {"surveyor_id": "TCN06", "aliases": ["TCN06"], "full_name": "Hoàng Trường Sinh", "commune": "Ea Kiết"},
+    {"surveyor_id": "TCN06", "aliases": ["TCN06", "TCN-65-074755"], "full_name": "Hoàng Trường Sinh", "commune": "Ea Kiết"},
 ]
+
+ROSTER_ID_MAP = {}
+for _member in FIELD_TEAM_ROSTER:
+    for _alias in _member["aliases"]:
+        ROSTER_ID_MAP[_alias.upper()] = _member["surveyor_id"]
+
+
+def _norm_vi_name(name):
+    s = str(name or "").strip().lower().replace("đ", "d")
+    s = "".join(ch for ch in unicodedata.normalize("NFKD", s) if not unicodedata.combining(ch))
+    return " ".join(s.split())
 
 def get_db_conn():
     conn = sqlite3.connect(DB_PATH, timeout=15.0)
@@ -101,9 +112,56 @@ def _get_sid_aliases(sid):
     s = str(sid or "").strip().upper()
     if not s:
         return []
-    if s in ("TCN07", "TCN01"):
-        return ["TCN07", "TCN01"]
+    for m in FIELD_TEAM_ROSTER:
+        up_aliases = [str(a).strip().upper() for a in m.get("aliases", []) if str(a).strip()]
+        if s == m["surveyor_id"].upper() or s in up_aliases:
+            return up_aliases
     return [s]
+
+
+def _get_roster_names_for_sid(sid):
+    s = str(sid or "").strip().upper()
+    names = []
+    for m in FIELD_TEAM_ROSTER:
+        up_aliases = [str(a).strip().upper() for a in m.get("aliases", [])]
+        if s == m["surveyor_id"].upper() or s in up_aliases:
+            nm = _norm_vi_name(m.get("full_name"))
+            if nm and nm not in names:
+                names.append(nm)
+    return names
+
+
+def is_known_editor_sid(sid):
+    s = str(sid or "").strip().upper()
+    if not s:
+        return False
+    if s in ROSTER_ID_MAP:
+        return True
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT 1 FROM users WHERE UPPER(surveyor_id) = ? LIMIT 1", (s,))
+        ok = cur.fetchone() is not None
+        conn.close()
+        return ok
+    except Exception:
+        return False
+
+
+def is_record_owned_by(sid_hdr, row_sid, row_name=""):
+    s = str(sid_hdr or "").strip().upper()
+    if not s:
+        return False
+    r_sid = str(row_sid or "").strip().upper()
+    r_name = _norm_vi_name(row_name)
+    if not r_sid and not r_name:
+        return True
+    if r_sid and r_sid in _get_sid_aliases(s):
+        return True
+    roster_names = _get_roster_names_for_sid(s)
+    if r_name and roster_names and r_name in roster_names:
+        return True
+    return False
 
 
 def verify_owner_password(sid_hdr, pwd):
@@ -1294,7 +1352,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
         self.send_header('Content-Length', str(len(body)))
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Key, X-Delete-Password, X-User-Role, X-User-Id')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Key, X-Delete-Password, X-User-Role, X-User-Id, X-Confirm-Delete')
         self.end_headers()
         self.wfile.write(body)
 
@@ -1302,7 +1360,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Key, X-Delete-Password, X-User-Role, X-User-Id')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Key, X-Delete-Password, X-User-Role, X-User-Id, X-Confirm-Delete')
         self.end_headers()
 
     def do_HEAD(self):
@@ -1455,18 +1513,30 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 ''')
                 d_rows = cur.fetchall()
             else:
-                aliases = _get_sid_aliases(sid_hdr)
-                ph = ",".join("?" for _ in aliases)
-                cur.execute(f'''
-                    SELECT id, original_id, survey_code, tool_code, surveyor_id, respondent_name, deleted_at, deleted_by
-                    FROM deleted_surveys_archive WHERE UPPER(COALESCE(surveyor_id, '')) IN ({ph}) ORDER BY id DESC LIMIT 100
-                ''', aliases)
-                s_rows = cur.fetchall()
-                cur.execute(f'''
-                    SELECT id, original_id, draft_key, survey_code, tool_code, surveyor_id, respondent_name, deleted_at, deleted_by
-                    FROM deleted_drafts_archive WHERE UPPER(COALESCE(surveyor_id, '')) IN ({ph}) ORDER BY id DESC LIMIT 100
-                ''', aliases)
-                d_rows = cur.fetchall()
+                cur.execute('''
+                    SELECT id, original_id, survey_code, tool_code, surveyor_id, respondent_name, deleted_at, deleted_by, row_json
+                    FROM deleted_surveys_archive ORDER BY id DESC LIMIT 250
+                ''')
+                s_rows = []
+                for r in cur.fetchall():
+                    try:
+                        rj = json.loads(r[8] or '{}')
+                    except Exception:
+                        rj = {}
+                    if is_record_owned_by(sid_hdr, r[4], rj.get('surveyor_name', '')):
+                        s_rows.append(r[:8])
+                cur.execute('''
+                    SELECT id, original_id, draft_key, survey_code, tool_code, surveyor_id, respondent_name, deleted_at, deleted_by, row_json
+                    FROM deleted_drafts_archive ORDER BY id DESC LIMIT 250
+                ''')
+                d_rows = []
+                for r in cur.fetchall():
+                    try:
+                        rj = json.loads(r[9] or '{}')
+                    except Exception:
+                        rj = {}
+                    if is_record_owned_by(sid_hdr, r[5], rj.get('surveyor_name', '')):
+                        d_rows.append(r[:9])
             conn.close()
             s_cols = ['archive_id', 'original_id', 'survey_code', 'tool_code', 'surveyor_id', 'respondent_name', 'deleted_at', 'deleted_by']
             d_cols = ['archive_id', 'original_id', 'draft_key', 'survey_code', 'tool_code', 'surveyor_id', 'respondent_name', 'deleted_at', 'deleted_by']
@@ -1601,17 +1671,16 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                        guide_name, gps_lat, gps_lng, current_section, photo_path, photo_meta,
                        answers_json, answered_count, total_count, updated_at
                 FROM survey_drafts
+                ORDER BY updated_at DESC, id DESC
             '''
-            params = []
-            if role_param != 'admin' and surveyor_filter:
-                sql += ' WHERE UPPER(surveyor_id) = UPPER(?)'
-                params.append(surveyor_filter)
-            sql += ' ORDER BY updated_at DESC, id DESC'
-            cur.execute(sql, params)
+            cur.execute(sql)
             cols = [c[0] for c in cur.description]
             drafts = []
             for r in cur.fetchall():
                 d = dict(zip(cols, r))
+                if role_param != 'admin' and surveyor_filter:
+                    if not is_record_owned_by(surveyor_filter, d.get('surveyor_id'), d.get('surveyor_name')):
+                        continue
                 try:
                     d['answers'] = json.loads(d.get('answers_json') or '{}')
                 except Exception:
@@ -2020,8 +2089,8 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             existing_lock = cur.fetchone()
             if (
                 existing_lock and role != 'admin' and surveyor_id
-                and str(existing_lock[0] or '').strip()
-                and str(existing_lock[0] or '').strip().upper() != surveyor_id.upper()
+                and (str(existing_lock[0] or '').strip() or str(existing_lock[1] or '').strip())
+                and not is_record_owned_by(surveyor_id, existing_lock[0], existing_lock[1])
                 and str(existing_lock[2] or '').strip()
             ):
                 other_sid = str(existing_lock[0] or '').strip()
@@ -2288,9 +2357,11 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 return
             row = json.loads(arch['row_json'])
             is_admin = is_valid_admin_key(auth_key)
-            row_sid = str(row.get('surveyor_id') or '').strip().upper()
-            owner_aliases = _get_sid_aliases(sid_hdr)
-            is_owner = (role_hdr == 'editor' and sid_hdr and (not row_sid or row_sid in owner_aliases) and (verify_owner_password(sid_hdr, auth_key) or not auth_key))
+            is_owner = (
+                role_hdr == 'editor' and sid_hdr
+                and is_record_owned_by(sid_hdr, row.get('surveyor_id'), row.get('surveyor_name'))
+                and (verify_owner_password(sid_hdr, auth_key) or not auth_key)
+            )
             if not is_admin and not is_owner:
                 conn.close()
                 self._send_json({'error': 'Bạn chỉ có thể khôi phục phiếu do chính tài khoản của bạn đã phỏng vấn!'}, 403)
@@ -2353,9 +2424,11 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 return
             row = json.loads(arch['row_json'])
             is_admin = is_valid_admin_key(auth_key)
-            row_sid = str(row.get('surveyor_id') or '').strip().upper()
-            owner_aliases = _get_sid_aliases(sid_hdr)
-            is_owner = (role_hdr == 'editor' and sid_hdr and (not row_sid or row_sid in owner_aliases) and (verify_owner_password(sid_hdr, auth_key) or not auth_key))
+            is_owner = (
+                role_hdr == 'editor' and sid_hdr
+                and is_record_owned_by(sid_hdr, row.get('surveyor_id'), row.get('surveyor_name'))
+                and (verify_owner_password(sid_hdr, auth_key) or not auth_key)
+            )
             if not is_admin and not is_owner:
                 conn.close()
                 self._send_json({'error': 'Bạn chỉ có thể khôi phục phiếu nháp của chính tài khoản của bạn!'}, 403)
@@ -2744,17 +2817,23 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 return
 
             s_dict = dict(s_row)
+            confirm_x = self.headers.get('X-Confirm-Delete', '').strip().upper()
+            if confirm_x and confirm_x != 'X':
+                conn.close()
+                self._send_json({'error': 'Vui lòng nhập đúng ký tự X để xác nhận xóa phiếu!'}, 400)
+                return
             is_admin_pwd = is_valid_admin_key(delete_pwd)
             is_owner_pwd = False
-            if not is_admin_pwd and role_hdr == 'editor' and sid_hdr and delete_pwd:
-                row_sid = str(s_dict.get('surveyor_id') or '').strip().upper()
-                owner_aliases = _get_sid_aliases(sid_hdr)
-                if (not row_sid or row_sid in owner_aliases) and verify_owner_password(sid_hdr, delete_pwd):
-                    is_owner_pwd = True
+            if not is_admin_pwd and role_hdr == 'editor' and sid_hdr:
+                if is_record_owned_by(sid_hdr, s_dict.get('surveyor_id'), s_dict.get('surveyor_name')):
+                    if delete_pwd and verify_owner_password(sid_hdr, delete_pwd):
+                        is_owner_pwd = True
+                    elif confirm_x == 'X' and is_known_editor_sid(sid_hdr):
+                        is_owner_pwd = True
 
             if not is_admin_pwd and not is_owner_pwd:
                 conn.close()
-                self._send_json({'error': 'Mật khẩu xác nhận không đúng hoặc bạn không có quyền xóa phiếu này!'}, 403)
+                self._send_json({'error': 'Bạn không có quyền xóa phiếu này hoặc thiếu xác nhận hợp lệ!'}, 403)
                 return
 
             deleted_by = 'admin' if is_admin_pwd else sid_hdr
@@ -2780,9 +2859,13 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             role_hdr = self.headers.get('X-User-Role', '').strip().lower()
             sid_hdr = self.headers.get('X-User-Id', '').strip().upper()
             delete_pwd = (self.headers.get('X-Delete-Password', '') or self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')).strip()
+            confirm_x = self.headers.get('X-Confirm-Delete', '').strip().upper()
 
             if role_hdr == 'viewer':
                 self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền xóa phiếu nháp!'}, 403)
+                return
+            if confirm_x and confirm_x != 'X':
+                self._send_json({'error': 'Vui lòng nhập đúng ký tự X để xác nhận xóa phiếu nháp!'}, 400)
                 return
 
             conn = get_db_conn()
@@ -2796,17 +2879,24 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 return
 
             is_admin = is_valid_admin_key(delete_pwd)
-            if role_hdr == 'editor' and sid_hdr and not is_admin:
-                owner_aliases = _get_sid_aliases(sid_hdr)
-                for dr in d_rows:
-                    row_sid = str(dr.get('surveyor_id') or '').strip().upper()
-                    if row_sid and row_sid not in owner_aliases:
+            if not is_admin:
+                if role_hdr == 'editor':
+                    if not sid_hdr:
                         conn.close()
-                        self._send_json({'error': 'Bạn chỉ có thể xóa phiếu nháp do tài khoản của bạn tạo!'}, 403)
+                        self._send_json({'error': 'Thiếu thông tin mã điều tra viên để xác nhận quyền xóa bản nháp!'}, 403)
                         return
-                if delete_pwd and not verify_owner_password(sid_hdr, delete_pwd):
+                    for dr in d_rows:
+                        if not is_record_owned_by(sid_hdr, dr.get('surveyor_id'), dr.get('surveyor_name')):
+                            conn.close()
+                            self._send_json({'error': 'Bạn chỉ có thể xóa phiếu nháp do tài khoản của bạn tạo!'}, 403)
+                            return
+                    if delete_pwd and not verify_owner_password(sid_hdr, delete_pwd):
+                        conn.close()
+                        self._send_json({'error': 'Mật khẩu xác nhận không đúng!'}, 403)
+                        return
+                elif role_hdr == 'admin':
                     conn.close()
-                    self._send_json({'error': 'Mật khẩu xác nhận không đúng!'}, 403)
+                    self._send_json({'error': 'Thiếu khóa xác thực Quản trị viên!'}, 403)
                     return
 
             if not (no_archive and is_admin):

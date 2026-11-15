@@ -3780,6 +3780,13 @@ async function refreshAllDraftsList() {
     const drafts = await fetchMergedDraftsList(true);
     await refreshDraftBadgeCount(false, drafts);
 
+    const role = currentUser?.role || 'viewer';
+    const btnBulkModal = document.getElementById('btnDeleteAllMyModalDrafts');
+    if (btnBulkModal) {
+        const hasOwned = role !== 'viewer' && drafts.some(d => isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name));
+        btnBulkModal.style.display = hasOwned ? 'inline-flex' : 'none';
+    }
+
     if (!drafts.length) {
         box.innerHTML = '<div style="text-align: center; padding: 24px; color: #64748b;">Chưa có phiếu nào đang lưu tạm. Khi đi hiện trường, chỉ cần chọn Chủ hộ, chụp ảnh &amp; lấy GPS rồi bấm <strong>Lưu Tạm</strong> để mở lại hoàn thiện sau.</div>';
         return;
@@ -3795,6 +3802,7 @@ async function refreshAllDraftsList() {
             : '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-weight:700;font-size:0.70rem;margin-left:4px;">Đang nhập dở</span>';
         const btnLabel = '<i class="fa-solid fa-pen-to-square"></i> Mở Phiếu Tạm';
         const borderLeftColor = isPaperPending ? '#0f766e' : '#d97706';
+        const canDeleteDraft = (role === 'admin') || isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name);
         return `
             <div style="border: 1px solid #cbd5e1; border-left: 4px solid ${borderLeftColor}; border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; background: #fff; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                 ${thumbSrc ? `<img src="${thumbSrc}" alt="Ảnh" style="width: 72px; height: 72px; object-fit: cover; border-radius: 3px; border: 1px solid #e2e8f0; flex-shrink: 0;">` : `<div style="width:72px; height:72px; background:#f1f5f9; border:1px dashed #cbd5e1; border-radius:3px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:0.72rem; text-align:center; flex-shrink:0;">Chưa ảnh</div>`}
@@ -3802,15 +3810,16 @@ async function refreshAllDraftsList() {
                     <div><strong style="color: #002060; font-family: monospace;">${escapeHtml(d.survey_code || '—')}</strong> <span style="background:#e0e7ff;color:#3730a3;padding:1px 5px;border-radius:2px;font-weight:700;font-size:0.72rem;">${escapeHtml(d.tool_code || 'P1')}</span>${badgeMode} — <strong>${escapeHtml(d.respondent_name || '(Chưa nhập tên chủ hộ)')}</strong></div>
                     <div style="color: #475569;">Địa bàn: ${escapeHtml(d.commune || '')}${d.hamlet ? ` (${escapeHtml(d.hamlet)})` : ''} | Dẫn đường: ${escapeHtml(d.guide_name || d.guide || '—')}</div>
                     <div style="color: #475569;">GPS: <span style="font-family:monospace;">${escapeHtml(gpsText)}</span> | Ảnh: ${hasPhoto ? '<span style="color:#15803d;font-weight:700;">✓ Đã có</span>' : '<span style="color:#b45309;">Chưa chụp</span>'} | Đã nhập: <strong>${d.answered_count || 0}/${d.total_count || '?'}</strong> câu</div>
-                    <div style="font-size: 0.74rem; color: #64748b;">Lưu lúc: ${escapeHtml(d.saved_at || d.updated_at || '')} • ${escapeHtml(d.source || '')}</div>
+                    <div style="font-size: 0.74rem; color: #64748b;">Lưu lúc: ${escapeHtml(d.saved_at || d.updated_at || '')} • ${escapeHtml(d.surveyor_name || d.surveyor_id || '')} • ${escapeHtml(d.source || '')}</div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;">
                     <button type="button" onclick="loadDraftIntoForm('${escapeQuotes(d.draft_key)}')" class="qgis-btn-primary" style="background: #15803d; border-color: #166534; padding: 6px 12px; font-size: 0.80rem;">
                         ${btnLabel}
                     </button>
-                    <button type="button" onclick="deleteDraftItem('${escapeQuotes(d.draft_key)}')" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 0.76rem; font-weight: 600;">
+                    ${canDeleteDraft ? `
+                    <button type="button" onclick="deleteDraftItem('${escapeQuotes(d.draft_key)}', '${escapeQuotes(d.survey_code || d.draft_key)}', '${escapeQuotes(d.respondent_name || '')}')" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 0.76rem; font-weight: 600;">
                         <i class="fa-solid fa-trash-can"></i> Xóa Nháp
-                    </button>
+                    </button>` : ''}
                 </div>
             </div>
         `;
@@ -3872,30 +3881,213 @@ async function loadDraftIntoForm(draftKey) {
     }
 }
 
-async function deleteDraftItem(draftKey) {
-    if (!confirm('Bạn có chắc chắn muốn xóa phiếu nháp này?\n(Dữ liệu nguồn trên VPS vẫn được bảo lưu trong Thùng rác để có thể khôi phục khi cần.)')) return;
+let _confirmDeleteXResolver = null;
+
+function onConfirmDeleteXInputChange() {
+    const inp = document.getElementById('confirmDeleteXInput');
+    const btn = document.getElementById('btnConfirmDeleteXSubmit');
+    const hint = document.getElementById('confirmDeleteXHint');
+    if (!inp || !btn) return;
+    const ok = String(inp.value || '').trim().toUpperCase() === 'X';
+    btn.disabled = !ok;
+    btn.style.opacity = ok ? '1' : '0.5';
+    btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+    inp.style.borderColor = ok ? '#16a34a' : (inp.value ? '#dc2626' : '#cbd5e1');
+    if (hint) {
+        hint.innerHTML = ok
+            ? '<span style="color:#15803d;font-weight:700;"><i class="fa-solid fa-circle-check"></i> Đã xác nhận đúng ký tự X — bấm nút đỏ để xóa.</span>'
+            : 'Nhập đúng 1 ký tự <strong>X</strong> (hoa hoặc thường)';
+    }
+}
+
+function submitConfirmDeleteXModal() {
+    const inp = document.getElementById('confirmDeleteXInput');
+    const ok = String(inp?.value || '').trim().toUpperCase() === 'X';
+    if (!ok) {
+        if (inp) {
+            inp.style.borderColor = '#dc2626';
+            inp.focus();
+        }
+        return;
+    }
+    closeConfirmDeleteXModal(true);
+}
+
+function closeConfirmDeleteXModal(confirmed = false) {
+    const modal = document.getElementById('confirmDeleteXModal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+    const resolver = _confirmDeleteXResolver;
+    _confirmDeleteXResolver = null;
+    if (resolver) resolver(Boolean(confirmed));
+}
+
+function requestConfirmDeleteWithX(titleText, detailHtml) {
+    const modal = document.getElementById('confirmDeleteXModal');
+    const titleEl = document.getElementById('confirmDeleteXTitle');
+    const detailEl = document.getElementById('confirmDeleteXDetail');
+    const inp = document.getElementById('confirmDeleteXInput');
+    if (!modal || !inp) {
+        const typed = prompt(`${titleText}\n\nNhập đúng chữ X để xác nhận xóa:`);
+        return Promise.resolve(String(typed || '').trim().toUpperCase() === 'X');
+    }
+    if (_confirmDeleteXResolver) {
+        const prev = _confirmDeleteXResolver;
+        _confirmDeleteXResolver = null;
+        prev(false);
+    }
+    if (titleEl) titleEl.textContent = titleText || 'Xác nhận xóa phiếu';
+    if (detailEl) detailEl.innerHTML = detailHtml || '';
+    inp.value = '';
+    onConfirmDeleteXInputChange();
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+    setTimeout(() => inp.focus(), 60);
+    return new Promise((resolve) => {
+        _confirmDeleteXResolver = resolve;
+    });
+}
+
+async function cleanupDeletedDraftLocally(draftKey, surveyCode = '') {
+    if (idbDraftSaveTimer) {
+        clearTimeout(idbDraftSaveTimer);
+        idbDraftSaveTimer = null;
+    }
     await deleteIdbDraft(draftKey);
-    const role = currentUser?.role || 'editor';
+
+    const dkParts = String(draftKey || '').split('::');
+    const dkTool = dkParts.length > 1 ? dkParts[0] : '';
+    const dkCode = (dkParts.length > 1 ? dkParts.slice(1).join('::') : (surveyCode || '')).trim().toUpperCase();
+    const targetCode = String(surveyCode || dkCode || '').trim().toUpperCase();
+
+    ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', dkTool].filter(Boolean).forEach(t => {
+        try {
+            const raw = localStorage.getItem(`dakman_draft_${t}`);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            const pCode = String(parsed?.survey_code || '').trim().toUpperCase();
+            if (!targetCode || pCode === targetCode || `${t}::${pCode}` === draftKey) {
+                localStorage.removeItem(`dakman_draft_${t}`);
+            }
+        } catch (_) {}
+    });
+
+    const activeFormCode = String(document.getElementById('surveyCodeInput')?.value || '').trim().toUpperCase();
+    if (activeFormCode && targetCode && activeFormCode === targetCode) {
+        currentDraftPhotoPath = '';
+    }
+}
+
+async function deleteDraftItem(draftKey, labelCode = '', respondentName = '') {
+    const role = currentUser?.role || 'viewer';
+    if (role === 'viewer') {
+        alert('Tài khoản Chỉ Xem không có quyền xóa phiếu nháp.');
+        return;
+    }
+    const displayCode = labelCode || draftKey;
+    const detailHtml = `
+        <div><strong>Phiếu nháp cần xóa:</strong> <span style="font-family:monospace;color:#991b1b;">${escapeHtml(displayCode)}</span></div>
+        ${respondentName ? `<div><strong>Chủ hộ:</strong> ${escapeHtml(respondentName)}</div>` : ''}
+        <div style="margin-top:4px;font-size:0.78rem;color:#64748b;">Sau khi xóa, phiếu này sẽ rời khỏi danh sách chờ nhưng vẫn được lưu bản sao trong Thùng rác VPS.</div>
+    `;
+    const confirmed = await requestConfirmDeleteWithX('Xác nhận xóa phiếu nháp', detailHtml);
+    if (!confirmed) return;
+
     try {
         const res = await fetch(apiUrl(`/api/drafts/${encodeURIComponent(draftKey)}`), {
             method: 'DELETE',
             headers: {
+                'X-Confirm-Delete': 'X',
                 'X-User-Role': role,
                 'X-User-Id': currentUser?.surveyor_id || '',
                 'X-Delete-Password': currentUser?.key || '',
-                'X-Admin-Key': role === 'admin' ? getAdminKey() : ''
+                'X-Admin-Key': role === 'admin' ? (getAdminKey() || currentUser?.key || '') : ''
             }
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok && data.error) {
-            alert('Không thể xóa phiếu nháp: ' + data.error);
+        if (!res.ok) {
+            alert('Không thể xóa phiếu nháp: ' + (data.error || `HTTP ${res.status}`));
             return;
         }
-    } catch (_) {}
+    } catch (err) {
+        if (navigator.onLine) {
+            alert('Lỗi kết nối VPS khi xóa phiếu nháp. Vui lòng thử lại.');
+            return;
+        }
+    }
+
+    await cleanupDeletedDraftLocally(draftKey, labelCode);
     await loadHouseholdLocks();
     await refreshAllDraftsList();
     if (typeof loadSurveysList === 'function') {
         loadSurveysList();
+    }
+}
+
+async function deleteAllMyDraftsConfirm() {
+    const role = currentUser?.role || 'viewer';
+    if (role === 'viewer') {
+        alert('Tài khoản Chỉ Xem không có quyền xóa phiếu nháp.');
+        return;
+    }
+    const drafts = await fetchMergedDraftsList(true);
+    const owned = (Array.isArray(drafts) ? drafts : []).filter(d => (role === 'admin') || isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name));
+    if (!owned.length) {
+        alert('Không có phiếu nháp nào thuộc tài khoản của bạn để xóa.');
+        return;
+    }
+
+    const previewCodes = owned.slice(0, 6).map(d => escapeHtml(d.survey_code || d.draft_key)).join(', ');
+    const moreText = owned.length > 6 ? ` và ${owned.length - 6} phiếu khác` : '';
+    const detailHtml = `
+        <div><strong>Số lượng xóa:</strong> <span style="color:#991b1b;font-weight:700;">${owned.length} phiếu nháp</span></div>
+        <div style="margin-top:4px;font-size:0.8rem;"><strong>Danh sách:</strong> ${previewCodes}${moreText}</div>
+    `;
+    const confirmed = await requestConfirmDeleteWithX(`Xóa tất cả ${owned.length} phiếu nháp`, detailHtml);
+    if (!confirmed) return;
+
+    let deletedCount = 0;
+    const errors = [];
+    for (const d of owned) {
+        try {
+            const res = await fetch(apiUrl(`/api/drafts/${encodeURIComponent(d.draft_key)}`), {
+                method: 'DELETE',
+                headers: {
+                    'X-Confirm-Delete': 'X',
+                    'X-User-Role': role,
+                    'X-User-Id': currentUser?.surveyor_id || '',
+                    'X-Delete-Password': currentUser?.key || '',
+                    'X-Admin-Key': role === 'admin' ? (getAdminKey() || currentUser?.key || '') : ''
+                }
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                await cleanupDeletedDraftLocally(d.draft_key, d.survey_code || '');
+                deletedCount++;
+            } else {
+                errors.push(`${d.survey_code || d.draft_key}: ${data.error || `HTTP ${res.status}`}`);
+            }
+        } catch (_) {
+            if (!navigator.onLine) {
+                await cleanupDeletedDraftLocally(d.draft_key, d.survey_code || '');
+                deletedCount++;
+            } else {
+                errors.push(`${d.survey_code || d.draft_key}: Lỗi mạng`);
+            }
+        }
+    }
+
+    await loadHouseholdLocks();
+    await refreshAllDraftsList();
+    if (typeof loadSurveysList === 'function') {
+        await loadSurveysList();
+    }
+    if (errors.length) {
+        alert(`Đã xóa ${deletedCount}/${owned.length} phiếu nháp.\nMột số phiếu gặp lỗi:\n- ${errors.slice(0, 5).join('\n- ')}`);
+    } else {
+        alert(`Đã xóa sạch ${deletedCount} phiếu nháp (vẫn bảo lưu trong Thùng rác VPS).`);
     }
 }
 
@@ -4879,17 +5071,45 @@ function renderCommuneProgressTable(data) {
 // ========================================================
 let surveysListFetchPromise = null;
 
-function isCurrentUserOwnerOf(recordSurveyorId) {
+const OWNER_ALIAS_GROUPS = [
+    { ids: ['TCN07', 'TCN01', 'TCN-47-195006'], name: 'le dinh duy' },
+    { ids: ['TCN02', 'TCN-55-195011'], name: 'phan doan vong' },
+    { ids: ['TCN03'], name: 'pham van thao' },
+    { ids: ['TCN04'], name: 'nguyen viet tru' },
+    { ids: ['TCN05'], name: 'cao thi phuc' },
+    { ids: ['TCN06', 'TCN-65-074755'], name: 'hoang truong sinh' }
+];
+
+function normViNameOwner(str) {
+    return String(str || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[đĐ]/g, 'd')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ');
+}
+
+function isCurrentUserOwnerOf(recordSurveyorId, recordSurveyorName = '') {
     const role = currentUser?.role || 'viewer';
     if (role === 'admin') return true;
     if (role !== 'editor') return false;
     const recSid = String(recordSurveyorId || '').trim().toUpperCase();
+    const recName = normViNameOwner(recordSurveyorName);
     const mySid = String(currentUser?.surveyor_id || '').trim().toUpperCase();
-    if (!recSid) return true;
-    if (!mySid) return false;
-    if (recSid === mySid) return true;
-    const duyAliases = ['TCN07', 'TCN01'];
-    return duyAliases.includes(recSid) && duyAliases.includes(mySid);
+    const myName = normViNameOwner(currentUser?.surveyor_name || currentUser?.name || '');
+    if (!recSid && !recName) return true;
+    if (!mySid && !myName) return false;
+    if (recSid && mySid && recSid === mySid) return true;
+    for (const grp of OWNER_ALIAS_GROUPS) {
+        const myMatch = (mySid && grp.ids.includes(mySid)) || (myName && myName === grp.name);
+        if (myMatch) {
+            if (recSid && grp.ids.includes(recSid)) return true;
+            if (recName && recName === grp.name) return true;
+        }
+    }
+    if (recName && myName && recName === myName) return true;
+    return false;
 }
 
 async function loadSurveysList() {
@@ -4923,7 +5143,7 @@ async function loadSurveysList() {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--slate-500);">Chưa có phiếu khảo sát nào được nộp lên hệ thống.</td></tr>';
             } else {
                 tbody.innerHTML = list.map(item => {
-                    const isOwner = isCurrentUserOwnerOf(item.surveyor_id);
+                    const isOwner = isCurrentUserOwnerOf(item.surveyor_id, item.surveyor_name);
                     const canEdit = (role === 'admin') || isOwner;
                     const canDelete = (role === 'admin') || isOwner;
                     const photoBadge = item.photo_path ? ' <i class="fa-solid fa-camera" style="color: #15803d;" title="Có ảnh người PV (Watermark WGS84)"></i>' : '';
@@ -4990,7 +5210,11 @@ async function renderHistoryDraftsTable() {
     try {
         const res = await fetch(apiUrl('/api/drafts'));
         const allDrafts = res.ok ? await res.json() : [];
-        const visibleDrafts = (Array.isArray(allDrafts) ? allDrafts : []).filter(d => isCurrentUserOwnerOf(d.surveyor_id));
+        const visibleDrafts = (Array.isArray(allDrafts) ? allDrafts : []).filter(d => isCurrentUserOwnerOf(d.surveyor_id, d.surveyor_name));
+        const btnBulkHist = document.getElementById('btnDeleteAllMyHistoryDrafts');
+        if (btnBulkHist) {
+            btnBulkHist.style.display = visibleDrafts.length > 0 ? 'inline-flex' : 'none';
+        }
         if (visibleDrafts.length === 0) {
             dBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:14px;color:var(--slate-500);">Chưa có phiếu nháp nào của tài khoản bạn đang lưu trên máy chủ.</td></tr>';
             return;
@@ -5010,7 +5234,7 @@ async function renderHistoryDraftsTable() {
                         <button type="button" onclick="loadDraftIntoForm('${escapeQuotes(d.draft_key)}')" style="background:#f0fdf4;border:1px solid #bbf7d0;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:600;color:#166534;margin-right:4px;">
                             <i class="fa-solid fa-pen-to-square"></i> Mở Sửa
                         </button>
-                        <button type="button" onclick="deleteHistoryDraftConfirm('${escapeQuotes(d.draft_key)}', '${escapeQuotes(d.survey_code || d.draft_key)}')" style="background:#fef2f2;border:1px solid #fecaca;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:600;color:#b91c1c;">
+                        <button type="button" onclick="deleteHistoryDraftConfirm('${escapeQuotes(d.draft_key)}', '${escapeQuotes(d.survey_code || d.draft_key)}', '${escapeQuotes(d.respondent_name || '')}')" style="background:#fef2f2;border:1px solid #fecaca;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:600;color:#b91c1c;">
                             <i class="fa-solid fa-trash-can"></i> Xóa Nháp
                         </button>
                     </td>
@@ -5022,17 +5246,28 @@ async function renderHistoryDraftsTable() {
     }
 }
 
-async function deleteHistoryDraftConfirm(draftKey, labelCode) {
-    if (!confirm(`Xóa phiếu nháp [${labelCode}] khỏi danh sách chờ?\n(Dữ liệu gốc và ảnh vẫn được bảo lưu an toàn trên VPS trong Thùng rác để khôi phục khi cần.)`)) return;
-    await deleteIdbDraft(draftKey);
-    const role = currentUser?.role || 'editor';
+async function deleteHistoryDraftConfirm(draftKey, labelCode, respondentName = '') {
+    const role = currentUser?.role || 'viewer';
+    if (role === 'viewer') {
+        alert('Tài khoản Chỉ Xem không có quyền xóa phiếu nháp.');
+        return;
+    }
+    const detailHtml = `
+        <div><strong>Phiếu nháp cần xóa:</strong> <span style="font-family:monospace;color:#991b1b;">${escapeHtml(labelCode || draftKey)}</span></div>
+        ${respondentName ? `<div><strong>Chủ hộ:</strong> ${escapeHtml(respondentName)}</div>` : ''}
+        <div style="margin-top:4px;font-size:0.78rem;color:#64748b;">Dữ liệu gốc và ảnh vẫn được bảo lưu trong Thùng rác VPS để khôi phục khi cần.</div>
+    `;
+    const confirmed = await requestConfirmDeleteWithX('Xác nhận xóa phiếu nháp', detailHtml);
+    if (!confirmed) return;
+
     const res = await fetch(apiUrl(`/api/drafts/${encodeURIComponent(draftKey)}`), {
         method: 'DELETE',
         headers: {
+            'X-Confirm-Delete': 'X',
             'X-User-Role': role,
             'X-User-Id': currentUser?.surveyor_id || '',
             'X-Delete-Password': currentUser?.key || '',
-            'X-Admin-Key': role === 'admin' ? getAdminKey() : ''
+            'X-Admin-Key': role === 'admin' ? (getAdminKey() || currentUser?.key || '') : ''
         }
     });
     const data = await res.json().catch(() => ({}));
@@ -5040,6 +5275,7 @@ async function deleteHistoryDraftConfirm(draftKey, labelCode) {
         alert('Lỗi xóa nháp: ' + (data.error || 'Thao tác không được phép'));
         return;
     }
+    await cleanupDeletedDraftLocally(draftKey, labelCode);
     alert(data.message || `Đã xóa phiếu nháp [${labelCode}]. Bạn vẫn có thể khôi phục trong mục Thùng rác / Phục hồi.`);
     await loadHouseholdLocks();
     await loadSurveysList();
@@ -5434,34 +5670,33 @@ async function deleteSurveyConfirm(id, surveyCode) {
         return;
     }
 
-    if (!confirm(`Bạn có chắc chắn muốn xóa phiếu [${surveyCode}] khỏi danh sách chính?\n(Dữ liệu nguồn và ảnh trên VPS vẫn được bảo lưu trong Thùng rác để phục hồi bất cứ lúc nào.)`)) {
-        return;
-    }
+    const detailHtml = `
+        <div><strong>Phiếu đã phỏng vấn cần xóa:</strong> <span style="font-family:monospace;color:#991b1b;">${escapeHtml(surveyCode || `#${id}`)}</span></div>
+        <div style="margin-top:4px;font-size:0.78rem;color:#64748b;">Phiếu sẽ được chuyển vào Thùng rác lưu trữ trên VPS và có thể phục hồi bất cứ lúc nào.</div>
+    `;
+    const confirmed = await requestConfirmDeleteWithX('Xác nhận xóa phiếu đã phỏng vấn', detailHtml);
+    if (!confirmed) return;
 
-    let pwd = (currentUser?.key || '').trim();
-    if (!pwd) {
-        pwd = prompt(
-            `XÁC NHẬN MẬT KHẨU ĐỂ XÓA PHIẾU [${surveyCode}]:\n` +
-            `Vui lòng nhập mật khẩu ${role === 'admin' ? 'Quản trị viên (Admin)' : 'tài khoản của bạn'} để xác nhận:`
-        );
-        if (pwd === null) return;
-        pwd = pwd.trim();
-        if (!pwd) {
-            alert('Bạn phải nhập mật khẩu để xác nhận xóa phiếu!');
-            return;
+    let pwd = (currentUser?.key || (role === 'admin' ? getAdminKey() : '') || '').trim();
+    const doDeleteReq = async (passVal) => fetch(apiUrl(`/api/surveys/${id}`), {
+        method: 'DELETE',
+        headers: {
+            'X-Confirm-Delete': 'X',
+            'X-Delete-Password': passVal,
+            'X-User-Role': role,
+            'X-User-Id': currentUser?.surveyor_id || '',
+            'X-Admin-Key': role === 'admin' ? passVal : ''
         }
-    }
+    });
 
     try {
-        const res = await fetch(apiUrl(`/api/surveys/${id}`), {
-            method: 'DELETE',
-            headers: {
-                'X-Delete-Password': pwd,
-                'X-User-Role': role,
-                'X-User-Id': currentUser?.surveyor_id || '',
-                'X-Admin-Key': role === 'admin' ? pwd : ''
-            }
-        });
+        let res = await doDeleteReq(pwd);
+        if (res.status === 403 && !pwd && role === 'admin') {
+            const prompted = prompt(`XÁC NHẬN MẬT KHẨU QUẢN TRỊ VIÊN ĐỂ XÓA PHIẾU [${surveyCode}]:`);
+            if (prompted === null || !prompted.trim()) return;
+            pwd = prompted.trim();
+            res = await doDeleteReq(pwd);
+        }
 
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
