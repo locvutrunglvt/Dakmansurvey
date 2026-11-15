@@ -626,6 +626,13 @@ function updateUserDisplay() {
     if (btnAdminStaff) {
         btnAdminStaff.style.display = (role === 'admin') ? 'inline-block' : 'none';
     }
+    const adminLiveBoard = document.getElementById('adminMenuLiveBoard');
+    if (adminLiveBoard) {
+        adminLiveBoard.style.display = (role === 'admin') ? 'grid' : 'none';
+        if (role === 'admin' && typeof refreshAdminMenuLiveBoard === 'function') {
+            refreshAdminMenuLiveBoard(false);
+        }
+    }
 
     if (badge) {
         if (role === 'admin') {
@@ -761,6 +768,9 @@ function switchMainView(viewId, subTab = '', skipHistory = false) {
     if (viewId === 'menu') {
         refreshDraftBadgeCount(false);
         updateMenuSummaryBadges();
+        if (currentUser?.role === 'admin' && typeof refreshAdminMenuLiveBoard === 'function') {
+            refreshAdminMenuLiveBoard(false);
+        }
     }
     if (viewId === 'survey') {
         if (!sampleHouseholds || sampleHouseholds.length === 0) {
@@ -3856,13 +3866,30 @@ async function loadDraftIntoForm(draftKey) {
 }
 
 async function deleteDraftItem(draftKey) {
-    if (!confirm('Bạn có chắc chắn muốn xóa bản nháp lưu tạm này?')) return;
+    if (!confirm('Bạn có chắc chắn muốn xóa phiếu nháp này?\n(Dữ liệu nguồn trên VPS vẫn được bảo lưu trong Thùng rác để có thể khôi phục khi cần.)')) return;
     await deleteIdbDraft(draftKey);
+    const role = currentUser?.role || 'editor';
     try {
-        await fetch(apiUrl(`/api/drafts/${encodeURIComponent(draftKey)}`), { method: 'DELETE' });
+        const res = await fetch(apiUrl(`/api/drafts/${encodeURIComponent(draftKey)}`), {
+            method: 'DELETE',
+            headers: {
+                'X-User-Role': role,
+                'X-User-Id': currentUser?.surveyor_id || '',
+                'X-Delete-Password': currentUser?.key || '',
+                'X-Admin-Key': role === 'admin' ? getAdminKey() : ''
+            }
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok && data.error) {
+            alert('Không thể xóa phiếu nháp: ' + data.error);
+            return;
+        }
     } catch (_) {}
     await loadHouseholdLocks();
     await refreshAllDraftsList();
+    if (typeof loadSurveysList === 'function') {
+        loadSurveysList();
+    }
 }
 
 function updateDraftTimeDisplay(timeStr) {
@@ -4147,12 +4174,18 @@ function clearHouseholdPhoto(silent = false) {
     }
 }
 
-function getFreshGpsString(timeoutMs = 5000) {
+function getFreshGpsString(timeoutMs = 6000) {
     return new Promise((resolve) => {
         const gpsEl = document.getElementById('gpsInput');
         const existing = gpsEl ? gpsEl.value.trim() : '';
         if (existing) {
             resolve(existing);
+            return;
+        }
+        if (bgBestGps && bgBestGps.lat && bgBestGps.lng) {
+            const bgStr = `${bgBestGps.lat}, ${bgBestGps.lng}`;
+            if (gpsEl && !gpsEl.value.trim()) gpsEl.value = bgStr;
+            resolve(bgStr);
             return;
         }
         if (!navigator.geolocation) {
@@ -4167,12 +4200,34 @@ function getFreshGpsString(timeoutMs = 5000) {
                 if (gpsEl && !gpsEl.value.trim()) {
                     gpsEl.value = str;
                 }
+                if (currentDraftAnswers) currentDraftAnswers['A05'] = str;
+                if (typeof sendTeamLocationPing === 'function') {
+                    sendTeamLocationPing(lat, lng, Math.round(pos.coords.accuracy || 0), 'Chụp ảnh người PV');
+                }
                 resolve(str);
             },
             () => resolve('Chưa có GPS'),
             { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 30000 }
         );
     });
+}
+
+function formatWgs84Display(gpsStr) {
+    const parts = String(gpsStr || '').split(',').map(x => parseFloat(String(x).trim()));
+    if (parts.length === 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) && Math.abs(parts[0]) > 0.01 && Math.abs(parts[1]) > 0.01) {
+        return `Lat ${parts[0].toFixed(6)}, Long ${parts[1].toFixed(6)} (WGS84)`;
+    }
+    return gpsStr || 'Chưa có tọa độ WGS84';
+}
+
+function drawFittedWatermarkLine(ctx, text, x, y, baseSize, isBold, maxWidth) {
+    let sz = baseSize;
+    while (sz > 10) {
+        ctx.font = `${isBold ? 'bold ' : ''}${sz}px Arial, sans-serif`;
+        if (ctx.measureText(text).width <= maxWidth) break;
+        sz -= 1;
+    }
+    ctx.fillText(text, x, y);
 }
 
 async function handlePhotoSelected(event) {
@@ -4185,10 +4240,11 @@ async function handlePhotoSelected(event) {
     const status = document.getElementById('photoWatermarkStatus');
     if (status) {
         status.style.color = '#d97706';
-        status.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lấy GPS & đóng watermark...';
+        status.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lấy tọa độ WGS84 &amp; đóng watermark...';
     }
 
-    const gpsStr = await getFreshGpsString(4500);
+    const gpsStr = await getFreshGpsString(5500);
+    const wgs84Text = formatWgs84Display(gpsStr);
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
     const timestampStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
@@ -4196,7 +4252,13 @@ async function handlePhotoSelected(event) {
     const surveyCode = (document.getElementById('surveyCodeInput')?.value || '').trim() || currentTool;
     const commune = (document.getElementById('communeSelect')?.value || '').trim();
     const hamlet = (document.getElementById('hamletInput')?.value || '').trim();
-    const respondent = (document.getElementById('respondentNameInput')?.value || '').trim() || 'Chưa nhập tên chủ hộ';
+    const respondentName = (document.getElementById('respondentNameInput')?.value || '').trim()
+        || (document.getElementById('headNameInput')?.value || '').trim()
+        || 'Người được phỏng vấn';
+    const relationVal = (document.getElementById('respondentRelationSelect')?.value || '').trim();
+    const respondentLabel = (relationVal && relationVal !== 'Chủ hộ')
+        ? `${respondentName} (${relationVal})`
+        : respondentName;
     const surveyorName = currentUser?.full_name || 'Điều tra viên';
     const surveyorId = currentUser?.surveyor_id || 'DTV';
 
@@ -4221,36 +4283,35 @@ async function handlePhotoSelected(event) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(source, 0, 0, w, h);
 
-            const fontSize = Math.max(14, Math.round(w * 0.021));
+            const fontSize = Math.max(13, Math.round(w * 0.020));
             const lineHeight = Math.round(fontSize * 1.45);
             const padding = Math.round(fontSize * 0.8);
             const barHeight = lineHeight * 3 + padding * 1.6;
 
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
             ctx.fillRect(0, h - barHeight, w, barHeight);
 
             ctx.fillStyle = '#4ade80';
             ctx.fillRect(0, h - barHeight, Math.max(4, Math.round(w * 0.006)), barHeight);
 
-            ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-            ctx.fillStyle = '#ffffff';
             ctx.textBaseline = 'top';
-
             const startY = h - barHeight + padding * 0.7;
             const leftX = padding + 6;
-            const line1 = `DAKMAN CƯ M'GAR | Mã phiếu: ${surveyCode} | Chủ hộ: ${respondent}`;
-            const line2 = `Thời gian: ${timestampStr} | Vị trí GPS: ${gpsStr}`;
+            const maxTextW = Math.max(120, w - leftX - padding);
+
+            const line1 = `DAKMAN CƯ M'GAR | Mã: ${surveyCode} | Người được PV: ${respondentLabel}`;
+            const line2 = `Vị trí ${wgs84Text} | ${timestampStr}`;
             const line3 = `Địa bàn: ${commune}${hamlet ? ' - ' + hamlet : ''} | ĐTV: ${surveyorName} (${surveyorId})`;
 
-            ctx.fillText(line1, leftX, startY);
-            ctx.font = `${fontSize}px Arial, sans-serif`;
-            ctx.fillStyle = '#fef08a';
-            ctx.fillText(line2, leftX, startY + lineHeight);
+            ctx.fillStyle = '#ffffff';
+            drawFittedWatermarkLine(ctx, line1, leftX, startY, fontSize, true, maxTextW);
+            ctx.fillStyle = '#fde047';
+            drawFittedWatermarkLine(ctx, line2, leftX, startY + lineHeight, fontSize, false, maxTextW);
             ctx.fillStyle = '#e2e8f0';
-            ctx.fillText(line3, leftX, startY + lineHeight * 2);
+            drawFittedWatermarkLine(ctx, line3, leftX, startY + lineHeight * 2, fontSize, false, maxTextW);
 
             const dataUrl = canvas.toDataURL('image/jpeg', 0.80);
-            const metaText = `${timestampStr} | GPS: ${gpsStr} | ${surveyCode} — ${respondent}`;
+            const metaText = `${timestampStr} | ${wgs84Text} | Người PV: ${respondentLabel} | ${surveyCode}`;
             setHouseholdPhotoPreview(dataUrl, metaText);
             startRealtimeInterviewClock();
             startBackgroundGpsTracker();
@@ -4811,6 +4872,19 @@ function renderCommuneProgressTable(data) {
 // ========================================================
 let surveysListFetchPromise = null;
 
+function isCurrentUserOwnerOf(recordSurveyorId) {
+    const role = currentUser?.role || 'viewer';
+    if (role === 'admin') return true;
+    if (role !== 'editor') return false;
+    const recSid = String(recordSurveyorId || '').trim().toUpperCase();
+    const mySid = String(currentUser?.surveyor_id || '').trim().toUpperCase();
+    if (!recSid) return true;
+    if (!mySid) return false;
+    if (recSid === mySid) return true;
+    const duyAliases = ['TCN07', 'TCN01'];
+    return duyAliases.includes(recSid) && duyAliases.includes(mySid);
+}
+
 async function loadSurveysList() {
     try {
         if (!surveysListFetchPromise) {
@@ -4831,61 +4905,244 @@ async function loadSurveysList() {
         }
 
         const tbody = document.getElementById('surveyHistoryTbody');
-        if (!tbody) return;
-
-        if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--slate-500);">Chưa có phiếu khảo sát nào được nộp lên hệ thống.</td></tr>';
-            return;
+        const role = currentUser?.role || 'editor';
+        const btnTrash = document.getElementById('btnToggleHistoryTrash');
+        if (btnTrash) {
+            btnTrash.style.display = (role === 'viewer') ? 'none' : 'inline-flex';
         }
 
-        const role = currentUser?.role || 'editor';
-        const curUserId = currentUser?.surveyor_id || '';
+        if (tbody) {
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--slate-500);">Chưa có phiếu khảo sát nào được nộp lên hệ thống.</td></tr>';
+            } else {
+                tbody.innerHTML = list.map(item => {
+                    const isOwner = isCurrentUserOwnerOf(item.surveyor_id);
+                    const canEdit = (role === 'admin') || isOwner;
+                    const canDelete = (role === 'admin') || isOwner;
+                    const photoBadge = item.photo_path ? ' <i class="fa-solid fa-camera" style="color: #15803d;" title="Có ảnh người PV (Watermark WGS84)"></i>' : '';
 
-        tbody.innerHTML = list.map(item => {
-            const canEdit = (role === 'admin') || (role === 'editor' && (item.surveyor_id === curUserId || !item.surveyor_id));
-            const canDelete = (role === 'admin') || (role === 'editor' && (item.surveyor_id === curUserId || !item.surveyor_id));
-            const photoBadge = item.photo_path ? ' <i class="fa-solid fa-camera" style="color: #15803d;" title="Có ảnh hiện trường (Watermark)"></i>' : '';
+                    return `
+                        <tr>
+                            <td style="font-family: monospace; font-weight: 700; color: var(--primary);">${escapeHtml(item.survey_code)}${photoBadge}</td>
+                            <td><span style="background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 0.78rem;">${escapeHtml(item.tool_code)}</span></td>
+                            <td>${escapeHtml(item.commune)} ${item.hamlet ? `(${escapeHtml(item.hamlet)})` : ''}</td>
+                            <td style="font-weight: 600;">${escapeHtml(item.respondent_name || '—')}</td>
+                            <td style="font-size: 0.82rem;">${escapeHtml(item.surveyor_name)} (${escapeHtml(item.surveyor_id)})</td>
+                            <td style="text-align: center; font-family: monospace; font-size: 0.82rem;">${formatDateVN(item.survey_date)}</td>
+                            <td style="text-align: center; white-space: nowrap;">
+                                <button type="button" 
+                                        onclick="viewSurveyDetail(${item.id})" 
+                                        style="background: var(--slate-100); border: 1px solid var(--border); padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--primary); margin-right: 4px;" title="Xem nội dung chi tiết">
+                                    <i class="fa-solid fa-eye"></i> Xem
+                                </button>
+                                ${canEdit ? `
+                                    <a href="${getPdfExportUrl(item.id)}" target="_blank"
+                                       style="display: inline-block; background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; font-size: 0.78rem; font-weight: 600; color: #b91c1c; text-decoration: none; margin-right: 4px;" title="Xuất báo cáo phỏng vấn PDF">
+                                        <i class="fa-solid fa-file-pdf"></i> PDF
+                                    </a>
+                                ` : ''}
+                                ${canEdit ? `
+                                    <button type="button" 
+                                            onclick="openEditSurveyModal(${item.id})" 
+                                            style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #166534; margin-right: 4px;" title="Cập nhật sửa đổi phiếu">
+                                        <i class="fa-solid fa-pen-to-square"></i> Sửa
+                                    </button>
+                                ` : ''}
+                                ${canDelete ? `
+                                    <button type="button" 
+                                            onclick="deleteSurveyConfirm(${item.id}, '${escapeQuotes(item.survey_code)}')" 
+                                            style="background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #b91c1c;" title="Xóa phiếu (vẫn bảo lưu trên VPS để khôi phục)">
+                                        <i class="fa-solid fa-trash-can"></i> Xóa
+                                    </button>
+                                ` : ''}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
 
+        renderHistoryDraftsTable();
+        if (role !== 'viewer') {
+            loadMyHistoryTrash(true);
+        }
+    } catch (e) {
+        console.warn('Không tải được danh sách phiếu đã nộp:', e);
+    }
+}
+
+async function renderHistoryDraftsTable() {
+    const dBody = document.getElementById('historyDraftsTbody');
+    const sec = document.getElementById('historyDraftsSection');
+    if (!dBody) return;
+
+    const role = currentUser?.role || 'viewer';
+    if (sec) sec.style.display = (role === 'viewer') ? 'none' : 'block';
+    if (role === 'viewer') return;
+
+    try {
+        const res = await fetch(apiUrl('/api/drafts'));
+        const allDrafts = res.ok ? await res.json() : [];
+        const visibleDrafts = (Array.isArray(allDrafts) ? allDrafts : []).filter(d => isCurrentUserOwnerOf(d.surveyor_id));
+        if (visibleDrafts.length === 0) {
+            dBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:14px;color:var(--slate-500);">Chưa có phiếu nháp nào của tài khoản bạn đang lưu trên máy chủ.</td></tr>';
+            return;
+        }
+        dBody.innerHTML = visibleDrafts.map(d => {
+            const hasPhoto = Boolean(d.photo_path || d.photo_url);
+            const photoBadge = hasPhoto ? ' <i class="fa-solid fa-camera" style="color:#0f766e;" title="Đã có ảnh"></i>' : '';
             return `
                 <tr>
-                    <td style="font-family: monospace; font-weight: 700; color: var(--primary);">${item.survey_code}${photoBadge}</td>
-                    <td><span style="background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 0.78rem;">${item.tool_code}</span></td>
-                    <td>${item.commune} ${item.hamlet ? `(${item.hamlet})` : ''}</td>
-                    <td style="font-weight: 600;">${item.respondent_name || '—'}</td>
-                    <td style="font-size: 0.82rem;">${item.surveyor_name} (${item.surveyor_id})</td>
-                    <td style="text-align: center; font-family: monospace; font-size: 0.82rem;">${formatDateVN(item.survey_date)}</td>
-                    <td style="text-align: center; white-space: nowrap;">
-                        <button type="button" 
-                                onclick="viewSurveyDetail(${item.id})" 
-                                style="background: var(--slate-100); border: 1px solid var(--border); padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--primary); margin-right: 4px;" title="Xem nội dung chi tiết">
-                            <i class="fa-solid fa-eye"></i> Xem
+                    <td style="font-family:monospace;font-weight:700;color:#b45309;">${escapeHtml(d.survey_code || d.draft_key)}${photoBadge}</td>
+                    <td><span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:3px;font-weight:700;font-size:0.78rem;">${escapeHtml(d.tool_code || 'P1')}</span></td>
+                    <td>${escapeHtml(d.commune || '')} ${d.hamlet ? `(${escapeHtml(d.hamlet)})` : ''}</td>
+                    <td style="font-weight:600;">${escapeHtml(d.respondent_name || '—')}</td>
+                    <td style="font-size:0.82rem;">${escapeHtml(d.surveyor_name || '')} (${escapeHtml(d.surveyor_id || '')})</td>
+                    <td style="font-size:0.78rem;text-align:center;">${d.answered_count || 0}/${d.total_count || '?'} câu</td>
+                    <td style="text-align:center;white-space:nowrap;">
+                        <button type="button" onclick="loadDraftIntoForm('${escapeQuotes(d.draft_key)}')" style="background:#f0fdf4;border:1px solid #bbf7d0;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:600;color:#166534;margin-right:4px;">
+                            <i class="fa-solid fa-pen-to-square"></i> Mở Sửa
                         </button>
-                        ${canEdit ? `
-                            <a href="${getPdfExportUrl(item.id)}" target="_blank"
-                               style="display: inline-block; background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; font-size: 0.78rem; font-weight: 600; color: #b91c1c; text-decoration: none; margin-right: 4px;" title="Xuất báo cáo phỏng vấn PDF">
-                                <i class="fa-solid fa-file-pdf"></i> PDF
-                            </a>
-                        ` : ''}
-                        ${canEdit ? `
-                            <button type="button" 
-                                    onclick="openEditSurveyModal(${item.id})" 
-                                    style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #166534; margin-right: 4px;" title="Cập nhật sửa đổi phiếu">
-                                <i class="fa-solid fa-pen-to-square"></i> Sửa
-                            </button>
-                        ` : ''}
-                        ${canDelete ? `
-                            <button type="button" 
-                                    onclick="deleteSurveyConfirm(${item.id}, '${item.survey_code}')" 
-                                    style="background: #fef2f2; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #b91c1c;" title="Xóa phiếu (Chỉ quyền Admin)">
-                                <i class="fa-solid fa-trash-can"></i> Xóa
-                            </button>
-                        ` : ''}
+                        <button type="button" onclick="deleteHistoryDraftConfirm('${escapeQuotes(d.draft_key)}', '${escapeQuotes(d.survey_code || d.draft_key)}')" style="background:#fef2f2;border:1px solid #fecaca;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:600;color:#b91c1c;">
+                            <i class="fa-solid fa-trash-can"></i> Xóa Nháp
+                        </button>
                     </td>
                 </tr>
             `;
         }).join('');
-    } catch (e) {
-        console.warn('Không tải được danh sách phiếu đã nộp:', e);
+    } catch (_) {
+        dBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:12px;color:#dc2626;">Không tải được danh sách phiếu nháp.</td></tr>';
+    }
+}
+
+async function deleteHistoryDraftConfirm(draftKey, labelCode) {
+    if (!confirm(`Xóa phiếu nháp [${labelCode}] khỏi danh sách chờ?\n(Dữ liệu gốc và ảnh vẫn được bảo lưu an toàn trên VPS trong Thùng rác để khôi phục khi cần.)`)) return;
+    await deleteIdbDraft(draftKey);
+    const role = currentUser?.role || 'editor';
+    const res = await fetch(apiUrl(`/api/drafts/${encodeURIComponent(draftKey)}`), {
+        method: 'DELETE',
+        headers: {
+            'X-User-Role': role,
+            'X-User-Id': currentUser?.surveyor_id || '',
+            'X-Delete-Password': currentUser?.key || '',
+            'X-Admin-Key': role === 'admin' ? getAdminKey() : ''
+        }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        alert('Lỗi xóa nháp: ' + (data.error || 'Thao tác không được phép'));
+        return;
+    }
+    alert(data.message || `Đã xóa phiếu nháp [${labelCode}]. Bạn vẫn có thể khôi phục trong mục Thùng rác / Phục hồi.`);
+    await loadHouseholdLocks();
+    await loadSurveysList();
+}
+
+function toggleHistoryTrashPanel() {
+    const panel = document.getElementById('historyTrashPanel');
+    if (!panel) return;
+    const isHidden = (panel.style.display === 'none' || !panel.style.display);
+    panel.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) loadMyHistoryTrash(false);
+}
+
+async function loadMyHistoryTrash(countOnly = false) {
+    const role = currentUser?.role || 'viewer';
+    const sid = currentUser?.surveyor_id || '';
+    const countEl = document.getElementById('historyTrashCount');
+    const contentEl = document.getElementById('historyTrashContent');
+    if (role === 'viewer') return;
+
+    try {
+        const res = await fetch(apiUrl(`/api/trash/my?role=${encodeURIComponent(role)}&surveyor_id=${encodeURIComponent(sid)}`), {
+            headers: {
+                'X-User-Role': role,
+                'X-User-Id': sid,
+                'X-Admin-Key': role === 'admin' ? getAdminKey() : ''
+            }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const delSurveys = data.deleted_surveys || [];
+        const delDrafts = data.deleted_drafts || [];
+        if (countEl) countEl.textContent = String(delSurveys.length + delDrafts.length);
+        if (countOnly && (!document.getElementById('historyTrashPanel') || document.getElementById('historyTrashPanel').style.display === 'none')) return;
+        if (!contentEl) return;
+
+        if (delSurveys.length === 0 && delDrafts.length === 0) {
+            contentEl.innerHTML = '<div style="color:#64748b;padding:6px 0;">Chưa có phiếu hoặc phiếu nháp nào bị xóa.</div>';
+            return;
+        }
+        let html = '';
+        if (delSurveys.length > 0) {
+            html += '<div style="font-weight:700;color:#0f2a4a;margin:6px 0 4px 0;">Phiếu đã hoàn thành đã xóa:</div>';
+            html += delSurveys.map(s => `
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;background:#fff;border:1px solid #fde68a;border-radius:4px;margin-bottom:5px;flex-wrap:wrap;">
+                    <div><strong>${escapeHtml(s.survey_code)}</strong> (${escapeHtml(s.tool_code)}) — ${escapeHtml(s.respondent_name || '—')} <span style="color:#64748b;font-size:0.76rem;">• Xóa lúc: ${escapeHtml(s.deleted_at || '')}</span></div>
+                    <button type="button" onclick="restoreMyDeletedSurvey(${s.archive_id}, '${escapeQuotes(s.survey_code)}')" style="background:#15803d;color:#fff;border:none;padding:4px 10px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:700;">
+                        <i class="fa-solid fa-rotate-left"></i> Phục hồi phiếu
+                    </button>
+                </div>
+            `).join('');
+        }
+        if (delDrafts.length > 0) {
+            html += '<div style="font-weight:700;color:#9a3412;margin:8px 0 4px 0;">Phiếu nháp đã xóa:</div>';
+            html += delDrafts.map(d => `
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;background:#fff;border:1px solid #fed7aa;border-radius:4px;margin-bottom:5px;flex-wrap:wrap;">
+                    <div><strong>${escapeHtml(d.survey_code || d.draft_key)}</strong> (${escapeHtml(d.tool_code || 'P1')}) — ${escapeHtml(d.respondent_name || '—')} <span style="color:#64748b;font-size:0.76rem;">• Xóa lúc: ${escapeHtml(d.deleted_at || '')}</span></div>
+                    <button type="button" onclick="restoreMyDeletedDraft(${d.archive_id}, '${escapeQuotes(d.survey_code || d.draft_key)}')" style="background:#0369a1;color:#fff;border:none;padding:4px 10px;border-radius:3px;cursor:pointer;font-size:0.78rem;font-weight:700;">
+                        <i class="fa-solid fa-rotate-left"></i> Phục hồi nháp
+                    </button>
+                </div>
+            `).join('');
+        }
+        contentEl.innerHTML = html;
+    } catch (_) {}
+}
+
+async function restoreMyDeletedSurvey(archiveId, code) {
+    if (!confirm(`Phục hồi lại phiếu [${code}] về danh sách chính?`)) return;
+    const role = currentUser?.role || 'editor';
+    const res = await fetch(apiUrl(`/api/trash/restore/survey/${archiveId}`), {
+        method: 'POST',
+        headers: {
+            'X-User-Role': role,
+            'X-User-Id': currentUser?.surveyor_id || '',
+            'X-Delete-Password': currentUser?.key || '',
+            'X-Admin-Key': role === 'admin' ? getAdminKey() : ''
+        }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.success) {
+        alert(data.message);
+        await loadSurveysList();
+        await loadMyHistoryTrash(false);
+        await refreshDashboardData();
+    } else {
+        alert('Lỗi phục hồi: ' + (data.error || 'Không thể khôi phục'));
+    }
+}
+
+async function restoreMyDeletedDraft(archiveId, code) {
+    if (!confirm(`Phục hồi lại phiếu nháp [${code}]?`)) return;
+    const role = currentUser?.role || 'editor';
+    const res = await fetch(apiUrl(`/api/trash/restore/draft/${archiveId}`), {
+        method: 'POST',
+        headers: {
+            'X-User-Role': role,
+            'X-User-Id': currentUser?.surveyor_id || '',
+            'X-Delete-Password': currentUser?.key || '',
+            'X-Admin-Key': role === 'admin' ? getAdminKey() : ''
+        }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.success) {
+        alert(data.message);
+        await loadHouseholdLocks();
+        await loadSurveysList();
+        await loadMyHistoryTrash(false);
+    } else {
+        alert('Lỗi phục hồi nháp: ' + (data.error || 'Không thể khôi phục'));
     }
 }
 
@@ -4913,7 +5170,7 @@ async function viewSurveyDetail(id) {
             photoHtml = `
                 <div style="margin-bottom: 12px; padding: 10px; background: #ffffff; border: 1px solid #d0d0d0; border-radius: var(--radius-sm);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.82rem; font-weight: 700; color: #15803d;">
-                        <span><i class="fa-solid fa-camera"></i> ẢNH HIỆN TRƯỜNG CÙNG CHỦ HỘ (WATERMARK)</span>
+                        <span><i class="fa-solid fa-camera"></i> ẢNH NGƯỜI ĐƯỢC PHỎNG VẤN (WATERMARK &amp; WGS84)</span>
                         <a href="${fullPhotoUrl}" target="_blank" style="color: var(--primary); text-decoration: none;">Mở ảnh gốc <i class="fa-solid fa-up-right-from-square"></i></a>
                     </div>
                     <img src="${fullPhotoUrl}" alt="Ảnh hiện trường ${item.survey_code}" style="max-width: 100%; max-height: 360px; display: block; border: 1px solid #e2e8f0; border-radius: 2px;">
@@ -5170,30 +5427,38 @@ async function deleteSurveyConfirm(id, surveyCode) {
         return;
     }
 
-    const pwd = prompt(
-        `XÁC NHẬN MẬT KHẨU ĐỂ XÓA PHIẾU [${surveyCode}]:\n` +
-        `Vui lòng nhập mật khẩu ${role === 'admin' ? 'Quản trị viên (Admin)' : 'tài khoản của bạn (hoặc mật khẩu Admin)'} để xác nhận:`
-    );
-    if (pwd === null) return;
-    if (!pwd.trim()) {
-        alert('Bạn phải nhập mật khẩu để xác nhận xóa phiếu!');
+    if (!confirm(`Bạn có chắc chắn muốn xóa phiếu [${surveyCode}] khỏi danh sách chính?\n(Dữ liệu nguồn và ảnh trên VPS vẫn được bảo lưu trong Thùng rác để phục hồi bất cứ lúc nào.)`)) {
         return;
+    }
+
+    let pwd = (currentUser?.key || '').trim();
+    if (!pwd) {
+        pwd = prompt(
+            `XÁC NHẬN MẬT KHẨU ĐỂ XÓA PHIẾU [${surveyCode}]:\n` +
+            `Vui lòng nhập mật khẩu ${role === 'admin' ? 'Quản trị viên (Admin)' : 'tài khoản của bạn'} để xác nhận:`
+        );
+        if (pwd === null) return;
+        pwd = pwd.trim();
+        if (!pwd) {
+            alert('Bạn phải nhập mật khẩu để xác nhận xóa phiếu!');
+            return;
+        }
     }
 
     try {
         const res = await fetch(apiUrl(`/api/surveys/${id}`), {
             method: 'DELETE',
             headers: {
-                'X-Delete-Password': pwd.trim(),
+                'X-Delete-Password': pwd,
                 'X-User-Role': role,
                 'X-User-Id': currentUser?.surveyor_id || '',
-                'X-Admin-Key': pwd.trim()
+                'X-Admin-Key': role === 'admin' ? pwd : ''
             }
         });
 
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
-            alert(data.message || `Đã chuyển phiếu ${surveyCode} vào Thùng rác lưu trữ!`);
+            alert(data.message || `Đã chuyển phiếu ${surveyCode} vào Thùng rác lưu trữ trên VPS (có thể khôi phục khi cần)!`);
             await loadSurveysList();
             if (typeof refreshDashboardData === 'function') {
                 refreshDashboardData();
@@ -5639,6 +5904,7 @@ async function deleteAdminQuestion(code) {
 
 async function loadTrashList() {
     const sBody = document.getElementById('trashSurveysTbody');
+    const dBody = document.getElementById('trashDraftsTbody');
     const uBody = document.getElementById('trashUsersTbody');
     if (!sBody || !uBody) return;
     try {
@@ -5649,11 +5915,13 @@ async function loadTrashList() {
             const err = await res.json().catch(() => ({}));
             const msg = escapeHtml(err.error || 'Không tải được dữ liệu thùng rác.');
             sBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:10px;">${msg}</td></tr>`;
+            if (dBody) dBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:10px;">${msg}</td></tr>`;
             uBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:10px;">${msg}</td></tr>`;
             return;
         }
         const data = await res.json();
         const surveys = data.deleted_surveys || [];
+        const drafts = data.deleted_drafts || [];
         const users = data.deleted_users || [];
 
         sBody.innerHTML = surveys.length === 0
@@ -5672,6 +5940,24 @@ async function loadTrashList() {
                 </tr>
             `).join('');
 
+        if (dBody) {
+            dBody.innerHTML = drafts.length === 0
+                ? '<tr><td colspan="5" style="text-align:center;color:#64748b;padding:12px;">Chưa có phiếu nháp nào bị xóa.</td></tr>'
+                : drafts.map(d => `
+                    <tr>
+                        <td style="font-family:monospace;font-weight:700;">${escapeHtml(d.survey_code || d.draft_key)}</td>
+                        <td>${escapeHtml(d.tool_code || 'P1')}</td>
+                        <td>${escapeHtml(d.respondent_name || '—')}</td>
+                        <td style="font-size:0.74rem;">${escapeHtml(d.deleted_at || '')}</td>
+                        <td style="text-align:center;">
+                            <button type="button" onclick="restoreDraftFromTrash(${d.archive_id}, '${escapeQuotes(d.survey_code || d.draft_key)}')" style="background:#0369a1;color:#fff;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.75rem;font-weight:600;">
+                                <i class="fa-solid fa-rotate-left"></i> Khôi phục
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
         uBody.innerHTML = users.length === 0
             ? '<tr><td colspan="5" style="text-align:center;color:#64748b;padding:12px;">Chưa có nhân sự nào bị xóa.</td></tr>'
             : users.map(u => `
@@ -5689,6 +5975,26 @@ async function loadTrashList() {
             `).join('');
     } catch (e) {
         sBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:10px;">Lỗi kết nối máy chủ.</td></tr>';
+    }
+}
+
+async function restoreDraftFromTrash(archiveId, code) {
+    if (!confirm(`Khôi phục lại phiếu nháp [${code}]?`)) return;
+    try {
+        const res = await fetch(apiUrl(`/api/admin/restore/draft/${archiveId}`), {
+            method: 'POST',
+            headers: { 'X-Admin-Key': getAdminKey() }
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            alert(data.message);
+            await loadTrashList();
+            await loadSurveysList();
+        } else {
+            alert('Lỗi: ' + (data.error || 'Không thể khôi phục nháp'));
+        }
+    } catch (e) {
+        alert('Lỗi kết nối máy chủ.');
     }
 }
 
@@ -6286,14 +6592,169 @@ async function loadTeamLocationsMap(fitAll = false) {
 
         if (!teamMapRefreshTimer) {
             teamMapRefreshTimer = setInterval(() => {
-                if (typeof currentMainView !== 'undefined' && currentMainView === 'dashboard' && document.visibilityState === 'visible') {
+                if (document.visibilityState !== 'visible') return;
+                if (typeof currentMainView !== 'undefined' && currentMainView === 'dashboard') {
                     loadTeamLocationsMap(false);
+                } else if (typeof currentMainView !== 'undefined' && currentMainView === 'menu' && currentUser?.role === 'admin') {
+                    refreshAdminMenuLiveBoard(false);
                 }
             }, 30000);
         }
     } catch (e) {
         if (summaryEl) {
             summaryEl.textContent = 'Không thể tải dữ liệu vị trí trực tuyến từ máy chủ lúc này.';
+        }
+    }
+}
+
+let adminMenuMap = null;
+let adminMenuLayerGroup = null;
+let adminMenuMarkersById = {};
+
+function ensureAdminMenuMap() {
+    const mapEl = document.getElementById('adminMenuActivityMap');
+    if (!mapEl || typeof L === 'undefined') return null;
+    if (!adminMenuMap) {
+        adminMenuMap = L.map('adminMenuActivityMap', {
+            center: [12.885, 108.115],
+            zoom: 12,
+            zoomControl: true
+        });
+        const googleHybridLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            attribution: 'Google Satellite Hybrid'
+        });
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: 'OpenStreetMap'
+        });
+        googleHybridLayer.addTo(adminMenuMap);
+        L.control.layers(
+            {
+                'Google Map Hybrid': googleHybridLayer,
+                'OpenStreetMap': osmLayer
+            },
+            null,
+            { position: 'topright' }
+        ).addTo(adminMenuMap);
+        adminMenuLayerGroup = L.layerGroup().addTo(adminMenuMap);
+    }
+    setTimeout(() => {
+        if (adminMenuMap) adminMenuMap.invalidateSize();
+    }, 150);
+    return adminMenuMap;
+}
+
+function focusAdminMenuMember(surveyorId) {
+    const m = adminMenuMarkersById[String(surveyorId || '').toUpperCase()];
+    if (!m || !adminMenuMap) {
+        alert(`Điều tra viên ${surveyorId} hiện chưa ghi nhận tọa độ GPS trên hệ thống.`);
+        return;
+    }
+    adminMenuMap.setView(m.getLatLng(), 16, { animate: true });
+    m.openPopup();
+}
+
+async function refreshAdminMenuLiveBoard(fitAll = false) {
+    if (!currentUser || currentUser.role !== 'admin') return;
+    const board = document.getElementById('adminMenuLiveBoard');
+    const staffListEl = document.getElementById('adminMenuStaffList');
+    const chipEl = document.getElementById('adminMenuOnlineChip');
+    const metaEl = document.getElementById('adminMenuMapMeta');
+    const kmlEl = document.getElementById('btnAdminMenuKml');
+    if (board) board.style.display = 'grid';
+    if (kmlEl) kmlEl.href = apiUrl('/api/team-locations.kml');
+
+    try {
+        const data = await fetchJsonWithTimeout(apiUrl('/api/team-locations'), 8000);
+        const members = Array.isArray(data.members) ? data.members : [];
+        if (chipEl) {
+            chipEl.textContent = `${data.online_count || 0}/6 online • ${data.gps_count || 0}/6 có GPS`;
+        }
+        if (metaEl) {
+            metaEl.innerHTML = `<span>Cập nhật lúc: <strong>${escapeHtml(data.updated_at_vn || '')}</strong></span><span>Nhấn vào từng nhân sự để định vị trên bản đồ</span>`;
+        }
+
+        if (staffListEl) {
+            staffListEl.innerHTML = members.map((m) => {
+                const hasGps = (m.lat !== null && m.lng !== null);
+                const dotColor = m.status === 'online' ? '#16a34a' : (m.status === 'recent' ? '#f59e0b' : (hasGps ? '#2563eb' : '#94a3b8'));
+                const coordStr = hasGps ? `${m.lat.toFixed(5)}, ${m.lng.toFixed(5)}` : 'Chưa có GPS';
+                return `
+                    <div onclick="focusAdminMenuMember('${escapeHtml(m.surveyor_id)}')" style="border: 1px solid #e2e8f0; border-left: 4px solid ${dotColor}; border-radius: 8px; padding: 8px 10px; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <div style="min-width: 170px; flex: 1;">
+                            <div style="font-size: 0.85rem; font-weight: 800; color: #0f2a4a;">
+                                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-right:5px;"></span>[${escapeHtml(m.surveyor_id)}] ${escapeHtml(m.full_name)}
+                            </div>
+                            <div style="font-size: 0.75rem; color: #475569; margin-top: 2px;">
+                                Xã: <strong>${escapeHtml(m.commune || '')}</strong> • ${escapeHtml(m.last_survey_code || m.last_activity || 'Chưa có phiếu')}
+                            </div>
+                            <div style="font-size: 0.73rem; color: #64748b; font-family: monospace; margin-top: 2px;">
+                                WGS84: ${escapeHtml(coordStr)}${m.last_seen_vn ? ` • ${escapeHtml(m.last_seen_vn)}` : ''}
+                            </div>
+                        </div>
+                        <div style="text-align: right; flex-shrink: 0;">
+                            <div>${getTeamStatusBadgeHtml(m)}</div>
+                            <div style="font-size: 0.74rem; color: #334155; font-weight: 700; margin-top: 4px;">
+                                ${m.completed_count || 0} đã nộp • ${m.draft_count || 0} nháp
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        const map = ensureAdminMenuMap();
+        adminMenuMarkersById = {};
+        const bounds = [];
+        if (map && adminMenuLayerGroup) {
+            adminMenuLayerGroup.clearLayers();
+            members.forEach((m) => {
+                if (m.lat === null || m.lng === null) return;
+                const color = m.status === 'online' ? '#16a34a' : (m.status === 'recent' ? '#f59e0b' : '#2563eb');
+                const icon = L.divIcon({
+                    className: 'team-pin-wrapper',
+                    html: `<div style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);">
+                        <div style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;white-space:nowrap;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);">
+                            ${escapeHtml(m.surveyor_id)} • ${escapeHtml(m.full_name)}
+                        </div>
+                        <div style="width:12px;height:12px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.45);margin-top:2px;"></div>
+                    </div>`,
+                    iconSize: [0, 0],
+                    iconAnchor: [0, 0]
+                });
+                const marker = L.marker([m.lat, m.lng], { icon }).addTo(adminMenuLayerGroup);
+                marker.bindPopup(`
+                    <div style="min-width:210px;font-size:12.5px;line-height:1.45;">
+                        <div style="font-weight:800;color:#0f2a4a;">[${escapeHtml(m.surveyor_id)}] ${escapeHtml(m.full_name)}</div>
+                        <div><strong>Trạng thái:</strong> ${escapeHtml(m.status_label)} (${escapeHtml(m.age_text || '')})</div>
+                        <div><strong>WGS84:</strong> <code>${m.lat}, ${m.lng}</code></div>
+                        <div><strong>Hoạt động:</strong> ${escapeHtml(m.last_survey_code || '—')} (${escapeHtml(m.gps_time_vn || m.last_seen_vn || '')})</div>
+                        <div style="margin-top:6px;"><a href="${m.google_earth_url}" target="_blank" style="color:#0369a1;font-weight:700;text-decoration:none;"><i class="fa-solid fa-earth-asia"></i> Mở Google Earth Web</a></div>
+                    </div>
+                `);
+                adminMenuMarkersById[String(m.surveyor_id).toUpperCase()] = marker;
+                bounds.push([m.lat, m.lng]);
+            });
+            if (bounds.length > 0 && (fitAll || !map._adminBoundsFitted)) {
+                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+                map._adminBoundsFitted = true;
+            }
+        }
+
+        if (!teamMapRefreshTimer) {
+            teamMapRefreshTimer = setInterval(() => {
+                if (document.visibilityState !== 'visible') return;
+                if (typeof currentMainView !== 'undefined' && currentMainView === 'dashboard') {
+                    loadTeamLocationsMap(false);
+                } else if (typeof currentMainView !== 'undefined' && currentMainView === 'menu' && currentUser?.role === 'admin') {
+                    refreshAdminMenuLiveBoard(false);
+                }
+            }, 30000);
+        }
+    } catch (_) {
+        if (staffListEl) {
+            staffListEl.innerHTML = '<div style="color:#dc2626;font-size:0.82rem;text-align:center;padding:16px;">Không tải được trạng thái nhân sự từ VPS.</div>';
         }
     }
 }

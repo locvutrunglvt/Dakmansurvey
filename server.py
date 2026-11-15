@@ -97,6 +97,38 @@ def is_valid_admin_key(auth_key):
     return False
 
 
+def _get_sid_aliases(sid):
+    s = str(sid or "").strip().upper()
+    if not s:
+        return []
+    if s in ("TCN07", "TCN01"):
+        return ["TCN07", "TCN01"]
+    return [s]
+
+
+def verify_owner_password(sid_hdr, pwd):
+    s = str(sid_hdr or "").strip()
+    p = str(pwd or "").strip()
+    if not s or not p:
+        return False
+    if is_valid_admin_key(p) or p == PASS_EDITOR:
+        return True
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        aliases = _get_sid_aliases(s)
+        ph = ",".join("?" for _ in aliases)
+        cur.execute(f"SELECT password FROM users WHERE UPPER(surveyor_id) IN ({ph})", aliases)
+        rows = cur.fetchall()
+        conn.close()
+        for r in rows:
+            if r and r[0] and p == str(r[0]).strip():
+                return True
+    except Exception:
+        pass
+    return False
+
+
 def _parse_utc_ts(ts_str):
     if not ts_str:
         return None
@@ -393,6 +425,20 @@ def init_db():
         CREATE TABLE IF NOT EXISTS deleted_surveys_archive (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             original_id INTEGER,
+            survey_code TEXT,
+            tool_code TEXT,
+            surveyor_id TEXT,
+            respondent_name TEXT,
+            deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            deleted_by TEXT,
+            row_json TEXT
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS deleted_drafts_archive (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            original_id INTEGER,
+            draft_key TEXT,
             survey_code TEXT,
             tool_code TEXT,
             surveyor_id TEXT,
@@ -1368,6 +1414,13 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             deleted_surveys = [dict(zip(s_cols, r)) for r in cur.fetchall()]
 
             cur.execute('''
+                SELECT id, original_id, draft_key, survey_code, tool_code, surveyor_id, respondent_name, deleted_at, deleted_by
+                FROM deleted_drafts_archive ORDER BY id DESC LIMIT 100
+            ''')
+            d_cols = ['archive_id', 'original_id', 'draft_key', 'survey_code', 'tool_code', 'surveyor_id', 'respondent_name', 'deleted_at', 'deleted_by']
+            deleted_drafts = [dict(zip(d_cols, r)) for r in cur.fetchall()]
+
+            cur.execute('''
                 SELECT id, original_id, surveyor_id, full_name, commune_assigned, deleted_at, deleted_by
                 FROM deleted_users_archive ORDER BY id DESC LIMIT 100
             ''')
@@ -1376,7 +1429,50 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             conn.close()
             self._send_json({
                 'deleted_surveys': deleted_surveys,
+                'deleted_drafts': deleted_drafts,
                 'deleted_users': deleted_users
+            })
+            return
+
+        elif path == '/api/trash/my':
+            role_hdr = (query.get('role', [None])[0] or self.headers.get('X-User-Role', '')).strip().lower()
+            sid_hdr = (query.get('surveyor_id', [None])[0] or self.headers.get('X-User-Id', '')).strip().upper()
+            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
+            if role_hdr == 'viewer' or (not is_valid_admin_key(auth_key) and not sid_hdr):
+                self._send_json({'error': 'Vui lòng đăng nhập tài khoản điều tra viên hoặc quản trị để xem dữ liệu đã xóa.'}, 403)
+                return
+            conn = get_db_conn()
+            cur = conn.cursor()
+            if role_hdr == 'admin' or is_valid_admin_key(auth_key):
+                cur.execute('''
+                    SELECT id, original_id, survey_code, tool_code, surveyor_id, respondent_name, deleted_at, deleted_by
+                    FROM deleted_surveys_archive ORDER BY id DESC LIMIT 100
+                ''')
+                s_rows = cur.fetchall()
+                cur.execute('''
+                    SELECT id, original_id, draft_key, survey_code, tool_code, surveyor_id, respondent_name, deleted_at, deleted_by
+                    FROM deleted_drafts_archive ORDER BY id DESC LIMIT 100
+                ''')
+                d_rows = cur.fetchall()
+            else:
+                aliases = _get_sid_aliases(sid_hdr)
+                ph = ",".join("?" for _ in aliases)
+                cur.execute(f'''
+                    SELECT id, original_id, survey_code, tool_code, surveyor_id, respondent_name, deleted_at, deleted_by
+                    FROM deleted_surveys_archive WHERE UPPER(COALESCE(surveyor_id, '')) IN ({ph}) ORDER BY id DESC LIMIT 100
+                ''', aliases)
+                s_rows = cur.fetchall()
+                cur.execute(f'''
+                    SELECT id, original_id, draft_key, survey_code, tool_code, surveyor_id, respondent_name, deleted_at, deleted_by
+                    FROM deleted_drafts_archive WHERE UPPER(COALESCE(surveyor_id, '')) IN ({ph}) ORDER BY id DESC LIMIT 100
+                ''', aliases)
+                d_rows = cur.fetchall()
+            conn.close()
+            s_cols = ['archive_id', 'original_id', 'survey_code', 'tool_code', 'surveyor_id', 'respondent_name', 'deleted_at', 'deleted_by']
+            d_cols = ['archive_id', 'original_id', 'draft_key', 'survey_code', 'tool_code', 'surveyor_id', 'respondent_name', 'deleted_at', 'deleted_by']
+            self._send_json({
+                'deleted_surveys': [dict(zip(s_cols, r)) for r in s_rows],
+                'deleted_drafts': [dict(zip(d_cols, r)) for r in d_rows]
             })
             return
 
@@ -2173,12 +2269,13 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': str(e)}, 400)
                 return
 
-        elif path.startswith('/api/admin/restore/survey/'):
+        elif path.startswith('/api/admin/restore/survey/') or path.startswith('/api/trash/restore/survey/'):
             archive_id = path.split('/')[-1]
-            cur_admin_pass = get_setting('pass_admin', PASS_ADMIN)
-            auth_key = self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')
-            if not is_valid_admin_key(auth_key):
-                self._send_json({'error': 'Chỉ Quản trị viên mới có quyền khôi phục phiếu!'}, 403)
+            auth_key = (self.headers.get('X-Admin-Key', '') or self.headers.get('X-Delete-Password', '') or self.headers.get('Authorization', '')).strip()
+            role_hdr = self.headers.get('X-User-Role', '').strip().lower()
+            sid_hdr = self.headers.get('X-User-Id', '').strip().upper()
+            if role_hdr == 'viewer':
+                self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền khôi phục phiếu!'}, 403)
                 return
             conn = get_db_conn()
             conn.row_factory = sqlite3.Row
@@ -2190,6 +2287,14 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json({'error': 'Không tìm thấy bản lưu phiếu cần khôi phục!'}, 404)
                 return
             row = json.loads(arch['row_json'])
+            is_admin = is_valid_admin_key(auth_key)
+            row_sid = str(row.get('surveyor_id') or '').strip().upper()
+            owner_aliases = _get_sid_aliases(sid_hdr)
+            is_owner = (role_hdr == 'editor' and sid_hdr and (not row_sid or row_sid in owner_aliases) and (verify_owner_password(sid_hdr, auth_key) or not auth_key))
+            if not is_admin and not is_owner:
+                conn.close()
+                self._send_json({'error': 'Bạn chỉ có thể khôi phục phiếu do chính tài khoản của bạn đã phỏng vấn!'}, 403)
+                return
             cur.execute('SELECT id FROM surveys WHERE id = ?', (row.get('id'),))
             exists_id = cur.fetchone()
             if exists_id:
@@ -2225,8 +2330,57 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             cur.execute('DELETE FROM deleted_surveys_archive WHERE id = ?', (archive_id,))
             conn.commit()
             conn.close()
-            append_audit_event('RESTORE_SURVEY', {'archive_id': archive_id, 'survey_code': row.get('survey_code')})
+            append_audit_event('RESTORE_SURVEY', {'archive_id': archive_id, 'survey_code': row.get('survey_code'), 'restored_by': sid_hdr or 'admin'})
             self._send_json({'success': True, 'message': f"Đã khôi phục phiếu [{row.get('survey_code')}] thành công!"})
+            return
+
+        elif path.startswith('/api/admin/restore/draft/') or path.startswith('/api/trash/restore/draft/'):
+            archive_id = path.split('/')[-1]
+            auth_key = (self.headers.get('X-Admin-Key', '') or self.headers.get('X-Delete-Password', '') or self.headers.get('Authorization', '')).strip()
+            role_hdr = self.headers.get('X-User-Role', '').strip().lower()
+            sid_hdr = self.headers.get('X-User-Id', '').strip().upper()
+            if role_hdr == 'viewer':
+                self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền khôi phục phiếu nháp!'}, 403)
+                return
+            conn = get_db_conn()
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute('SELECT * FROM deleted_drafts_archive WHERE id = ?', (archive_id,))
+            arch = cur.fetchone()
+            if not arch:
+                conn.close()
+                self._send_json({'error': 'Không tìm thấy bản lưu phiếu nháp cần khôi phục!'}, 404)
+                return
+            row = json.loads(arch['row_json'])
+            is_admin = is_valid_admin_key(auth_key)
+            row_sid = str(row.get('surveyor_id') or '').strip().upper()
+            owner_aliases = _get_sid_aliases(sid_hdr)
+            is_owner = (role_hdr == 'editor' and sid_hdr and (not row_sid or row_sid in owner_aliases) and (verify_owner_password(sid_hdr, auth_key) or not auth_key))
+            if not is_admin and not is_owner:
+                conn.close()
+                self._send_json({'error': 'Bạn chỉ có thể khôi phục phiếu nháp của chính tài khoản của bạn!'}, 403)
+                return
+            cur.execute('''
+                INSERT OR REPLACE INTO survey_drafts (
+                    draft_key, tool_code, survey_code, surveyor_id, surveyor_name,
+                    survey_date, commune, hamlet, respondent_name, respondent_phone,
+                    guide_name, gps_lat, gps_lng, current_section, photo_path, photo_meta,
+                    answers_json, answered_count, total_count, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                row.get('draft_key'), row.get('tool_code'), row.get('survey_code'),
+                row.get('surveyor_id'), row.get('surveyor_name'), row.get('survey_date'),
+                row.get('commune'), row.get('hamlet'), row.get('respondent_name'),
+                row.get('respondent_phone'), row.get('guide_name'), row.get('gps_lat'),
+                row.get('gps_lng'), row.get('current_section'), row.get('photo_path'),
+                row.get('photo_meta'), row.get('answers_json'), row.get('answered_count'),
+                row.get('total_count'), row.get('updated_at') or datetime.datetime.now().isoformat()
+            ))
+            cur.execute('DELETE FROM deleted_drafts_archive WHERE id = ?', (archive_id,))
+            conn.commit()
+            conn.close()
+            append_audit_event('RESTORE_DRAFT', {'archive_id': archive_id, 'draft_key': row.get('draft_key'), 'survey_code': row.get('survey_code')})
+            self._send_json({'success': True, 'message': f"Đã khôi phục phiếu nháp [{row.get('survey_code') or row.get('draft_key')}] thành công!"})
             return
 
         elif path.startswith('/api/admin/restore/user/'):
@@ -2593,13 +2747,10 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             is_admin_pwd = is_valid_admin_key(delete_pwd)
             is_owner_pwd = False
             if not is_admin_pwd and role_hdr == 'editor' and sid_hdr and delete_pwd:
-                row_sid = str(s_dict.get('surveyor_id') or '').strip()
-                if not row_sid or row_sid == sid_hdr:
-                    cur.execute('SELECT password FROM users WHERE surveyor_id = ?', (sid_hdr,))
-                    u_row = cur.fetchone()
-                    expected_pwd = (u_row['password'] if u_row and u_row['password'] else PASS_EDITOR)
-                    if delete_pwd == expected_pwd or delete_pwd == PASS_EDITOR:
-                        is_owner_pwd = True
+                row_sid = str(s_dict.get('surveyor_id') or '').strip().upper()
+                owner_aliases = _get_sid_aliases(sid_hdr)
+                if (not row_sid or row_sid in owner_aliases) and verify_owner_password(sid_hdr, delete_pwd):
+                    is_owner_pwd = True
 
             if not is_admin_pwd and not is_owner_pwd:
                 conn.close()
@@ -2619,17 +2770,64 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             cur.execute('DELETE FROM surveys WHERE id = ?', (survey_id,))
             conn.commit()
             conn.close()
-            self._send_json({'success': True, 'message': f'Đã chuyển phiếu #{survey_id} vào Thùng rác lưu trữ (có thể khôi phục bất cứ lúc nào).'})
+            self._send_json({'success': True, 'message': f'Đã chuyển phiếu #{survey_id} vào Thùng rác lưu trữ trên VPS (có thể khôi phục bất cứ lúc nào).'})
             return
 
         elif path.startswith('/api/drafts/'):
             draft_ref = urllib.parse.unquote(path.split('/api/drafts/', 1)[1]).strip()
+            query = urllib.parse.parse_qs(parsed.query)
+            no_archive = query.get('no_archive', ['0'])[0] == '1'
+            role_hdr = self.headers.get('X-User-Role', '').strip().lower()
+            sid_hdr = self.headers.get('X-User-Id', '').strip().upper()
+            delete_pwd = (self.headers.get('X-Delete-Password', '') or self.headers.get('X-Admin-Key', '') or self.headers.get('Authorization', '')).strip()
+
+            if role_hdr == 'viewer':
+                self._send_json({'error': 'Tài khoản Chỉ Xem không có quyền xóa phiếu nháp!'}, 403)
+                return
+
             conn = get_db_conn()
+            conn.row_factory = sqlite3.Row
             cur = conn.cursor()
+            cur.execute('SELECT * FROM survey_drafts WHERE draft_key = ? OR CAST(id AS TEXT) = ?', (draft_ref, draft_ref))
+            d_rows = [dict(r) for r in cur.fetchall()]
+            if not d_rows:
+                conn.close()
+                self._send_json({'success': True, 'message': 'Bản nháp không còn trên máy chủ.'})
+                return
+
+            is_admin = is_valid_admin_key(delete_pwd)
+            if role_hdr == 'editor' and sid_hdr and not is_admin:
+                owner_aliases = _get_sid_aliases(sid_hdr)
+                for dr in d_rows:
+                    row_sid = str(dr.get('surveyor_id') or '').strip().upper()
+                    if row_sid and row_sid not in owner_aliases:
+                        conn.close()
+                        self._send_json({'error': 'Bạn chỉ có thể xóa phiếu nháp do tài khoản của bạn tạo!'}, 403)
+                        return
+                if delete_pwd and not verify_owner_password(sid_hdr, delete_pwd):
+                    conn.close()
+                    self._send_json({'error': 'Mật khẩu xác nhận không đúng!'}, 403)
+                    return
+
+            if not (no_archive and is_admin):
+                deleted_by = 'admin' if is_admin else (sid_hdr or 'owner')
+                for dr in d_rows:
+                    cur.execute('''
+                        INSERT INTO deleted_drafts_archive (
+                            original_id, draft_key, survey_code, tool_code, surveyor_id,
+                            respondent_name, deleted_by, row_json
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        dr.get('id'), dr.get('draft_key'), dr.get('survey_code'),
+                        dr.get('tool_code'), dr.get('surveyor_id'), dr.get('respondent_name'),
+                        deleted_by, json.dumps(dr, ensure_ascii=False)
+                    ))
+                    append_audit_event('DELETE_DRAFT', {'draft': dr, 'deleted_by': deleted_by})
+
             cur.execute('DELETE FROM survey_drafts WHERE draft_key = ? OR CAST(id AS TEXT) = ?', (draft_ref, draft_ref))
             conn.commit()
             conn.close()
-            self._send_json({'success': True, 'message': 'Đã xóa bản nháp lưu tạm.'})
+            self._send_json({'success': True, 'message': 'Đã xóa bản nháp khỏi danh sách (dữ liệu nguồn trên VPS vẫn được bảo lưu để khôi phục).'})
             return
 
         self._send_json({'error': 'Not found'}, 404)

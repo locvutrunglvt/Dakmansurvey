@@ -1898,6 +1898,41 @@
                         <i class="fa-solid fa-chevron-right app-tile-arrow"></i>
                     </button>
                 </div>
+
+                <!-- BẢNG ĐIỀU HÀNH RIÊNG CHO ADMIN / ADMIN1 TRÊN MÀN HÌNH CHÍNH -->
+                <div id="adminMenuLiveBoard" style="display: none; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; margin-top: 16px;">
+                    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(15,23,42,0.06); display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
+                            <div style="font-size: 0.92rem; font-weight: 800; color: #0f2a4a;">
+                                <i class="fa-solid fa-users" style="color: #15803d;"></i> Danh sách nhân sự (06 ĐTV)
+                            </div>
+                            <div id="adminMenuOnlineChip" style="font-size: 0.76rem; font-weight: 700; color: #166534; background: #dcfce7; padding: 3px 9px; border-radius: 999px;">0/6 online</div>
+                        </div>
+                        <div id="adminMenuStaffList" style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
+                            <div style="color: #64748b; font-size: 0.82rem; text-align: center; padding: 20px;">Đang tải trạng thái nhân sự...</div>
+                        </div>
+                    </div>
+
+                    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(15,23,42,0.06); display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap;">
+                            <div style="font-size: 0.92rem; font-weight: 800; color: #0f2a4a;">
+                                <i class="fa-solid fa-earth-asia" style="color: #0284c7;"></i> Map hoạt động (Google Hybrid)
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" onclick="refreshAdminMenuLiveBoard(true)" class="qgis-btn-secondary" style="font-size: 0.76rem; padding: 4px 9px;">
+                                    <i class="fa-solid fa-rotate"></i> Làm mới
+                                </button>
+                                <a id="btnAdminMenuKml" href="/api/team-locations.kml" target="_blank" class="qgis-btn-primary" style="font-size: 0.76rem; padding: 4px 9px; text-decoration: none; background: #0f766e;">
+                                    <i class="fa-solid fa-file-export"></i> KML
+                                </a>
+                            </div>
+                        </div>
+                        <div id="adminMenuActivityMap" style="width: 100%; height: 355px; border-radius: 8px; border: 1px solid #cbd5e1; background: #e2e8f0; z-index: 1;"></div>
+                        <div id="adminMenuMapMeta" style="font-size: 0.76rem; color: #64748b; margin-top: 8px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+                            <span>Chọn nhân sự ở bảng bên để định vị nhanh trên bản đồ.</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- ======================================================== -->
@@ -2177,13 +2212,13 @@
                             </div>
                         </div>
 
-                        <!-- Ảnh Chụp Đầu Tiên Cùng Chủ Hộ (Tự Động Đóng Watermark Thời Gian & Vị Trí) -->
+                        <!-- Ảnh Chụp Người Được Phỏng Vấn (Tự Động Đóng Watermark Thời Gian & Tọa độ WGS84) -->
                         <div class="form-group"
                             style="margin-top: 12px; padding: 12px; background: #f8f9fa; border: 1px solid #d0d0d0; border-radius: var(--radius-sm);">
                             <label
                                 style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
-                                <span><i class="fa-solid fa-camera" style="color: #15803d;"></i> Ảnh Chụp Đầu Tiên Cùng
-                                    Chủ Hộ (Tự động đóng Watermark Thời gian & Vị trí GPS)</span>
+                                <span><i class="fa-solid fa-camera" style="color: #15803d;"></i> Ảnh Chụp Người Được Phỏng Vấn
+                                    (Tự động đóng Watermark Thời gian &amp; Vị trí WGS84 Lat/Long)</span>
                                 <span id="photoWatermarkStatus"
                                     style="font-size: 0.78rem; font-weight: 600; color: #64748b;">Chưa chụp ảnh</span>
                             </label>
@@ -2192,19 +2227,17 @@
                             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                 <button type="button" onclick="triggerHouseholdPhotoCapture()"
                                     style="background: linear-gradient(180deg, #ffffff 0%, #e6e6e6 100%); color: #1e293b; border: 1px solid #b0b0b0; padding: 6px 14px; border-radius: 3px; cursor: pointer; font-size: 0.84rem; font-weight: 600; box-shadow: 0 1px 1px rgba(0,0,0,0.06);">
-                                    <i class="fa-solid fa-camera-retro" style="color: #15803d;"></i> Chụp / Chọn Ảnh Chủ
-                                    Hộ
+                                    <i class="fa-solid fa-camera-retro" style="color: #15803d;"></i> Chụp / Chọn Ảnh Người Được Phỏng Vấn
                                 </button>
                                 <button type="button" id="btnClearHouseholdPhoto" onclick="clearHouseholdPhoto()"
                                     style="display: none; background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 0.82rem; font-weight: 600;">
                                     <i class="fa-solid fa-trash-can"></i> Xóa ảnh
                                 </button>
-                                <span style="font-size: 0.76rem; color: #64748b;">Hệ thống tự lấy GPS hiện tại (nếu
-                                    trống) và đóng dấu Thời gian + Tọa độ + Mã phiếu lên góc ảnh.</span>
+                                <span style="font-size: 0.76rem; color: #64748b;">Hệ thống tự lấy tọa độ WGS84 (Lat, Long) và đóng dấu Thời gian + Tọa độ + Tên người được phỏng vấn lên ảnh.</span>
                             </div>
                             <div id="photoPreviewBox"
                                 style="display: none; margin-top: 10px; background: #ffffff; border: 1px solid #d0d0d0; padding: 8px; border-radius: 3px;">
-                                <img id="photoPreviewImg" src="" alt="Ảnh hiện trường có watermark"
+                                <img id="photoPreviewImg" src="" alt="Ảnh người được phỏng vấn có watermark WGS84"
                                     style="max-width: 100%; max-height: 360px; display: block; border: 1px solid #e2e8f0; border-radius: 2px;">
                                 <div id="photoWatermarkMeta"
                                     style="margin-top: 6px; font-size: 0.78rem; color: #334155; font-family: monospace;">
@@ -2218,8 +2251,8 @@
                         style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                             <div style="font-size: 0.83rem; color: #78350f;">
-                                <strong style="color: #92400e;"><i class="fa-solid fa-camera"></i> Chưa có ảnh hiện trường cùng chủ hộ:</strong>
-                                Anh/Chị có thể bấm <strong>Chụp Ảnh</strong> để lưu GPS + Watermark rồi bấm <strong>Lưu Tạm</strong>, hoặc nhập ngay câu trả lời bên dưới.
+                                <strong style="color: #92400e;"><i class="fa-solid fa-camera"></i> Chưa có ảnh người được phỏng vấn:</strong>
+                                Anh/Chị có thể bấm <strong>Chụp Ảnh</strong> để đóng Watermark + WGS84 Lat/Long rồi bấm <strong>Lưu Tạm</strong>, hoặc nhập ngay câu trả lời bên dưới.
                             </div>
                             <button type="button" onclick="triggerHouseholdPhotoCapture()"
                                 style="background: #15803d; color: #fff; border: none; padding: 7px 13px; border-radius: 7px; font-size: 0.81rem; font-weight: 700; cursor: pointer; white-space: nowrap;">
@@ -2556,15 +2589,32 @@
             </div>
 
             <!-- ======================================================== -->
-            <!-- VIEW 4: DANH SÁCH DỮ LIỆU ĐÃ NỘP                          -->
+            <!-- VIEW 4: DANH SÁCH DỮ LIỆU ĐÃ NỘP & KHÔI PHỤC            -->
             <!-- ======================================================== -->
             <div id="view-history" class="view-pane" style="display: none;">
                 <div class="form-section">
-                    <div class="section-header">
+                    <div class="section-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                         <span>DANH SÁCH PHIẾU KHẢO SÁT ĐÃ LƯU TRÊN MÁY CHỦ VPS</span>
-                        <a href="/api/export/excel" class="summary-link">
-                            <i class="fa-solid fa-download"></i> Tải Toàn Bộ File Excel (.xlsx)
-                        </a>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <button type="button" id="btnToggleHistoryTrash" onclick="toggleHistoryTrashPanel()" class="qgis-btn-secondary" style="font-size: 0.80rem; padding: 5px 10px; background: #fff7ed; color: #9a3412; border-color: #fed7aa;">
+                                <i class="fa-solid fa-trash-arrow-up"></i> Thùng rác / Phục hồi (<span id="historyTrashCount">0</span>)
+                            </button>
+                            <a href="/api/export/excel" class="summary-link">
+                                <i class="fa-solid fa-download"></i> Tải Toàn Bộ File Excel (.xlsx)
+                            </a>
+                        </div>
+                    </div>
+
+                    <div id="historyTrashPanel" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                            <div style="font-size: 0.85rem; font-weight: 700; color: #92400e;">
+                                <i class="fa-solid fa-shield-halved"></i> DỮ LIỆU ĐÃ XÓA ĐƯỢC BẢO LƯU TRÊN VPS — CÓ THỂ PHỤC HỒI
+                            </div>
+                            <button type="button" onclick="loadMyHistoryTrash()" class="qgis-btn-secondary" style="font-size: 0.76rem; padding: 3px 9px;">
+                                <i class="fa-solid fa-rotate"></i> Làm mới
+                            </button>
+                        </div>
+                        <div id="historyTrashContent" style="font-size: 0.82rem; color: #475569;">Đang tải dữ liệu bảo lưu...</div>
                     </div>
 
                     <table class="report-table">
@@ -2583,6 +2633,28 @@
                             <!-- Rendered by JS -->
                         </tbody>
                     </table>
+
+                    <div id="historyDraftsSection" style="margin-top: 22px;">
+                        <h3 style="font-size: 0.92rem; font-weight: 700; color: var(--navy); margin: 0 0 8px 0; text-transform: uppercase;">
+                            <i class="fa-solid fa-file-pen" style="color: #d97706;"></i> Phiếu Nháp / Lưu Tạm Trên Máy Chủ (Chủ tài khoản có thể mở sửa hoặc xóa — vẫn bảo lưu trên VPS)
+                        </h3>
+                        <table class="report-table" style="margin-top: 0;">
+                            <thead>
+                                <tr>
+                                    <th>Mã Phiếu</th>
+                                    <th>Công Cụ</th>
+                                    <th>Địa Bàn</th>
+                                    <th>Người Được Phỏng Vấn</th>
+                                    <th>Điều Tra Viên</th>
+                                    <th>Cập Nhật / Tiến Độ</th>
+                                    <th style="text-align: center;">Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyDraftsTbody">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -2920,6 +2992,29 @@
                                 </tr>
                             </thead>
                             <tbody id="trashSurveysTbody">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 12px; color: #64748b;">Đang
+                                        tải...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4 style="font-size: 0.84rem; font-weight: 700; color: #002060; margin-bottom: 6px;">
+                        <i class="fa-solid fa-file-pen"></i> Phiếu Nháp Đã Xóa (Có Thể Khôi Phục)
+                    </h4>
+                    <div style="overflow-x: auto; max-height: 160px; border: 1px solid #cbd5e1; margin-bottom: 14px;">
+                        <table class="report-table" style="margin-top: 0; font-size: 0.78rem;">
+                            <thead>
+                                <tr>
+                                    <th>Mã Phiếu</th>
+                                    <th>Công Cụ</th>
+                                    <th>Người PV</th>
+                                    <th>Thời Gian Xóa</th>
+                                    <th style="text-align: center;">Khôi Phục</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trashDraftsTbody">
                                 <tr>
                                     <td colspan="5" style="text-align: center; padding: 12px; color: #64748b;">Đang
                                         tải...</td>
@@ -3298,7 +3393,7 @@
     <!-- Bundled Questions & Households Fallback + Application Logic -->
     <script src="questions_bundle.js?v=1"></script>
     <script src="sample_households_bundle.js?v=1"></script>
-    <script src="app.js?v=2.38"></script>
+    <script src="app.js?v=2.40"></script>
 
 </body>
 
