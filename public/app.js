@@ -1165,7 +1165,7 @@ function switchDonorTab(donorKey) {
     const heading = document.getElementById('currentToolHeading');
     if (heading) {
         const donorName = (currentDonorTab === 'IDH') ? 'IDH' : 'JDE PEET’S';
-        heading.textContent = `CÔNG CỤ: TT — NHÀ TÀI TRỢ ${donorName} (1–5 PHIẾU)`;
+        heading.textContent = `CÔNG CỤ: TT — NHÀ TÀI TRỢ ${donorName} (2 ĐƠN VỊ)`;
     }
     const subTitle = document.getElementById('subviewTitleText');
     if (subTitle && currentMainView === 'survey') {
@@ -2387,9 +2387,34 @@ async function selectTool(toolCode, options = {}) {
     if (guideGrp) guideGrp.style.display = isTT ? 'none' : 'block';
     if (relGrid) relGrid.style.display = isTT ? 'none' : (isP1 ? 'grid' : 'none');
 
+    const genderGrp = document.getElementById('respondentGenderGroup');
+    const birthGrp = document.getElementById('respondentBirthYearGroup');
+    const altRowEl = document.getElementById('altRespondentSubRow');
+    if (genderGrp) genderGrp.style.display = isTT ? 'none' : 'block';
+    if (birthGrp) birthGrp.style.display = isTT ? 'none' : 'block';
+    if (altRowEl) {
+        if (isTT) {
+            altRowEl.className = 'grid-1';
+            altRowEl.style.display = 'grid';
+        } else {
+            altRowEl.className = 'grid-3';
+        }
+    }
+
     const respNameInput = document.getElementById('respondentNameInput');
     if (respNameInput) {
         respNameInput.placeholder = isTT ? 'Nhập họ và tên người đại diện nhà tài trợ...' : 'Nhập họ và tên người trả lời thay';
+    }
+    const lblResp = document.getElementById('lblRespondentName');
+    if (lblResp) {
+        lblResp.innerHTML = isTT ? 'Họ Tên Người Được Phỏng Vấn (Đại diện nhà tài trợ) <span class="req">*</span>' : 'Họ Tên Người Được Phỏng Vấn <span class="req">*</span>';
+    }
+
+    // Luôn dọn dẹp ảnh sạch sẽ khi chuyển sang công cụ TT
+    if (isTT) {
+        clearHouseholdPhoto(true);
+        currentHouseholdPhotoData = '';
+        currentDraftPhotoPath = '';
     }
 
     const applyDemographicFields = (ans = {}, respName = '') => {
@@ -2427,7 +2452,10 @@ async function selectTool(toolCode, options = {}) {
             if (parsed.guide && document.getElementById('guideNameInput')) document.getElementById('guideNameInput').value = parsed.guide;
             if (parsed.gps) document.getElementById('gpsInput').value = parsed.gps;
             applyDemographicFields(currentDraftAnswers, parsed.respondent_name || '');
-            if (parsed.photo_data) {
+            if (isTT) {
+                // Nhóm 5 (Nhà tài trợ) không tự động gắn ảnh từ nháp cũ
+                clearHouseholdPhoto(true);
+            } else if (parsed.photo_data) {
                 setHouseholdPhotoPreview(parsed.photo_data, parsed.photo_meta || 'Đã khôi phục ảnh nháp có watermark');
             } else if (parsed.photo_path) {
                 setHouseholdPhotoPreview(apiUrl(`/api/photos/${parsed.photo_path}`), parsed.photo_meta || 'Ảnh nháp đã lưu trên VPS');
@@ -2869,11 +2897,11 @@ function renderQuestionsForSection(secName) {
                     ${chipHtml}
                     ${structuredHtml}
                     <textarea id="txInput_${code}" class="form-control" 
-                              rows="${currentTool === 'TT' ? 5 : 2}" 
-                              style="${currentTool === 'TT' ? 'min-height: 120px; font-size: 0.92rem; line-height: 1.55; padding: 10px 12px;' : ''}"
+                              rows="${currentTool === 'P1' ? 2 : (q.rows || 4)}" 
+                              style="${currentTool === 'P1' ? '' : 'min-height: 110px; font-size: 0.92rem; line-height: 1.55; padding: 10px 12px;'}"
                               ${isViewer ? 'disabled' : ''}
                               oninput="onAnswerChange('${code}', this, false)" 
-                              placeholder="${structuredHtml ? 'Tổng hợp tự động từ các ô trên (hoặc ghi chú bổ sung thêm)...' : (currentTool === 'TT' ? '✎ Ghi chép câu trả lời / phân tích chi tiết của đại diện nhà tài trợ...' : 'Ghi chép câu trả lời của đối tượng...')}">${escapeHtml(val)}</textarea>
+                              placeholder="${structuredHtml ? 'Tổng hợp tự động từ các ô trên (hoặc ghi chú bổ sung thêm)...' : (currentTool !== 'P1' ? '✎ Ghi chép câu trả lời / phân tích chi tiết...' : 'Ghi chép câu trả lời của đối tượng...')}">${escapeHtml(val)}</textarea>
                 </div>
             `;
         }
@@ -5007,7 +5035,8 @@ function stopBackgroundGpsTracker() {
 function clearHouseholdPhoto(silent = false) {
     const input = document.getElementById('householdPhotoInput');
     if (input) input.value = '';
-    if (!silent) currentDraftPhotoPath = '';
+    currentHouseholdPhotoData = '';
+    currentDraftPhotoPath = '';
     setHouseholdPhotoPreview('', '');
     if (!silent) {
         saveDraftLocal(false);

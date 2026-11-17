@@ -2479,11 +2479,11 @@
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         <button type="button" id="btnDonorTab-IDH" class="donor-tab-btn active" onclick="switchDonorTab('IDH')"
                                 style="flex: 1; min-width: 200px; padding: 10px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.92rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; background: #002060; color: #ffffff; transition: all 0.2s;">
-                            <i class="fa-solid fa-building"></i> 1. Nhà tài trợ IDH (1–5 phiếu)
+                            <i class="fa-solid fa-building"></i> 1. Nhà tài trợ IDH
                         </button>
                         <button type="button" id="btnDonorTab-JDE" class="donor-tab-btn" onclick="switchDonorTab('JDE')"
                                 style="flex: 1; min-width: 200px; padding: 10px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.92rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; background: #f1f5f9; color: #475569; transition: all 0.2s;">
-                            <i class="fa-solid fa-mug-hot"></i> 2. Nhà tài trợ JDE Peet’s (1–5 phiếu)
+                            <i class="fa-solid fa-mug-hot"></i> 2. Nhà tài trợ JDE Peet’s
                         </button>
                     </div>
                 </div>
@@ -2521,7 +2521,7 @@
                                 </select>
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
-                                <label>Cấp Mã Phiếu (+1) (1-5)</label>
+                                <label>Cấp Mã Phiếu (+1)</label>
                                 <button type="button" class="btn-outline" onclick="generateNextDonorSurveyCode(currentDonorTab, true)"
                                         style="width: 100%; height: 38px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 0.82rem; background: #f0fdf4; border-color: #86efac; color: #166534;">
                                     <i class="fa-solid fa-plus"></i> Cấp mã tự động kế tiếp
@@ -2657,13 +2657,13 @@
                             </div>
 
                             <div id="altRespondentSubRow" class="grid-3" style="display: none; padding: 10px 12px; margin: 4px 0 8px 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; gap: 12px;">
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label>Họ Tên Người Được Phỏng Vấn <span class="req">*</span></label>
+                                <div class="form-group" id="respondentNameGroup" style="margin-bottom: 0;">
+                                    <label id="lblRespondentName">Họ Tên Người Được Phỏng Vấn <span class="req">*</span></label>
                                     <input type="text" class="form-control" id="respondentNameInput"
                                         oninput="onRespondentTyping(this.value)"
                                         placeholder="Nhập họ và tên người trả lời thay">
                                 </div>
-                                <div class="form-group" style="margin-bottom: 0;">
+                                <div class="form-group" id="respondentGenderGroup" style="margin-bottom: 0;">
                                     <label>Giới Tính Người Trả Lời <span class="req">*</span></label>
                                     <select class="form-control" id="respondentGenderSelect" onchange="onRespondentMetaChange()">
                                         <option value="">-- Chọn giới tính --</option>
@@ -2671,7 +2671,7 @@
                                         <option value="Nữ">Nữ</option>
                                     </select>
                                 </div>
-                                <div class="form-group" style="margin-bottom: 0;">
+                                <div class="form-group" id="respondentBirthYearGroup" style="margin-bottom: 0;">
                                     <label>Năm Sinh Người Trả Lời <span class="req">*</span></label>
                                     <input type="number" class="form-control" id="respondentBirthYearInput"
                                         min="1920" max="2012" step="1"

@@ -2338,1008 +2338,719 @@
     "target_count": "220 phiếu"
   },
   "NT": {
-    "name": "NT: Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
+    "tool_code": "NT",
+    "tool_name": "Nhóm trưởng & Trưởng thôn",
+    "target_count": "10 phiếu",
+    "group": "Nhóm trưởng, đại diện nhóm hộ & trưởng thôn",
     "questions": [
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "NT1",
-        "orig_code": "NT1",
-        "section": "Thảo luận nhóm trưởng ToT (8 người, 90 phút)",
-        "text": "Anh chị đã được tập huấn những nội dung gì, mấy lần? Nội dung nào tự tin hướng dẫn lại nhất, kém nhất?",
+        "code": "A01",
+        "text": "Vai trò hiện nay của ông/bà (có thể chọn nhiều phương án)",
+        "section": "A. Xác định người trả lời",
         "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 nhóm",
-        "indicator": "ToT (RA1 Output 2)",
-        "dac": "Hiệu quả"
+        "rows": 3,
+        "options": [
+          {
+            "value": "NT_TOT",
+            "label": "Nhóm trưởng / nhóm trưởng ToT"
+          },
+          {
+            "value": "DD_NHOM",
+            "label": "Đại diện nhóm hộ nông dân"
+          },
+          {
+            "value": "TRUONG_THON",
+            "label": "Trưởng thôn/buôn hoặc thành viên ban tự quản thôn/buôn"
+          },
+          {
+            "value": "KHAC",
+            "label": "Vai trò khác"
+          }
+        ],
+        "follow_up_on": "KHAC",
+        "follow_up_placeholder": "Ghi rõ vai trò khác..."
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "NT2",
-        "orig_code": "NT2",
-        "section": "Thảo luận nhóm trưởng ToT (8 người, 90 phút)",
-        "text": "Mỗi người đã kèm khoảng bao nhiêu hộ? Kèm bằng cách nào (họp nhóm, tại vườn, Zalo)?",
-        "type": "SO + MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 nhóm",
-        "indicator": "Lan tỏa",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "NT3",
-        "orig_code": "NT3",
-        "section": "Thảo luận nhóm trưởng ToT (8 người, 90 phút)",
-        "text": "Tài liệu, phụ cấp, dụng cụ được cấp có đủ dùng không?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 nhóm",
-        "indicator": "",
-        "dac": "Hiệu suất"
-      },
-      {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "NT4",
-        "orig_code": "NT4",
-        "section": "Thảo luận nhóm trưởng ToT (8 người, 90 phút)",
-        "text": "Khi hướng dẫn hộ DTTS, hộ lớn tuổi, hộ phụ nữ làm chủ thì gặp khó gì?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 nhóm",
-        "indicator": "",
-        "dac": "Tác động"
-      },
-      {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "NT5",
-        "orig_code": "NT5",
-        "section": "Thảo luận nhóm trưởng ToT (8 người, 90 phút)",
-        "text": "Việc theo dõi hộ (không dùng thuốc cấm, ranh giới vườn cho EUDR) làm thế nào, ghi chép ở đâu?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 nhóm",
-        "indicator": "Hệ thống M&E (RA4 Outcome 7)",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "NT6",
-        "orig_code": "NT6",
-        "section": "Thảo luận nhóm trưởng ToT (8 người, 90 phút)",
-        "text": "Sau 12/2025 anh chị còn sinh hoạt nhóm không? Ai chi trả?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 nhóm",
-        "indicator": "",
-        "dac": "Bền vững"
-      },
-      {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "NT7",
-        "orig_code": "NT7",
-        "section": "Thảo luận nhóm trưởng ToT (8 người, 90 phút)",
-        "text": "Cần gì để mạng lưới nhóm trưởng tiếp tục hoạt động?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 nhóm",
-        "indicator": "",
-        "dac": "Bền vững"
-      },
-      {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP1",
-        "orig_code": "KIP1",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Tên thôn, xã cũ, xã mới; thành phần nhóm (số người, nam/nữ, DTTS, hộ lớn/vừa/nhỏ, hộ nghèo)",
+        "code": "A02",
+        "text": "Ông/bà đảm nhiệm vai trò này từ năm nào?",
+        "section": "A. Xác định người trả lời",
         "type": "TX",
-        "options_raw": "",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": ""
+        "rows": 2,
+        "hint": "Ghi rõ năm bắt đầu hoặc số năm đảm nhiệm"
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP2",
-        "orig_code": "KIP2",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Tổng số hộ; số hộ trồng cà phê; số hộ DTTS; số hộ nghèo năm 2025",
+        "code": "A03",
+        "text": "Ông/bà có trực tiếp tham gia hoặc phối hợp với các hoạt động của Compact Cư M’gar giai đoạn 2021–2025 không?",
+        "section": "A. Xác định người trả lời",
         "type": "SO",
-        "options_raw": "Theo sổ thôn",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Phù hợp"
-      },
-      {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP3",
-        "orig_code": "KIP3",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Tỷ lệ diện tích cà phê theo độ dốc: dưới 8°, 8-15°, trên 15°",
-        "type": "SO",
-        "options_raw": "% diện tích",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": ""
-      },
-      {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP4",
-        "orig_code": "KIP4",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Tỷ lệ hộ theo quy mô cà phê: ≤0,5 ha; 0,5-1; 1-2; 2-5; trên 5 ha",
-        "type": "SO",
-        "options_raw": "% hộ",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": ""
-      },
-      {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP5",
-        "orig_code": "KIP5",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Tỷ lệ diện tích cà phê kiến thiết cơ bản, kinh doanh, già cỗi, đã nhổ",
-        "type": "SO",
-        "options_raw": "% diện tích",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Tác động"
-      },
-      {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP6",
-        "orig_code": "KIP6",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Năng suất bình quân vụ 2025/26; tỷ lệ hộ có năng suất dưới 2 tấn, 2-3 tấn, trên 3 tấn",
-        "type": "SO",
-        "options_raw": "tấn nhân/ha; % hộ",
+        "rows": 2,
         "options": [
           {
-            "value": "tấn nhân/ha",
-            "label": "tấn nhân/ha"
+            "value": "TRUC_TIEP",
+            "label": "Tham gia trực tiếp"
           },
           {
-            "value": "% hộ",
-            "label": "% hộ"
+            "value": "PHOI_HOP",
+            "label": "Có phối hợp / kết nối"
+          },
+          {
+            "value": "BIET_KO_TT",
+            "label": "Biết về dự án nhưng không trực tiếp tham gia"
+          },
+          {
+            "value": "KO_BIET",
+            "label": "Không biết rõ"
           }
         ],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Tác động"
+        "follow_up_on": "TRUC_TIEP",
+        "follow_up_placeholder": "Nếu có, xin nêu hoạt động hoặc vai trò chính..."
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP7",
-        "orig_code": "KIP7",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Tái canh, ghép cải tạo: tỷ lệ hộ áp dụng từng kiểu; tỷ lệ không thành công; ai hỗ trợ kỹ thuật",
-        "type": "SO + MO",
-        "options_raw": "% hộ",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Hiệu quả"
+        "code": "B01",
+        "text": "Theo ông/bà, những khó khăn lớn nhất của các hộ trồng cà phê tại thôn/buôn trong giai đoạn 2021–2025 là gì?",
+        "section": "B. Nhận biết và mức độ phù hợp của dự án",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP8",
-        "orig_code": "KIP8",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Trồng xen: tỷ lệ hộ trồng xen; mật độ tiêu, sầu riêng, bơ, điều, mít, mắc ca, cây gỗ (cây/ha)",
-        "type": "SO",
-        "options_raw": "% hộ; cây/ha",
-        "options": [
-          {
-            "value": "% hộ",
-            "label": "% hộ"
-          },
-          {
-            "value": "cây/ha",
-            "label": "cây/ha"
-          }
-        ],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Tác động"
+        "code": "B02",
+        "text": "Các hoạt động của Compact Cư M’gar có đáp ứng đúng những khó khăn và nhu cầu đó không? Hoạt động nào phù hợp nhất, hoạt động nào chưa sát với thực tế?",
+        "section": "B. Nhận biết và mức độ phù hợp của dự án",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP9",
-        "orig_code": "KIP9",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Quản lý cỏ: % hộ không dùng thuốc cỏ, % dùng thuốc cỏ, % giữ thảm phủ; số đợt phun thuốc cỏ",
-        "type": "SO",
-        "options_raw": "% hộ",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Hiệu quả"
+        "code": "B03",
+        "text": "Trong thời gian dự án triển khai, tình hình sản xuất cà phê tại địa phương có thay đổi đáng kể không (ví dụ thời tiết, nguồn nước, giá vật tư, giá cà phê, lao động)? Những thay đổi đó ảnh hưởng thế nào đến các hộ?",
+        "section": "B. Nhận biết và mức độ phù hợp của dự án",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP10",
-        "orig_code": "KIP10",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Nước tưới: nguồn nước; % hộ lo thiếu nước; số đợt tưới; lượng nước phổ biến mỗi gốc mỗi đợt",
-        "type": "SO",
-        "options_raw": "% hộ; lít/gốc",
-        "options": [
-          {
-            "value": "% hộ",
-            "label": "% hộ"
-          },
-          {
-            "value": "lít/gốc",
-            "label": "lít/gốc"
-          }
-        ],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Hiệu quả"
+        "code": "C01",
+        "text": "Theo quan sát của ông/bà, các hộ tham gia dự án đã thay đổi những gì trong cách chăm sóc vườn cà phê? Có thể kể cụ thể về phân bón, quản lý cỏ, sử dụng thuốc bảo vệ thực vật, tưới nước, trồng xen/cây che bóng hoặc thu hoạch.",
+        "section": "C. Kết quả và thay đổi ghi nhận tại địa phương",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP11",
-        "orig_code": "KIP11",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Phân bón: hộ bón theo kinh nghiệm, nông dân khác, đại lý, tập huấn, kết quả phân tích đất (% hộ); % hộ dùng phân hữu cơ, lượng; % hộ bón cao hơn nhu cầu",
-        "type": "SO",
-        "options_raw": "% hộ",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Tác động"
+        "code": "C02",
+        "text": "Trong các hoạt động như tập huấn, tham quan mô hình, hỗ trợ phân tích đất, cây giống, bảo hộ lao động hoặc tưới tiết kiệm, hoạt động nào được người dân quan tâm và áp dụng nhiều nhất? Vì sao?",
+        "section": "C. Kết quả và thay đổi ghi nhận tại địa phương",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP12",
-        "orig_code": "KIP12",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Thuốc BVTV: % hộ phun trên cà phê, cây xen; % hộ lưu ý không dùng thuốc cấm; % hộ dùng chế phẩm sinh học",
-        "type": "SO",
-        "options_raw": "% hộ",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Tác động"
+        "code": "C03",
+        "text": "Có hoạt động nào người dân ít áp dụng, đã ngừng thực hiện hoặc gặp khó khăn khi duy trì không? Theo ông/bà, nguyên nhân là gì?",
+        "section": "C. Kết quả và thay đổi ghi nhận tại địa phương",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP13",
-        "orig_code": "KIP13",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Thu hoạch, chế biến: % hộ hái chín trên 90%, 70-90%, 50-70%, dưới 50%; % sấy, xát dập, phơi cả quả",
-        "type": "SO",
-        "options_raw": "% hộ",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Hiệu quả"
+        "code": "C04",
+        "text": "Theo ông/bà, dự án có tạo ra thay đổi nào đối với năng suất, chi phí sản xuất, chất lượng cà phê hoặc thu nhập của hộ không? Xin nêu ví dụ thực tế nếu có. Theo ông/bà, thay đổi đó còn chịu ảnh hưởng bởi những yếu tố nào khác, chẳng hạn giá cà phê hoặc thời tiết?",
+        "section": "C. Kết quả và thay đổi ghi nhận tại địa phương",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP14",
-        "orig_code": "KIP14",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Rác thải: % hộ xử lý rác; đốt, chôn, vứt ra môi trường, gom; bao bì thuốc xử lý thế nào",
-        "type": "SO",
-        "options_raw": "% hộ",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Tác động"
+        "code": "C05",
+        "text": "Những nhóm hộ nào được hưởng lợi rõ hơn hoặc khó tiếp cận hoạt động dự án hơn (hộ nhỏ, hộ nghèo, phụ nữ, người dân tộc thiểu số, hộ ở xa…)? Vì sao?",
+        "section": "C. Kết quả và thay đổi ghi nhận tại địa phương",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP15",
-        "orig_code": "KIP15",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Bể chứa bao bì của dự án tại thôn: còn dùng không, ai gom, bao lâu một lần",
-        "type": "MO",
-        "options_raw": "Quan sát, chụp ảnh bể",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Bền vững"
+        "code": "D01",
+        "text": "Ông/bà đánh giá thế nào về cách Dakman và các bên liên quan thông tin, tổ chức hoạt động và làm việc với người dân tại thôn/buôn?",
+        "section": "D. Tổ chức triển khai và sự phối hợp ở cấp thôn/buôn",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP16",
-        "orig_code": "KIP16",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Bảo tồn đất, nước: % hộ đào bồn, đào mương, băng cây cản nước; còn trồng sát nguồn nước không",
-        "type": "SO",
-        "options_raw": "% hộ",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Tác động"
+        "code": "D02",
+        "text": "Vai trò của trưởng thôn, nhóm trưởng và đại diện nhóm hộ trong việc thông báo, lựa chọn người tham gia, kết nối nông dân và hỗ trợ triển khai hoạt động được thực hiện như thế nào?",
+        "section": "D. Tổ chức triển khai và sự phối hợp ở cấp thôn/buôn",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP17",
-        "orig_code": "KIP17",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Tổ chức nông dân: % hộ trong Hội Nông dân, tổ hợp tác, HTX; % hộ có chứng nhận; % hộ ghi nhật ký",
-        "type": "SO",
-        "options_raw": "% hộ",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Bền vững"
+        "code": "D03",
+        "text": "Sự phối hợp giữa người dân, nhóm hộ, hợp tác xã, chính quyền địa phương và Dakman có thuận lợi không? Khâu nào phối hợp tốt, khâu nào còn vướng mắc?",
+        "section": "D. Tổ chức triển khai và sự phối hợp ở cấp thôn/buôn",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP18",
-        "orig_code": "KIP18",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Tập huấn 2021-2025: % hộ trong thôn đã dự; nội dung; đơn vị tổ chức",
-        "type": "SO + MO",
-        "options_raw": "% hộ",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Hiệu quả"
+        "code": "D04",
+        "text": "Trong thời gian dự án, địa phương có chương trình hoặc đơn vị khác cũng hỗ trợ sản xuất cà phê không? Nếu có, các hoạt động đó bổ trợ hay trùng lặp với Compact Cư M’gar?",
+        "section": "D. Tổ chức triển khai và sự phối hợp ở cấp thôn/buôn",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP19",
-        "orig_code": "KIP19",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Vay vốn: % hộ vay; nguồn; mục đích",
-        "type": "SO",
-        "options_raw": "% hộ",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": ""
+        "code": "E01",
+        "text": "Sau khi dự án kết thúc, theo ông/bà, người dân còn tiếp tục thực hiện những kỹ thuật hoặc hoạt động nào đã được giới thiệu? Những hoạt động nào có khả năng bị gián đoạn? Vì sao?",
+        "section": "E. Khả năng duy trì và nhu cầu tiếp theo",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP20",
-        "orig_code": "KIP20",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Xếp hạng các hoạt động dự án ở thôn theo mức có ích (thẻ hình); vì sao",
-        "type": "MO",
-        "options_raw": "Thẻ: tập huấn, cây giống, cây che bóng, PPE, thùng rác, bể bao bì, mô hình, tổ SDM",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Phù hợp"
+        "code": "E02",
+        "text": "Để người dân tiếp tục duy trì các thực hành có ích, họ cần thêm hỗ trợ gì? Ai nên đảm nhận vai trò hỗ trợ (nhóm trưởng, hợp tác xã, chính quyền, doanh nghiệp hoặc đơn vị khác)?",
+        "section": "E. Khả năng duy trì và nhu cầu tiếp theo",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP21",
-        "orig_code": "KIP21",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Nhóm trưởng, mô hình, tổ dịch vụ trong thôn còn hoạt động gì sau 12/2025?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Bền vững"
+        "code": "E03",
+        "text": "Theo ông/bà, Cư M’gar có nên có Giai đoạn 2 không? Vì sao? Nếu có, giai đoạn tiếp theo nên ưu tiên giải quyết những vấn đề gì của nông hộ và địa phương?",
+        "section": "E. Khả năng duy trì và nhu cầu tiếp theo",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP22",
-        "orig_code": "KIP22",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Chương trình, dự án khác hỗ trợ cà phê tại thôn 2021-2026",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Nhất quán"
+        "code": "E04",
+        "text": "Nếu có Giai đoạn 2, ông/bà đề xuất điều gì cần giữ lại, điều chỉnh hoặc làm khác so với giai đoạn 2021–2025?",
+        "section": "E. Khả năng duy trì và nhu cầu tiếp theo",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP23",
-        "orig_code": "KIP23",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Cây trồng trong thôn thay đổi thế nào từ 2021 (sầu riêng, chuyển đổi, nhổ cà phê)?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Tác động"
+        "code": "F01",
+        "text": "Nếu chọn ba kết quả hoặc thay đổi quan trọng nhất mà Compact Cư M’gar mang lại cho thôn/buôn, ông/bà sẽ chọn những gì?",
+        "section": "F. Đánh giá chung và khuyến nghị",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP24",
-        "orig_code": "KIP24",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Từ 2021 có phát rừng, lấn đất rừng để trồng cây trên địa bàn thôn không?",
-        "type": "SC + MO",
-        "options_raw": "1=Có; 2=Không; 98=Không biết",
-        "options": [
-          {
-            "value": "1",
-            "label": "Có"
-          },
-          {
-            "value": "2",
-            "label": "Không"
-          },
-          {
-            "value": "98",
-            "label": "Không biết"
-          }
-        ],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Tác động"
+        "code": "F02",
+        "text": "Theo ông/bà, bài học hoặc khuyến nghị quan trọng nhất cho các chương trình hỗ trợ nông dân trồng cà phê trong thời gian tới là gì?",
+        "section": "F. Đánh giá chung và khuyến nghị",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP25",
-        "orig_code": "KIP25",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Điểm mạnh, điểm yếu, điều lo ngại, mong muốn của thôn về sản xuất cà phê",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Phù hợp"
+        "code": "F03",
+        "text": "Ông/bà có ví dụ, trường hợp hộ gia đình hoặc thông tin nào khác muốn chia sẻ để nhóm đánh giá hiểu rõ hơn về kết quả và hạn chế của dự án không?",
+        "section": "F. Đánh giá chung và khuyến nghị",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "NT",
-        "tool_name": "NT - Nhóm trưởng, đại diện nhóm hộ & trưởng thôn (10)",
-        "group": "Nhóm 2: Nhóm trưởng, đại diện nhóm hộ và trưởng thôn (10)",
-        "code": "KIP26",
-        "orig_code": "KIP26",
-        "section": "Thảo luận nhóm thôn (6 người, 120 phút)",
-        "text": "Thời gian tới, bà con cần hỗ trợ kỹ thuật gì nhất về đất, phân hữu cơ, cây che bóng, nước?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "12 thôn trọng điểm",
-        "indicator": "",
-        "dac": "Bền vững"
+        "code": "G01",
+        "text": "Ví dụ / bằng chứng cụ thể được người trả lời chia sẻ",
+        "section": "G. Ghi chú của điều tra viên",
+        "type": "TX",
+        "rows": 4
+      },
+      {
+        "code": "G02",
+        "text": "Trường hợp hộ gia đình / cá nhân điển hình cần theo dõi thêm",
+        "section": "G. Ghi chú của điều tra viên",
+        "type": "TX",
+        "rows": 4
+      },
+      {
+        "code": "G03",
+        "text": "Đánh giá của điều tra viên về mức độ hiểu biết / sát thực tế của người trả lời",
+        "section": "G. Ghi chú của điều tra viên",
+        "type": "TX",
+        "rows": 4
       }
-    ],
-    "tool_code": "NT",
-    "tool_name": "Nhóm trưởng, đại diện nhóm hộ & trưởng thôn",
-    "target_count": "10 cuộc"
+    ]
   },
   "CQ": {
-    "name": "CQ: Chính quyền địa phương – 3 xã (3)",
+    "tool_code": "CQ",
+    "tool_name": "Chính quyền địa phương (3 xã)",
+    "target_count": "3 xã",
+    "group": "Chính quyền địa phương",
     "questions": [
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ1",
-        "orig_code": "CQ1",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Ông/bà và đơn vị đã tham gia dự án ở vai trò nào, từ khi nào?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Tất cả",
-        "indicator": "",
-        "dac": "Phù hợp"
+        "code": "A01",
+        "text": "Ông/bà hiện phụ trách lĩnh vực hoặc nhiệm vụ nào có liên quan đến sản xuất nông nghiệp, phát triển nông thôn, môi trường hoặc đời sống người dân tại địa phương?",
+        "section": "A. Thông tin và vai trò của người trả lời",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ2",
-        "orig_code": "CQ2",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Dự án khớp đến đâu với kế hoạch của xã, của ngành (tái canh, nông nghiệp xanh, giảm phát thải, EUDR)?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Tất cả",
-        "indicator": "",
-        "dac": "Phù hợp"
+        "code": "A02",
+        "text": "Ông/bà đã công tác tại địa bàn này từ khi nào? Có trực tiếp tham gia hoặc theo dõi Compact Cư M’gar trong giai đoạn 2021–2025 không?",
+        "section": "A. Thông tin và vai trò của người trả lời",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ3",
-        "orig_code": "CQ3",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Dự án bổ sung hay trùng với chương trình nào khác trên địa bàn?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Tất cả",
-        "indicator": "",
-        "dac": "Nhất quán"
+        "code": "A03",
+        "text": "Nếu có, ông/bà tham gia ở vai trò nào (phối hợp triển khai, tuyên truyền, kết nối nông dân/HTX, giám sát, xử lý vấn đề phát sinh hoặc vai trò khác)?",
+        "section": "A. Thông tin và vai trò của người trả lời",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ4",
-        "orig_code": "CQ4",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Kết quả rõ nhất ông/bà thấy ở địa phương là gì? Có số liệu, ví dụ nào?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Tất cả",
-        "indicator": "",
-        "dac": "Hiệu quả"
+        "code": "B01",
+        "text": "Trong giai đoạn 2021–2025, những vấn đề lớn nhất đối với sản xuất cà phê và sinh kế của người dân tại địa bàn là gì? Những vấn đề nào thay đổi đáng kể trong vài năm gần đây?",
+        "section": "B. Bối cảnh địa phương và mức độ phù hợp của dự án",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ5",
-        "orig_code": "CQ5",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Hoạt động nào chưa đạt? Vì sao?",
-        "type": "MO",
-        "options_raw": "Gợi ý: cây gỗ bản địa chỉ đạt 14,8% kế hoạch",
-        "options": [],
-        "condition": "Tất cả",
-        "indicator": "",
-        "dac": "Hiệu quả"
+        "code": "B02",
+        "text": "Theo đánh giá của địa phương, các hoạt động của Compact Cư M’gar có phù hợp với nhu cầu thực tế của nông hộ và định hướng phát triển của địa phương không? Hoạt động nào phù hợp nhất, hoạt động nào chưa đáp ứng đầy đủ?",
+        "section": "B. Bối cảnh địa phương và mức độ phù hợp của dự án",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ6",
-        "orig_code": "CQ6",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Phần đối ứng của xã (tiền, hiện vật, nhân lực) đã thực hiện được bao nhiêu?",
-        "type": "SO + MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "UBND xã",
-        "indicator": "Đối ứng",
-        "dac": "Hiệu suất"
+        "code": "B03",
+        "text": "Trong quá trình triển khai, địa phương có ghi nhận thay đổi lớn về thời tiết, nguồn nước, giá vật tư, giá cà phê, lao động hoặc thị trường không? Những thay đổi này ảnh hưởng thế nào đến sản xuất và việc thực hiện dự án?",
+        "section": "B. Bối cảnh địa phương và mức độ phù hợp của dự án",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ7",
-        "orig_code": "CQ7",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Phụ nữ, thanh niên, hộ DTTS tham gia thế nào? Hội có đưa nội dung vào sinh hoạt không?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Hội Nông dân",
-        "indicator": "RA6",
-        "dac": "Tác động"
+        "code": "B04",
+        "text": "Trên địa bàn có những chương trình hoặc dự án khác cùng hỗ trợ sản xuất cà phê, nông nghiệp hoặc bảo vệ môi trường không? Theo ông/bà, Compact Cư M’gar đã bổ trợ, phối hợp hay có phần nào trùng lặp với các chương trình đó?",
+        "section": "B. Bối cảnh địa phương và mức độ phù hợp của dự án",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ8",
-        "orig_code": "CQ8",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Sắp xếp đơn vị hành chính từ 7/2025 ảnh hưởng thế nào đến duy trì kết quả?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "UBND xã",
-        "indicator": "",
-        "dac": "Bền vững"
+        "code": "C01",
+        "text": "Địa phương đã phối hợp với Dakman và các bên liên quan như thế nào trong quá trình triển khai Compact Cư M’gar? Những hình thức phối hợp nào hoạt động hiệu quả?",
+        "section": "C. Phối hợp triển khai và vai trò của các bên",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ9",
-        "orig_code": "CQ9",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Tình hình chuyển đổi đất rừng từ 2021? Có bản đồ, số liệu chia sẻ được?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "UBND xã; Sở NN&MT",
-        "indicator": "EUDR",
-        "dac": "Tác động"
+        "code": "C02",
+        "text": "Theo ông/bà, việc phối hợp giữa chính quyền, Dakman, ba hợp tác xã Tân Phát, Ea Kiết, Cư Dliê M’nông và các nhóm nông dân có thuận lợi không? Khó khăn hoặc điểm chưa rõ về vai trò, trách nhiệm của các bên là gì?",
+        "section": "C. Phối hợp triển khai và vai trò của các bên",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ10",
-        "orig_code": "CQ10",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Địa phương có cơ chế, chính sách hoặc kế hoạch lồng ghép nào hỗ trợ bà con bảo vệ độ phì đất, trồng cây che bóng, giảm phân thuốc hóa học theo hướng Nông nghiệp tái sinh (2026–2030) không?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Tất cả",
-        "indicator": "",
-        "dac": "Bền vững"
+        "code": "C03",
+        "text": "Dự án có tạo điều kiện để tăng cường năng lực hoặc vai trò của các hợp tác xã, nhóm nông dân và lực lượng khuyến nông/cán bộ địa phương không? Xin nêu ví dụ cụ thể nếu có.",
+        "section": "C. Phối hợp triển khai và vai trò của các bên",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ11",
-        "orig_code": "CQ11",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Đơn vị có cam kết duy trì gì sau 2025?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "Tất cả",
-        "indicator": "",
-        "dac": "Bền vững"
+        "code": "C04",
+        "text": "Công tác thông tin, tuyên truyền, lựa chọn hộ tham gia và tiếp nhận phản hồi/kiến nghị của người dân được thực hiện như thế nào? Có nhóm hộ nào khó tiếp cận hoặc chưa được hưởng lợi tương xứng không?",
+        "section": "C. Phối hợp triển khai và vai trò của các bên",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ12",
-        "orig_code": "CQ12",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Chấm điểm 1-5 cho 6 tiêu chí",
-        "type": "LK",
-        "options_raw": "1=Rất kém/không hữu ích ... 5=Rất tốt/rất hữu ích",
-        "options": [
-          {
-            "value": "1",
-            "label": "Rất kém/không hữu ích ... 5=Rất tốt/rất hữu ích"
-          }
-        ],
-        "condition": "Tất cả",
-        "indicator": "",
-        "dac": "Phù hợp"
+        "code": "C05",
+        "text": "Trong quá trình thực hiện, địa phương có gặp vấn đề hoặc nhận được phản ánh nào từ người dân liên quan đến hoạt động dự án không? Các vấn đề đó được xử lý ra sao?",
+        "section": "C. Phối hợp triển khai và vai trò của các bên",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "CQ",
-        "tool_name": "CQ - Phỏng vấn chính quyền, cơ quan chuyên môn",
-        "group": "Nhóm 3: Chính quyền",
-        "code": "CQ13",
-        "orig_code": "CQ13",
-        "section": "Phỏng vấn UBND xã, Hội Nông dân, Sở NN&MT hoặc TT Khuyến nông (60 phút)",
-        "text": "Ông/bà có đồng ý trả lời phỏng vấn quay clip không?",
-        "type": "SC",
-        "options_raw": "1=Có; 2=Không",
-        "options": [
-          {
-            "value": "1",
-            "label": "Có"
-          },
-          {
-            "value": "2",
-            "label": "Không"
-          }
-        ],
-        "condition": "UBND xã Ea Kiết",
-        "indicator": "",
-        "dac": ""
+        "code": "D01",
+        "text": "Từ góc nhìn của chính quyền địa phương, dự án đã đóng góp những kết quả đáng chú ý nào đối với sản xuất cà phê và đời sống nông hộ? Kết quả nào có thể quan sát hoặc kiểm chứng được?",
+        "section": "D. Kết quả và thay đổi ghi nhận ở cấp địa phương",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "D02",
+        "text": "Ông/bà có ghi nhận thay đổi trong thực hành sản xuất của người dân như sử dụng phân bón, quản lý cỏ và thuốc bảo vệ thực vật, tưới nước, trồng xen/cây che bóng, cải tạo vườn hoặc an toàn lao động không? Những thay đổi nào có vẻ được duy trì tốt hơn?",
+        "section": "D. Kết quả và thay đổi ghi nhận ở cấp địa phương",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "D03",
+        "text": "Dự án có đóng góp gì cho việc nâng cao năng lực của HTX, tăng cường liên kết giữa nông dân với HTX/doanh nghiệp, hoặc cải thiện việc tổ chức vùng sản xuất tại địa phương không?",
+        "section": "D. Kết quả và thay đổi ghi nhận ở cấp địa phương",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "D04",
+        "text": "Theo ông/bà, những kết quả nào của dự án còn hạn chế hoặc chưa bền vững? Nguyên nhân chủ yếu nằm ở đâu: nguồn lực, kỹ thuật, tổ chức thực hiện, thị trường, điều kiện của hộ hay yếu tố khác?",
+        "section": "D. Kết quả và thay đổi ghi nhận ở cấp địa phương",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "E01",
+        "text": "Sau khi dự án kết thúc vào cuối năm 2025, địa phương có tiếp tục triển khai, lồng ghép hoặc hỗ trợ duy trì hoạt động nào liên quan đến các nội dung của Compact Cư M’gar không? Nếu có, xin nêu cụ thể.",
+        "section": "E. Khả năng duy trì sau khi dự án kết thúc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "E02",
+        "text": "Theo ông/bà, những thực hành hoặc kết quả nào người dân và các tổ chức tại địa phương có khả năng tự duy trì? Những nội dung nào cần hỗ trợ thêm từ bên ngoài?",
+        "section": "E. Khả năng duy trì sau khi dự án kết thúc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "E03",
+        "text": "Chính quyền địa phương hiện có kế hoạch, chương trình hoặc nguồn lực nào có thể hỗ trợ tiếp tục các hoạt động phù hợp với mục tiêu của dự án không? Nếu chưa có, đâu là những trở ngại chính?",
+        "section": "E. Khả năng duy trì sau khi dự án kết thúc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "E04",
+        "text": "Vai trò của chính quyền, HTX, nhóm nông dân, doanh nghiệp và các đơn vị chuyên môn nên được phân công hoặc phối hợp như thế nào để duy trì kết quả trong thời gian tới?",
+        "section": "E. Khả năng duy trì sau khi dự án kết thúc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "F01",
+        "text": "Theo ông/bà, sau khi Compact Cư M’gar kết thúc, địa phương có cần một Giai đoạn 2 hoặc một chương trình tiếp nối không? Vì sao?",
+        "section": "F. Ý kiến về nhu cầu và khả năng có Giai đoạn 2",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "F02",
+        "text": "Nếu có Giai đoạn 2, những vấn đề nào của sản xuất cà phê và đời sống nông hộ tại địa phương nên được ưu tiên giải quyết? Xin giải thích dựa trên nhu cầu thực tế.",
+        "section": "F. Ý kiến về nhu cầu và khả năng có Giai đoạn 2",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "F03",
+        "text": "Theo ông/bà, Giai đoạn 2 nên kế thừa những kết quả hoặc cách làm nào của giai đoạn trước; đồng thời cần điều chỉnh hoặc bổ sung điều gì?",
+        "section": "F. Ý kiến về nhu cầu và khả năng có Giai đoạn 2",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "F04",
+        "text": "Địa phương có thể tham gia hoặc đóng góp những gì nếu có chương trình tiếp theo (ví dụ phối hợp, nhân lực, lồng ghép kế hoạch, kết nối HTX/nông dân, dữ liệu hoặc nguồn lực)? Những điều kiện nào cần được đáp ứng?",
+        "section": "F. Ý kiến về nhu cầu và khả năng có Giai đoạn 2",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "G01",
+        "text": "Nếu lựa chọn ba kết quả hoặc bài học quan trọng nhất của Compact Cư M’gar đối với địa phương, ông/bà sẽ nêu những nội dung nào?",
+        "section": "G. Đánh giá chung và khuyến nghị",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "G02",
+        "text": "Theo ông/bà, đâu là khuyến nghị quan trọng nhất dành cho các đơn vị triển khai, nhà tài trợ và chính quyền khi thiết kế hoặc thực hiện các chương trình hỗ trợ sản xuất cà phê trong thời gian tới?",
+        "section": "G. Đánh giá chung và khuyến nghị",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "G03",
+        "text": "Ông/bà có thông tin, ví dụ hoặc tài liệu nào khác muốn chia sẻ để nhóm đánh giá hiểu đầy đủ hơn về kết quả, hạn chế và nhu cầu của địa phương không?",
+        "section": "G. Đánh giá chung và khuyến nghị",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "H01",
+        "text": "Số liệu / văn bản / nghị quyết / kế hoạch địa phương đã ban hành hoặc chia sẻ",
+        "section": "H. Ghi chú của điều tra viên",
+        "type": "TX",
+        "rows": 4
+      },
+      {
+        "code": "H02",
+        "text": "Đề xuất chính sách hoặc cơ chế phối hợp cụ thể",
+        "section": "H. Ghi chú của điều tra viên",
+        "type": "TX",
+        "rows": 4
+      },
+      {
+        "code": "H03",
+        "text": "Điểm cần làm rõ thêm",
+        "section": "H. Ghi chú của điều tra viên",
+        "type": "TX",
+        "rows": 4
       }
-    ],
-    "tool_code": "CQ",
-    "tool_name": "Chính quyền địa phương – đại diện 3 xã",
-    "target_count": "3 xã"
+    ]
   },
   "HTX": {
-    "name": "HTX: Ban quản lý 3 HTX (3)",
+    "tool_code": "HTX",
+    "tool_name": "Ban quản lý 3 Hợp tác xã",
+    "target_count": "3 HTX",
+    "group": "Hợp tác xã",
     "questions": [
       {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX1",
-        "orig_code": "HTX1",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "Số thành viên năm 2021 và hiện nay; số nữ; số hộ DTTS",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "",
-        "dac": "Hiệu quả"
+        "code": "II_01",
+        "text": "Hiện nay hợp tác xã có bao nhiêu thành viên? Trong giai đoạn 2021–2025, số lượng thành viên và mức độ tham gia hoạt động của thành viên có thay đổi đáng kể không?",
+        "section": "II. Tổ chức, quản trị và năng lực của hợp tác xã",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX2",
-        "orig_code": "HTX2",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "Sản lượng cà phê HTX thu mua mỗi năm 2021-2025; phần bán có chứng nhận (FT, 4C, RA)",
-        "type": "SO",
-        "options_raw": "Tấn/năm",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "Cà phê bền vững có thị trường (RA4 Impact 1)",
-        "dac": "Tác động"
+        "code": "II_02",
+        "text": "Trong thời gian Compact Cư M’gar triển khai, hợp tác xã tham gia những hoạt động hoặc đảm nhận những nhiệm vụ gì? Vai trò và trách nhiệm của hợp tác xã được thống nhất với Dakman và các bên như thế nào?",
+        "section": "II. Tổ chức, quản trị và năng lực của hợp tác xã",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX3",
-        "orig_code": "HTX3",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "Premium Fairtrade nhận mỗi năm và đã chi vào việc gì?",
-        "type": "SO + TX",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "",
-        "dac": "Tác động"
+        "code": "II_03",
+        "text": "Dự án có hỗ trợ gì cho công tác quản trị, điều hành, lập kế hoạch, quản lý hồ sơ, tài chính hoặc năng lực cán bộ của hợp tác xã không? Nội dung nào thực sự hữu ích và được áp dụng vào hoạt động thường xuyên?",
+        "section": "II. Tổ chức, quản trị và năng lực của hợp tác xã",
+        "type": "TX",
+        "rows": 5
       },
       {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX4",
-        "orig_code": "HTX4",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "Dự án đã hỗ trợ HTX những gì (đào tạo, thiết bị, phần mềm)? HTX làm được việc gì mà trước đây chưa làm được?",
+        "code": "II_04",
+        "text": "Theo ông/bà, năng lực của hợp tác xã đã thay đổi như thế nào trong giai đoạn dự án? Những điểm nào tiến bộ rõ nhất, và những hạn chế nào vẫn còn?",
+        "section": "II. Tổ chức, quản trị và năng lực của hợp tác xã",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "III_01",
+        "text": "Hiện nay hợp tác xã đang cung cấp những dịch vụ nào cho thành viên (ví dụ: tập huấn, tư vấn kỹ thuật, cung ứng vật tư, hỗ trợ sản xuất, thu mua, kết nối thị trường hoặc dịch vụ khác)? Dịch vụ nào được thành viên sử dụng nhiều nhất?",
+        "section": "III. Dịch vụ hỗ trợ thành viên và tổ dịch vụ",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "III_02",
+        "text": "Trong khuôn khổ dự án, hợp tác xã có tham gia tổ chức hoặc cung cấp dịch vụ kỹ thuật cho nông dân không? Những dịch vụ nào được hình thành hoặc cải thiện nhờ sự hỗ trợ của dự án?",
+        "section": "III. Dịch vụ hỗ trợ thành viên và tổ dịch vụ",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "III_03",
+        "text": "Dự án có hỗ trợ thành lập, củng cố hoặc vận hành các tổ dịch vụ SDM hay không? Nếu có, tổ dịch vụ hiện hoạt động như thế nào, cung cấp dịch vụ gì, phục vụ bao nhiêu hộ và nguồn thu/chi phí vận hành được tổ chức ra sao?",
+        "section": "III. Dịch vụ hỗ trợ thành viên và tổ dịch vụ",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "III_04",
+        "text": "Các dịch vụ của hợp tác xã hoặc tổ SDM có thể tiếp tục duy trì sau khi dự án kết thúc không? Khó khăn lớn nhất hiện nay là gì (nhân lực, kỹ thuật, vốn, nhu cầu của thành viên, chi phí hay cơ chế vận hành)?",
+        "section": "III. Dịch vụ hỗ trợ thành viên và tổ dịch vụ",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "IV_01",
+        "text": "Hợp tác xã hiện có tham gia thu mua hoặc liên kết tiêu thụ cà phê cho thành viên không? Nếu có, quy trình thu mua, xác định chất lượng, giá cả và thanh toán được thực hiện như thế nào?",
+        "section": "IV. Thu mua, liên kết thị trường và truy xuất nguồn gốc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "IV_02",
+        "text": "Trong giai đoạn dự án, mối liên kết giữa hợp tác xã với Dakman và các đơn vị thu mua đã thay đổi như thế nào? Những lợi ích cụ thể mà thành viên nhận được là gì?",
+        "section": "IV. Thu mua, liên kết thị trường và truy xuất nguồn gốc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "IV_03",
+        "text": "Hợp tác xã hiện đang quản lý những thông tin hoặc hồ sơ nào về thành viên, diện tích/vườn cà phê, sản lượng và giao dịch? Việc cập nhật, lưu trữ và sử dụng dữ liệu được thực hiện ra sao?",
+        "section": "IV. Thu mua, liên kết thị trường và truy xuất nguồn gốc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "IV_04",
+        "text": "Hợp tác xã có tham gia thực hiện truy xuất nguồn gốc, ghi nhận thông tin vùng trồng hoặc cung cấp dữ liệu phục vụ yêu cầu của khách hàng/chuỗi cung ứng không? Khâu nào đang làm tốt, khâu nào còn khó khăn?",
+        "section": "IV. Thu mua, liên kết thị trường và truy xuất nguồn gốc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "IV_05",
+        "text": "Theo ông/bà, yêu cầu về truy xuất nguồn gốc và sản xuất không gây mất rừng đang tạo ra cơ hội hoặc áp lực gì cho hợp tác xã và thành viên? Hợp tác xã cần được hỗ trợ thêm điều gì để đáp ứng các yêu cầu này?",
+        "section": "IV. Thu mua, liên kết thị trường và truy xuất nguồn gốc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "V_01",
+        "text": "Hợp tác xã có cung ứng hoặc kết nối thành viên với các loại vật tư đầu vào, đặc biệt là phân bón hữu cơ, phân vi sinh, cây giống hoặc vật tư phục vụ sản xuất không? Hoạt động này được tổ chức theo hình thức nào?",
+        "section": "V. Vật tư đầu vào và thực hành sản xuất của thành viên",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "V_02",
+        "text": "Trong các nội dung dự án hỗ trợ như phân tích đất, dinh dưỡng đất, ủ phân hữu cơ, quản lý cỏ, trồng xen/cây che bóng, tưới nước và an toàn lao động, nội dung nào thành viên quan tâm và áp dụng rõ nhất?",
+        "section": "V. Vật tư đầu vào và thực hành sản xuất của thành viên",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "V_03",
+        "text": "Theo quan sát của hợp tác xã, những thực hành nào thành viên còn duy trì sau khi dự án kết thúc? Những thực hành nào khó duy trì và nguyên nhân là gì?",
+        "section": "V. Vật tư đầu vào và thực hành sản xuất của thành viên",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "V_04",
+        "text": "Hợp tác xã có theo dõi hoặc ghi nhận thay đổi về chi phí đầu vào, năng suất, chất lượng, sản lượng bán qua hợp tác xã hoặc thu nhập của thành viên không? Nếu có, dữ liệu nào đang sẵn có?",
+        "section": "V. Vật tư đầu vào và thực hành sản xuất của thành viên",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "VI_01",
+        "text": "Ông/bà đánh giá thế nào về cách Dakman phối hợp với hợp tác xã trong quá trình triển khai dự án? Những điểm nào hiệu quả và những điểm nào cần cải thiện?",
+        "section": "VI. Phối hợp với Dakman và các bên liên quan",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "VI_02",
+        "text": "Thông tin về kế hoạch, tiêu chí tham gia, hỗ trợ và kết quả dự án được trao đổi giữa Dakman và hợp tác xã có đầy đủ, kịp thời không? Hợp tác xã có cơ hội phản hồi hoặc đề xuất điều chỉnh không?",
+        "section": "VI. Phối hợp với Dakman và các bên liên quan",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "VI_03",
+        "text": "Sự phối hợp giữa hợp tác xã với chính quyền địa phương, nhóm trưởng, tổ dịch vụ và các đơn vị thu mua có thay đổi gì nhờ dự án?",
+        "section": "VI. Phối hợp với Dakman và các bên liên quan",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "VI_04",
+        "text": "Có khó khăn hoặc bất đồng nào trong quá trình phối hợp, triển khai hoạt động, cung cấp dịch vụ hoặc thu mua không? Các bên đã xử lý như thế nào?",
+        "section": "VI. Phối hợp với Dakman và các bên liên quan",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "VII_01",
+        "text": "Sau khi dự án kết thúc, hợp tác xã đã tiếp tục duy trì những hoạt động hoặc dịch vụ nào được hỗ trợ trong giai đoạn 2021–2025? Hoạt động nào đã dừng hoặc giảm quy mô? Vì sao?",
+        "section": "VII. Khả năng duy trì và nhu cầu giai đoạn tiếp theo",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "VII_02",
+        "text": "Theo ông/bà, những hoạt động nào hợp tác xã có thể tự duy trì bằng nguồn lực hiện có; những hoạt động nào cần sự hỗ trợ từ doanh nghiệp, chính quyền, nhà tài trợ hoặc đối tác kỹ thuật?",
+        "section": "VII. Khả năng duy trì và nhu cầu giai đoạn tiếp theo",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "VII_03",
+        "text": "Theo ông/bà, Cư M’gar có nên có Giai đoạn 2 không? Vì sao? Nếu có, hợp tác xã mong muốn Giai đoạn 2 tập trung hỗ trợ những vấn đề nào để đáp ứng nhu cầu thực tế của thành viên?",
+        "section": "VII. Khả năng duy trì và nhu cầu giai đoạn tiếp theo",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "VII_04",
+        "text": "Nếu có Giai đoạn 2, hợp tác xã có thể đảm nhận vai trò gì? Hợp tác xã cần điều kiện hoặc hỗ trợ nào về nhân lực, quản trị, dịch vụ, thị trường, dữ liệu và nguồn lực tài chính để tham gia hiệu quả?",
+        "section": "VII. Khả năng duy trì và nhu cầu giai đoạn tiếp theo",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "VII_05",
+        "text": "Theo ông/bà, mô hình phối hợp giữa Dakman, hợp tác xã và nông hộ nên được duy trì, điều chỉnh hoặc tổ chức lại như thế nào trong thời gian tới?",
+        "section": "VII. Khả năng duy trì và nhu cầu giai đoạn tiếp theo",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "VIII_01",
+        "text": "Nếu lựa chọn ba kết quả quan trọng nhất mà Compact Cư M’gar mang lại cho hợp tác xã và thành viên, ông/bà sẽ nêu những kết quả nào?",
+        "section": "VIII. Đánh giá chung và ghi chú",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "VIII_02",
+        "text": "Đâu là ba khó khăn lớn nhất hiện nay của hợp tác xã trong việc cung cấp dịch vụ, liên kết thị trường và hỗ trợ thành viên sản xuất cà phê bền vững?",
+        "section": "VIII. Đánh giá chung và ghi chú",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "VIII_03",
+        "text": "Ông/bà có khuyến nghị quan trọng nào cho nhóm đánh giá và các bên đang cân nhắc chương trình tiếp theo không?",
+        "section": "VIII. Đánh giá chung và ghi chú",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "IX_01",
+        "text": "Tài liệu / hồ sơ HTX có thể cung cấp đối chiếu (nếu có)",
+        "section": "IX. Tài liệu / Hồ sơ có thể đối chiếu",
         "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "Nâng cao năng lực HTX (RA5 Output 1)",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX5",
-        "orig_code": "HTX5",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "Tổ SDM: số hộ dùng dịch vụ, doanh thu, ai quản lý? (đối chiếu với thảo luận tổ SDM)",
-        "type": "SO + MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "RA5 Outcome 1",
-        "dac": "Bền vững"
-      },
-      {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX6",
-        "orig_code": "HTX6",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "Bao nhiêu % thành viên đã có tọa độ, ranh giới vườn? Ai cập nhật dữ liệu khi hộ mua, bán đất?",
-        "type": "SO + MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "Dữ liệu GPS EUDR (IV.4.8)",
-        "dac": "Bền vững"
-      },
-      {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX7",
-        "orig_code": "HTX7",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "HTX đã sẵn sàng cung cấp hồ sơ thẩm định EUDR cho người mua chưa? Còn thiếu gì?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "Sẵn sàng EUDR",
-        "dac": "Bền vững"
-      },
-      {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX8",
-        "orig_code": "HTX8",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "Quan hệ mua bán với Dakman và doanh nghiệp khác thay đổi thế nào từ 2021?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "",
-        "dac": "Nhất quán"
-      },
-      {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX9",
-        "orig_code": "HTX9",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "Năm 2024 HTX lỗ hợp đồng kỳ hạn ảnh hưởng thế nào đến phần đối ứng và hoạt động tổ SDM?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "Đối ứng HTX",
-        "dac": "Hiệu suất"
-      },
-      {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX10",
-        "orig_code": "HTX10",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "HTX có kế hoạch, kinh phí duy trì các hoạt động của dự án trong 2026-2028 không?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "",
-        "dac": "Bền vững"
-      },
-      {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX11",
-        "orig_code": "HTX11",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "Chấm điểm dự án (1-5) theo: phù hợp, hiệu quả, bền vững. Giải thích.",
-        "type": "LK + TX",
-        "options_raw": "1=Rất kém/không hữu ích ... 5=Rất tốt/rất hữu ích",
+        "rows": 3,
         "options": [
           {
-            "value": "1",
-            "label": "Rất kém/không hữu ích ... 5=Rất tốt/rất hữu ích"
+            "value": "DS_THANH_VIEN",
+            "label": "Danh sách thành viên và diện tích / sản lượng"
+          },
+          {
+            "value": "BC_NGHI_QUYET",
+            "label": "Báo cáo hoạt động, nghị quyết hoặc kế hoạch sản xuất kinh doanh của HTX"
+          },
+          {
+            "value": "HS_THU_MUA",
+            "label": "Hồ sơ thu mua, hợp đồng / liên kết tiêu thụ và thanh toán"
+          },
+          {
+            "value": "HS_TRUY_XUAT",
+            "label": "Hồ sơ truy xuất nguồn gốc, dữ liệu vùng trồng hoặc nhật ký sản xuất"
+          },
+          {
+            "value": "TO_DICH_VU_SDM",
+            "label": "Hồ sơ hoạt động tổ dịch vụ SDM (nếu có)"
+          },
+          {
+            "value": "TL_KHAC",
+            "label": "Tài liệu khác"
           }
         ],
-        "condition": "3 HTX",
-        "indicator": "",
-        "dac": "Phù hợp"
+        "follow_up_on": "TL_KHAC",
+        "follow_up_placeholder": "Ghi rõ tài liệu khác..."
       },
       {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX12",
-        "orig_code": "HTX12",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "HTX quản lý mấy điểm thu mua được dự án hỗ trợ? Khi mua có ghi mã hộ, mã vườn không, ghi bằng sổ hay phần mềm?",
-        "type": "SO + TX",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "Truy xuất nguồn gốc (V.1)",
-        "dac": "Hiệu quả"
+        "code": "X_01",
+        "text": "Thông tin / bằng chứng cụ thể cần ghi nhận",
+        "section": "X. Ghi chú của điều tra viên",
+        "type": "TX",
+        "rows": 4
       },
       {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX13",
-        "orig_code": "HTX13",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "Khoảng bao nhiêu % cà phê HTX mua truy được đến vườn? Có tách riêng dòng hàng đạt yêu cầu EUDR không?",
-        "type": "SO + TX",
-        "options_raw": "%",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "Cơ chế thu mua phân biệt",
-        "dac": "Tác động"
+        "code": "X_02",
+        "text": "Số liệu / hồ sơ cần kiểm chứng hoặc bổ sung",
+        "section": "X. Ghi chú của điều tra viên",
+        "type": "TX",
+        "rows": 4
       },
       {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX14",
-        "orig_code": "HTX14",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "HTX có thể cung cấp phân hữu cơ, chế phẩm sinh học hoặc dịch vụ cho thành viên không? Cần gì để làm được?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "",
-        "dac": "Bền vững"
-      },
-      {
-        "tool_code": "HTX",
-        "tool_name": "HTX - Phỏng vấn ban giám đốc HTX",
-        "group": "Nhóm 2: Trưởng nhóm, HTX",
-        "code": "HTX15",
-        "orig_code": "HTX15",
-        "section": "Phỏng vấn ban giám đốc HTX (90 phút)",
-        "text": "Bài học kinh nghiệm và đề xuất cho Giai đoạn 2: Nhu cầu và khả năng của HTX khi chuyển dịch sang mô hình Nông nghiệp tái sinh (Regenerative Agriculture 2026–2030), như cung ứng phân bón hữu cơ vi sinh, cây che bóng đa tầng, và liên kết tiêu thụ cà phê giảm phát thải carbon.",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "3 HTX",
-        "indicator": "",
-        "dac": "Bền vững"
+        "code": "X_03",
+        "text": "Nhận xét của điều tra viên về năng lực và tính minh bạch của HTX",
+        "section": "X. Ghi chú của điều tra viên",
+        "type": "TX",
+        "rows": 4
       }
-    ],
-    "tool_code": "HTX",
-    "tool_name": "Ban quản lý 3 HTX",
-    "target_count": "3 HTX"
+    ]
   },
   "TT": {
     "name": "TT: Nhà tài trợ - IDH và JDE Peet’s (2)",
     "tool_code": "TT",
-    "tool_name": "Nhà tài trợ (IDH và JDE Peet’s)",
-    "target_count": "2 đơn vị (1-5 phiếu/đơn vị)",
+    "tool_name": "Nhà tài trợ (IDH & JDE Peet's)",
+    "target_count": "2 đơn vị",
     "donor_tabs": {
       "IDH": {
         "donor_code": "IDH",
@@ -3939,117 +3650,206 @@
     ]
   },
   "MH": {
-    "name": "MH: Chủ mô hình trình diễn (2)",
-    "questions": [
-      {
-        "tool_code": "MH",
-        "tool_name": "MH - Phỏng vấn sâu chủ mô hình",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MH1",
-        "orig_code": "MH1",
-        "section": "Phỏng vấn sâu chủ mô hình (45 phút)",
-        "text": "Mô hình gì, lắp năm nào, diện tích bao nhiêu? Tổng chi phí, phần dự án hỗ trợ?",
-        "type": "SO + TX",
-        "options_raw": "",
-        "options": [],
-        "condition": "9 hộ: 3 tưới nhỏ giọt, 6 quản lý cỏ",
-        "indicator": "Mô hình (RA2 Output, RA3 Output 2)",
-        "dac": "Hiệu suất"
-      },
-      {
-        "tool_code": "MH",
-        "tool_name": "MH - Phỏng vấn sâu chủ mô hình",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MH2",
-        "orig_code": "MH2",
-        "section": "Phỏng vấn sâu chủ mô hình (45 phút)",
-        "text": "So với trước khi có mô hình: lượng nước, tiền điện, phân bón, công lao động, năng suất thay đổi thế nào?",
-        "type": "SO",
-        "options_raw": "Ghi số trước và sau theo từng mục",
-        "options": [],
-        "condition": "9 hộ",
-        "indicator": "Hiệu quả mô hình",
-        "dac": "Tác động"
-      },
-      {
-        "tool_code": "MH",
-        "tool_name": "MH - Phỏng vấn sâu chủ mô hình",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MH3",
-        "orig_code": "MH3",
-        "section": "Phỏng vấn sâu chủ mô hình (45 phút)",
-        "text": "Đã có bao nhiêu đoàn, bao nhiêu người đến xem?",
-        "type": "SO",
-        "options_raw": "",
-        "options": [],
-        "condition": "9 hộ",
-        "indicator": "RA2 Output 6; RA3 Output 3",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "MH",
-        "tool_name": "MH - Phỏng vấn sâu chủ mô hình",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MH4",
-        "orig_code": "MH4",
-        "section": "Phỏng vấn sâu chủ mô hình (45 phút)",
-        "text": "Ông/bà biết bao nhiêu hộ đã làm theo? Hộ ở thôn nào?",
-        "type": "SO + TX",
-        "options_raw": "",
-        "options": [],
-        "condition": "9 hộ",
-        "indicator": "Lan tỏa",
-        "dac": "Tác động"
-      },
-      {
-        "tool_code": "MH",
-        "tool_name": "MH - Phỏng vấn sâu chủ mô hình",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MH5",
-        "orig_code": "MH5",
-        "section": "Phỏng vấn sâu chủ mô hình (45 phút)",
-        "text": "Mô hình có hỏng hóc gì? Chi phí duy trì mỗi năm?",
-        "type": "SO + TX",
-        "options_raw": "",
-        "options": [],
-        "condition": "9 hộ",
-        "indicator": "",
-        "dac": "Bền vững"
-      },
-      {
-        "tool_code": "MH",
-        "tool_name": "MH - Phỏng vấn sâu chủ mô hình",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MH6",
-        "orig_code": "MH6",
-        "section": "Phỏng vấn sâu chủ mô hình (45 phút)",
-        "text": "Ông/bà có duy trì, mở rộng mô hình không?",
-        "type": "SC + TX",
-        "options_raw": "",
-        "options": [],
-        "condition": "9 hộ",
-        "indicator": "",
-        "dac": "Bền vững"
-      },
-      {
-        "tool_code": "MH",
-        "tool_name": "MH - Phỏng vấn sâu chủ mô hình",
-        "group": "Nhóm 1: Nông Dân",
-        "code": "MH7",
-        "orig_code": "MH7",
-        "section": "Phỏng vấn sâu chủ mô hình (45 phút)",
-        "text": "Hộ khác cần điều kiện gì để làm được như vậy?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "9 hộ",
-        "indicator": "",
-        "dac": "Bền vững"
-      }
-    ],
     "tool_code": "MH",
     "tool_name": "Chủ mô hình trình diễn",
-    "target_count": "2 mô hình"
+    "target_count": "2 mô hình",
+    "group": "Chủ mô hình trình diễn",
+    "questions": [
+      {
+        "code": "A01",
+        "text": "Ông/bà giới thiệu ngắn gọn về gia đình và vườn cà phê đang thực hiện mô hình: diện tích vườn, tuổi vườn, giống cà phê, địa điểm và thời điểm bắt đầu tham gia mô hình.",
+        "section": "A. Thông tin và quá trình tham gia mô hình",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "A02",
+        "text": "Mô hình gia đình đang thực hiện cụ thể là gì? Dự án/Dakman đã hỗ trợ những hạng mục hoặc thiết bị, vật tư, hướng dẫn kỹ thuật nào? Hộ gia đình có tự đầu tư thêm không?",
+        "section": "A. Thông tin và quá trình tham gia mô hình",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "A03",
+        "text": "Vì sao gia đình được lựa chọn làm mô hình trình diễn? Trước khi tham gia, gia đình đang gặp khó khăn gì trong sản xuất mà mô hình hướng tới giải quyết?",
+        "section": "A. Thông tin và quá trình tham gia mô hình",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "B01",
+        "text": "Trước khi có mô hình, gia đình thực hiện công việc liên quan như thế nào? Xin mô tả cách làm cũ, tần suất thực hiện và những khó khăn hoặc chi phí chính.",
+        "section": "B. Thực hành trước và sau khi áp dụng mô hình",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "B02",
+        "text": "Từ khi áp dụng mô hình, gia đình đã thay đổi những công việc cụ thể nào? Xin mô tả quy trình hiện nay và những điểm khác so với trước.",
+        "section": "B. Thực hành trước và sau khi áp dụng mô hình",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "B03",
+        "text": "Nếu là mô hình tưới tiết kiệm: trước và sau khi áp dụng, gia đình tưới bao nhiêu lần/vụ, mỗi lần trong bao lâu hoặc sử dụng khoảng bao nhiêu nước/điện? Nếu không có số liệu đo, xin nêu ước tính và căn cứ.",
+        "section": "B. Thực hành trước và sau khi áp dụng mô hình",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "B04",
+        "text": "Nếu là mô hình quản lý cỏ/thảm phủ: gia đình quản lý cỏ giữa hàng và quanh gốc như thế nào, dùng công cụ gì, tần suất cắt ra sao và sinh khối cỏ được xử lý như thế nào?",
+        "section": "B. Thực hành trước và sau khi áp dụng mô hình",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "B05",
+        "text": "Gia đình có thay đổi gì về sử dụng phân bón, phân hữu cơ, thuốc bảo vệ thực vật hoặc công lao động do áp dụng mô hình không? Xin nêu ví dụ cụ thể.",
+        "section": "B. Thực hành trước và sau khi áp dụng mô hình",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "C01",
+        "text": "Theo quan sát của gia đình, mô hình đã tạo ra thay đổi gì đối với vườn cà phê (độ ẩm đất, tình trạng cỏ, đất, sinh trưởng cây, sâu bệnh hoặc khả năng chống chịu thời tiết)? Thay đổi nào nhìn thấy rõ nhất?",
+        "section": "C. Kết quả, chi phí và khả năng nhân rộng",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "C02",
+        "text": "Chi phí đầu tư ban đầu và chi phí vận hành/bảo dưỡng mô hình hiện nay là bao nhiêu? Gia đình có tiết kiệm được chi phí nước, điện, phân bón, thuốc hoặc công lao động không? Nếu có, xin ước tính theo vụ hoặc theo năm.",
+        "section": "C. Kết quả, chi phí và khả năng nhân rộng",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "C03",
+        "text": "Năng suất, sản lượng hoặc chất lượng cà phê có thay đổi kể từ khi áp dụng mô hình không? Nếu có, gia đình dựa trên số liệu hay quan sát nào để nhận định? Ngoài mô hình, còn yếu tố nào khác có thể ảnh hưởng đến thay đổi này?",
+        "section": "C. Kết quả, chi phí và khả năng nhân rộng",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "C04",
+        "text": "Đã có bao nhiêu lượt nông dân hoặc hộ khác đến tham quan, học hỏi mô hình? Có hộ nào đã áp dụng thử hoặc làm theo không? Nếu có, xin nêu ví dụ và quy mô.",
+        "section": "C. Kết quả, chi phí và khả năng nhân rộng",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "C05",
+        "text": "Theo gia đình, điều kiện nào cần có để hộ khác có thể áp dụng mô hình này (chi phí, diện tích, nguồn nước, thiết bị, kỹ thuật, lao động hoặc hỗ trợ bên ngoài)?",
+        "section": "C. Kết quả, chi phí và khả năng nhân rộng",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "D01",
+        "text": "Sau khi dự án kết thúc, gia đình hiện còn duy trì những hạng mục và thực hành nào của mô hình? Có nội dung nào đã giảm, thay đổi hoặc ngừng thực hiện không? Vì sao?",
+        "section": "D. Duy trì sau khi dự án kết thúc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "D02",
+        "text": "Trong quá trình duy trì mô hình, khó khăn lớn nhất của gia đình là gì (sửa chữa thiết bị, chi phí, thiếu vật tư, thiếu tư vấn kỹ thuật, thời gian hoặc yếu tố khác)? Gia đình đã tự xử lý như thế nào?",
+        "section": "D. Duy trì sau khi dự án kết thúc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "D03",
+        "text": "Gia đình có còn nhận được hỗ trợ kỹ thuật hoặc dịch vụ từ Dakman, HTX, tổ dịch vụ SDM, nhóm trưởng hoặc đơn vị nào khác không? Hỗ trợ đó đáp ứng nhu cầu đến đâu?",
+        "section": "D. Duy trì sau khi dự án kết thúc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "D04",
+        "text": "Nếu tiếp tục duy trì hoặc mở rộng mô hình, gia đình cần thêm hỗ trợ gì? Hộ có sẵn sàng tự đầu tư một phần chi phí không? Vì sao?",
+        "section": "D. Duy trì sau khi dự án kết thúc",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "E01",
+        "text": "Theo ông/bà, địa phương có nên tiếp tục có một giai đoạn hoặc chương trình hỗ trợ tiếp theo sau Compact Cư M’gar không? Vì sao?",
+        "section": "E. Ý kiến về nhu cầu tiếp theo",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "E02",
+        "text": "Nếu có chương trình tiếp theo, gia đình mong muốn được hỗ trợ hoặc tập trung vào những vấn đề nào là thiết thực nhất đối với vườn cà phê?",
+        "section": "E. Ý kiến về nhu cầu tiếp theo",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "E03",
+        "text": "Từ trải nghiệm của gia đình, cần giữ lại, điều chỉnh hoặc tránh lặp lại điều gì khi xây dựng chương trình tiếp theo?",
+        "section": "E. Ý kiến về nhu cầu tiếp theo",
+        "type": "TX",
+        "rows": 5
+      },
+      {
+        "code": "F01",
+        "text": "Điều tra viên quan sát trực tiếp tại vườn và ghi nhận hiện trạng thực tế:",
+        "section": "F. Quan sát thực địa và bằng chứng",
+        "type": "MO",
+        "rows": 3,
+        "options": [
+          {
+            "value": "HOAT_DONG",
+            "label": "Mô hình còn hoạt động tại thời điểm khảo sát"
+          },
+          {
+            "value": "THIET_BI_SU_DUNG_DUOC",
+            "label": "Thiết bị / hạng mục được lắp đặt còn sử dụng được"
+          },
+          {
+            "value": "DUY_TRI_KY_THUAT",
+            "label": "Thực hành kỹ thuật được hộ duy trì"
+          },
+          {
+            "value": "CO_GHI_CHEP",
+            "label": "Có dấu hiệu / ghi chép hỗ trợ cho thay đổi được mô tả"
+          },
+          {
+            "value": "HO_KHAC_THAM_QUAN",
+            "label": "Có hộ khác đến tham quan hoặc áp dụng theo"
+          },
+          {
+            "value": "KHONG_CON_DUY_TRI",
+            "label": "Có nội dung không còn duy trì hoặc thiết bị không hoạt động"
+          }
+        ]
+      },
+      {
+        "code": "F02",
+        "text": "Mô tả loại mô hình và hiện trạng thực tế tại vườn",
+        "section": "F. Quan sát thực địa và bằng chứng",
+        "type": "TX",
+        "rows": 4
+      },
+      {
+        "code": "F03",
+        "text": "Số liệu / ghi chép / hóa đơn hoặc bằng chứng hộ cung cấp",
+        "section": "F. Quan sát thực địa và bằng chứng",
+        "type": "TX",
+        "rows": 4
+      },
+      {
+        "code": "F04",
+        "text": "Ảnh chụp / điểm cần xác minh thêm",
+        "section": "F. Quan sát thực địa và bằng chứng",
+        "type": "TX",
+        "rows": 4
+      }
+    ]
   },
   "TT_IDH": {
     "name": "TT_IDH: Nhà tài trợ IDH (1-5)",
