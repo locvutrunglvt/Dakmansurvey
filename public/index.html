@@ -2474,6 +2474,20 @@
                     </div>
                 </div>
 
+                <!-- Thanh 02 Tab Chọn Nhà Tài Trợ (IDH & JDE Peet's) khi mở công cụ TT -->
+                <div id="donorSubTabBar" style="display: none; margin: 10px 0 14px 0; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" id="btnDonorTab-IDH" class="donor-tab-btn active" onclick="switchDonorTab('IDH')"
+                                style="flex: 1; min-width: 200px; padding: 10px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.92rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; background: #002060; color: #ffffff; transition: all 0.2s;">
+                            <i class="fa-solid fa-building"></i> 1. Nhà tài trợ IDH (1–5 phiếu)
+                        </button>
+                        <button type="button" id="btnDonorTab-JDE" class="donor-tab-btn" onclick="switchDonorTab('JDE')"
+                                style="flex: 1; min-width: 200px; padding: 10px 14px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.92rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; background: #f1f5f9; color: #475569; transition: all 0.2s;">
+                            <i class="fa-solid fa-mug-hot"></i> 2. Nhà tài trợ JDE Peet’s (1–5 phiếu)
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Survey Form -->
                 <form id="onlineSurveyForm" onsubmit="handleSurveySubmit(event)">
                     <!-- Section 1: Thông tin hành chính & Định vị -->
@@ -2481,6 +2495,38 @@
                         <div class="section-header">
                             <span>I. THÔNG TIN HÀNH CHÍNH & ĐỊNH VỊ KHẢO SÁT HIỆN TRƯỜNG</span>
                             <span class="sub-note">(*) Bắt buộc ghi nhận chính xác</span>
+                        </div>
+
+                        <!-- Khối thông tin riêng cho Nhà tài trợ (IDH & JDE Peet's) -->
+                        <div id="donorSpecificRow" class="grid-4" style="display: none; margin-bottom: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Tổ Chức / Nhà Tài Trợ <span class="req">*</span></label>
+                                <input type="text" class="form-control" id="donorOrgInput" readonly
+                                       style="background: #ffffff; font-weight: 700; color: #002060;" value="Nhà tài trợ IDH">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Chức Vụ / Bộ Phận <span class="req">*</span></label>
+                                <input type="text" class="form-control" id="donorPositionInput"
+                                       placeholder="VD: Quản lý chương trình, Giám đốc..."
+                                       oninput="currentDraftAnswers['_donor_position'] = this.value; saveDraftLocal(false);">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Hình Thức Phỏng Vấn <span class="req">*</span></label>
+                                <select class="form-control" id="donorMethodSelect"
+                                        onchange="currentDraftAnswers['_donor_method'] = this.value; saveDraftLocal(false);">
+                                    <option value="Trực tuyến qua MS Teams / Zoom">Trực tuyến (MS Teams / Zoom)</option>
+                                    <option value="Trực tiếp tại văn phòng">Trực tiếp tại văn phòng</option>
+                                    <option value="Email / Văn bản trao đổi">Email / Văn bản trao đổi</option>
+                                    <option value="Khác">Khác (ghi rõ trong ghi chú)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Cấp Mã Phiếu (+1) (1-5)</label>
+                                <button type="button" class="btn-outline" onclick="generateNextDonorSurveyCode(currentDonorTab, true)"
+                                        style="width: 100%; height: 38px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 0.82rem; background: #f0fdf4; border-color: #86efac; color: #166534;">
+                                    <i class="fa-solid fa-plus"></i> Cấp mã tự động kế tiếp
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Tra Cứu & Lọc Nông Hộ Theo Danh Sách Mẫu (Chỉ gồm 1: Tìm thông minh & 2: Người dẫn đường) -->
@@ -2520,27 +2566,30 @@
                         </div>
 
                         <div class="grid-4">
-                            <div class="form-group">
-                                <label>Mã Phiếu / ID Nông Hộ <span class="req">*</span></label>
+                            <div class="form-group" id="surveyCodeInputGroup">
+                                <label id="surveyCodeLabel">Mã Phiếu / ID Nông Hộ <span class="req">*</span></label>
                                 <input type="text" class="form-control" id="surveyCodeInput" required
                                     onchange="tryAutofillBySurveyCode(this.value)"
                                     placeholder="Ví dụ: EK-JV-001">
                             </div>
-                            <div class="form-group">
-                                <label>Địa Bàn Xã <span class="req">*</span></label>
+                            <div class="form-group" id="communeSelectGroup">
+                                <label id="communeSelectLabel">Địa Bàn Xã <span class="req">*</span></label>
                                 <select class="form-control" id="communeSelect" required>
                                     <option value="Ea Kiết">Xã Ea Kiết</option>
                                     <option value="Ea Tul">Xã Ea Tul</option>
                                     <option value="Ea Tar">Xã Ea Tar</option>
                                     <option value="Cư Dliê M'nông">Xã Cư Dliê M'nông</option>
+                                    <option value="Toàn vùng Cư M'gar (Dự án)">Toàn vùng Cư M'gar (Dự án)</option>
+                                    <option value="Hà Nội / Trực tuyến">Hà Nội / Trực tuyến</option>
+                                    <option value="TP. Hồ Chí Minh / Trực tuyến">TP. Hồ Chí Minh / Trực tuyến</option>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="hamletInputGroup">
                                 <label>Thôn / Buôn</label>
                                 <input type="text" class="form-control" id="hamletInput"
                                     placeholder="Ví dụ: Buôn Thung">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="guideNameInputGroup">
                                 <label>Người Dẫn Đường</label>
                                 <input type="text" class="form-control" id="guideNameInput"
                                     oninput="currentDraftAnswers['_guide'] = this.value; saveDraftLocal(false);"
@@ -2734,6 +2783,14 @@
                     <!-- Section Fast-Jump Navigation -->
                     <div class="section-jump-nav" id="sectionJumpNav">
                         <!-- Rendered by JS -->
+                    </div>
+
+                    <!-- Khung Giới thiệu & Thông tin nền khi phỏng vấn Nhà tài trợ -->
+                    <div id="donorIntroCard" style="display: none; margin-bottom: 14px; padding: 14px 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-left: 5px solid #002060; border-radius: 6px;">
+                        <div style="font-weight: 700; color: #002060; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-circle-info"></i> <span id="donorIntroTitle">I. GIỚI THIỆU &amp; THÔNG TIN NỀN DỰ ÁN</span>
+                        </div>
+                        <div id="donorIntroContent" style="font-size: 0.86rem; color: #334155; line-height: 1.55; display: flex; flex-direction: column; gap: 8px;"></div>
                     </div>
 
                     <!-- Questions Container -->

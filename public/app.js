@@ -1074,6 +1074,151 @@ function generateUniqueAutoSurveyCode(toolCode = 'P1') {
     return `${cleanTool}_${sid}_${tail}`;
 }
 
+let currentDonorTab = 'IDH';
+
+function generateNextDonorSurveyCode(donorKey = 'IDH', forceNext = false) {
+    const keyUpper = String(donorKey || currentDonorTab || 'IDH').toUpperCase().includes('JDE') ? 'JDE' : 'IDH';
+    const prefix = `TT-${keyUpper}-`;
+
+    const usedNumbers = new Set();
+    const scanCode = (codeStr) => {
+        if (!codeStr) return;
+        const m = String(codeStr).trim().match(/^TT[-_](IDH|JDE)[-_]0*(\d+)$/i);
+        if (m && m[1].toUpperCase() === keyUpper) {
+            const num = parseInt(m[2], 10);
+            if (!isNaN(num) && num > 0) usedNumbers.add(num);
+        }
+    };
+
+    if (Array.isArray(window.allSurveysCache)) {
+        window.allSurveysCache.forEach(s => scanCode(s.survey_code));
+    }
+    if (typeof interviewedSurveyCodes !== 'undefined' && interviewedSurveyCodes && interviewedSurveyCodes.forEach) {
+        interviewedSurveyCodes.forEach(scanCode);
+    }
+    if (typeof checkinDraftCodes !== 'undefined' && checkinDraftCodes && checkinDraftCodes.forEach) {
+        checkinDraftCodes.forEach(scanCode);
+    }
+    if (typeof householdLocksMap !== 'undefined' && householdLocksMap && householdLocksMap.forEach) {
+        householdLocksMap.forEach((v, k) => { scanCode(k); if (v && v.survey_code) scanCode(v.survey_code); });
+    }
+
+    const currentVal = document.getElementById('surveyCodeInput')?.value?.trim() || '';
+    let currentNum = 0;
+    const curMatch = currentVal.match(/^TT[-_](IDH|JDE)[-_]0*(\d+)$/i);
+    if (curMatch && curMatch[1].toUpperCase() === keyUpper) {
+        currentNum = parseInt(curMatch[2], 10) || 0;
+    }
+
+    let candNum = 1;
+    if (forceNext && currentNum > 0) {
+        candNum = currentNum + 1;
+        while (candNum <= 20 && usedNumbers.has(candNum)) {
+            candNum++;
+        }
+    } else {
+        while (candNum <= 20 && usedNumbers.has(candNum)) {
+            candNum++;
+        }
+    }
+
+    const formattedCode = `${prefix}${String(candNum).padStart(2, '0')}`;
+    const codeEl = document.getElementById('surveyCodeInput');
+    if (codeEl) {
+        codeEl.value = formattedCode;
+    }
+    return formattedCode;
+}
+
+function switchDonorTab(donorKey) {
+    currentDonorTab = (String(donorKey || 'IDH').toUpperCase().includes('JDE')) ? 'JDE' : 'IDH';
+
+    const btnIdh = document.getElementById('btnDonorTab-IDH');
+    const btnJde = document.getElementById('btnDonorTab-JDE');
+    if (btnIdh && btnJde) {
+        if (currentDonorTab === 'IDH') {
+            btnIdh.classList.add('active');
+            btnIdh.style.background = '#002060';
+            btnIdh.style.color = '#ffffff';
+            btnIdh.style.boxShadow = '0 2px 4px rgba(0,32,96,0.25)';
+            btnJde.classList.remove('active');
+            btnJde.style.background = '#f1f5f9';
+            btnJde.style.color = '#475569';
+            btnJde.style.boxShadow = 'none';
+        } else {
+            btnJde.classList.add('active');
+            btnJde.style.background = '#002060';
+            btnJde.style.color = '#ffffff';
+            btnJde.style.boxShadow = '0 2px 4px rgba(0,32,96,0.25)';
+            btnIdh.classList.remove('active');
+            btnIdh.style.background = '#f1f5f9';
+            btnIdh.style.color = '#475569';
+            btnIdh.style.boxShadow = 'none';
+        }
+    }
+
+    const donorOrgInput = document.getElementById('donorOrgInput');
+    if (donorOrgInput) {
+        donorOrgInput.value = (currentDonorTab === 'IDH') ? 'Tổ chức IDH (Hà Lan)' : 'Tập đoàn JDE Peet’s';
+    }
+
+    const heading = document.getElementById('currentToolHeading');
+    if (heading) {
+        const donorName = (currentDonorTab === 'IDH') ? 'IDH' : 'JDE PEET’S';
+        heading.textContent = `CÔNG CỤ: TT — NHÀ TÀI TRỢ ${donorName} (1–5 PHIẾU)`;
+    }
+    const subTitle = document.getElementById('subviewTitleText');
+    if (subTitle && currentMainView === 'survey') {
+        const donorName = (currentDonorTab === 'IDH') ? 'IDH' : 'JDE Peet’s';
+        subTitle.textContent = `Tạo phiếu: TT — Nhà tài trợ ${donorName}`;
+    }
+
+    const ttObj = allQuestionsData['TT'];
+    const tabData = ttObj?.donor_tabs?.[currentDonorTab];
+
+    const introCard = document.getElementById('donorIntroCard');
+    const introTitle = document.getElementById('donorIntroTitle');
+    const introContent = document.getElementById('donorIntroContent');
+    if (introCard && tabData) {
+        introCard.style.display = 'block';
+        if (introTitle) introTitle.textContent = tabData.intro_title || 'I. GIỚI THIỆU & THÔNG TIN NỀN DỰ ÁN';
+        if (introContent) {
+            const pars = tabData.intro_paragraphs || [];
+            introContent.innerHTML = pars.map(p => `<p style="margin: 0 0 6px 0; text-align: justify;">${escapeHtml(p)}</p>`).join('');
+        }
+    }
+
+    if (ttObj && tabData && Array.isArray(tabData.questions)) {
+        ttObj.questions = tabData.questions;
+    }
+
+    const curCode = document.getElementById('surveyCodeInput')?.value?.trim() || '';
+    if (!curCode || !curCode.startsWith(`TT-${currentDonorTab}-`)) {
+        generateNextDonorSurveyCode(currentDonorTab, false);
+    }
+
+    currentDraftAnswers['_donor_tab'] = currentDonorTab;
+
+    const questions = ttObj?.questions || [];
+    const sections = [];
+    questions.forEach(q => {
+        const s = q.section || 'Thông tin chung';
+        if (!sections.includes(s)) sections.push(s);
+    });
+    if (isTT) {
+        switchDonorTab(currentDraftAnswers['_donor_tab'] || currentDonorTab || 'IDH');
+    } else {
+        const introCard = document.getElementById('donorIntroCard');
+        if (introCard) introCard.style.display = 'none';
+        renderSectionJumpNav(sections);
+        currentSection = sections.length > 1 ? '__ALL__' : (sections[0] || null);
+        renderQuestionsForSection(currentSection);
+    }
+    updateSectionStepButtons(sections);
+    updateAnsweredSummaryBadge();
+}
+
+
 const INTERVIEWER_ROSTER = {
     'Duy':  { code: 'TCN07', fullName: 'Lê Đình Duy',       communes: 'Ea Kiết' },
     'Vọng': { code: 'TCN02', fullName: 'Phan Doãn Vọng',    communes: 'Ea Kiết' },
@@ -2225,10 +2370,27 @@ async function selectTool(toolCode, options = {}) {
     }
 
     const isP1 = (toolCode === 'P1');
+    const isTT = (toolCode === 'TT');
     const pickerBox = document.getElementById('samplePickerContainer');
     const headRow = document.getElementById('headDemographicsRow');
+    const donorBar = document.getElementById('donorSubTabBar');
+    const donorRow = document.getElementById('donorSpecificRow');
+    const hamletGrp = document.getElementById('hamletInputGroup');
+    const guideGrp = document.getElementById('guideNameInputGroup');
+    const relGrid = document.getElementById('respondentRelationGrid');
+
     if (pickerBox) pickerBox.style.display = isP1 ? 'block' : 'none';
     if (headRow) headRow.style.display = isP1 ? 'grid' : 'none';
+    if (donorBar) donorBar.style.display = isTT ? 'block' : 'none';
+    if (donorRow) donorRow.style.display = isTT ? 'grid' : 'none';
+    if (hamletGrp) hamletGrp.style.display = isTT ? 'none' : 'block';
+    if (guideGrp) guideGrp.style.display = isTT ? 'none' : 'block';
+    if (relGrid) relGrid.style.display = isTT ? 'none' : (isP1 ? 'grid' : 'none');
+
+    const respNameInput = document.getElementById('respondentNameInput');
+    if (respNameInput) {
+        respNameInput.placeholder = isTT ? 'Nhập họ và tên người đại diện nhà tài trợ...' : 'Nhập họ và tên người trả lời thay';
+    }
 
     const applyDemographicFields = (ans = {}, respName = '') => {
         applySharedDemographicsToForm(ans, respName, toolCode);
@@ -2249,6 +2411,17 @@ async function selectTool(toolCode, options = {}) {
             activeDraftOriginKey = parsed.survey_code ? `${toolCode}::${parsed.survey_code}` : '';
             activeDraftBaselineName = parsed.respondent_name || '';
             if (parsed.commune) document.getElementById('communeSelect').value = parsed.commune;
+            if (isTT) {
+                if (parsed.answers?._donor_position && document.getElementById('donorPositionInput')) {
+                    document.getElementById('donorPositionInput').value = parsed.answers._donor_position;
+                }
+                if (parsed.answers?._donor_method && document.getElementById('donorMethodSelect')) {
+                    document.getElementById('donorMethodSelect').value = parsed.answers._donor_method;
+                }
+                if (parsed.answers?._donor_tab) {
+                    currentDonorTab = parsed.answers._donor_tab;
+                }
+            }
             if (parsed.hamlet) document.getElementById('hamletInput').value = parsed.hamlet;
             if (parsed.phone && document.getElementById('phoneInput')) document.getElementById('phoneInput').value = parsed.phone;
             if (parsed.guide && document.getElementById('guideNameInput')) document.getElementById('guideNameInput').value = parsed.guide;
@@ -2288,7 +2461,15 @@ async function selectTool(toolCode, options = {}) {
         currentDraftPhotoPath = '';
         activeDraftOriginKey = '';
         activeDraftBaselineName = '';
-        document.getElementById('surveyCodeInput').value = generateUniqueAutoSurveyCode(toolCode);
+        if (isTT) {
+            const comSel = document.getElementById('communeSelect');
+            if (comSel && (!comSel.value || comSel.value.startsWith('Xã '))) {
+                comSel.value = "Toàn vùng Cư M'gar (Dự án)";
+            }
+            generateNextDonorSurveyCode(currentDonorTab, false);
+        } else {
+            document.getElementById('surveyCodeInput').value = generateUniqueAutoSurveyCode(toolCode);
+        }
         document.getElementById('hamletInput').value = '';
         if (document.getElementById('phoneInput')) document.getElementById('phoneInput').value = '';
         if (document.getElementById('guideNameInput')) document.getElementById('guideNameInput').value = '';
@@ -2688,10 +2869,11 @@ function renderQuestionsForSection(secName) {
                     ${chipHtml}
                     ${structuredHtml}
                     <textarea id="txInput_${code}" class="form-control" 
-                              rows="2" 
+                              rows="${currentTool === 'TT' ? 5 : 2}" 
+                              style="${currentTool === 'TT' ? 'min-height: 120px; font-size: 0.92rem; line-height: 1.55; padding: 10px 12px;' : ''}"
                               ${isViewer ? 'disabled' : ''}
                               oninput="onAnswerChange('${code}', this, false)" 
-                              placeholder="${structuredHtml ? 'Tổng hợp tự động từ các ô trên (hoặc ghi chú bổ sung thêm)...' : 'Ghi chép câu trả lời của đối tượng...'}">${escapeHtml(val)}</textarea>
+                              placeholder="${structuredHtml ? 'Tổng hợp tự động từ các ô trên (hoặc ghi chú bổ sung thêm)...' : (currentTool === 'TT' ? '✎ Ghi chép câu trả lời / phân tích chi tiết của đại diện nhà tài trợ...' : 'Ghi chép câu trả lời của đối tượng...')}">${escapeHtml(val)}</textarea>
                 </div>
             `;
         }
@@ -3799,6 +3981,12 @@ function buildCurrentDraftRecord() {
         ? (currentDraftAnswers['_resp_relation'] || 'Đại diện đơn vị / Khác')
         : ((relSel === 'Khác' && relOther) ? relOther : relSel);
 
+    if (currentTool === 'TT') {
+        currentDraftAnswers['_donor_tab'] = currentDonorTab;
+        currentDraftAnswers['_donor_org'] = document.getElementById('donorOrgInput')?.value || (currentDonorTab === 'JDE' ? "Nhà tài trợ JDE Peet's" : "Nhà tài trợ IDH");
+        currentDraftAnswers['_donor_position'] = document.getElementById('donorPositionInput')?.value || '';
+        currentDraftAnswers['_donor_method'] = document.getElementById('donorMethodSelect')?.value || 'Trực tuyến qua MS Teams / Zoom';
+    }
     const answersCopy = Object.assign({}, currentDraftAnswers, {
         _head_name: headName,
         _head_gender: headGender,
@@ -5028,9 +5216,16 @@ async function handlePhotoSelected(event) {
             const leftX = padding + 6;
             const maxTextW = Math.max(120, w - leftX - padding);
 
-            const line1 = `DAKMAN CƯ M'GAR | Mã: ${surveyCode} | Người được PV: ${respondentLabel}`;
-            const line2 = `Vị trí ${wgs84Text} | ${timestampStr}`;
-            const line3 = `Địa bàn: ${commune}${hamlet ? ' - ' + hamlet : ''} | ĐTV: ${surveyorName} (${surveyorId})`;
+            let line1 = `DAKMAN CƯ M'GAR | Mã: ${surveyCode} | Người được PV: ${respondentLabel}`;
+            let line2 = `Vị trí ${wgs84Text} | ${timestampStr}`;
+            let line3 = `Địa bàn: ${commune}${hamlet ? ' - ' + hamlet : ''} | ĐTV: ${surveyorName} (${surveyorId})`;
+            if (currentTool === 'TT') {
+                const dOrg = document.getElementById('donorOrgInput')?.value || (currentDonorTab === 'JDE' ? "Nhà tài trợ JDE Peet's" : "Nhà tài trợ IDH");
+                const dPos = document.getElementById('donorPositionInput')?.value || '';
+                line1 = `DAKMAN CƯ M'GAR | ${dOrg} | Mã: ${surveyCode}`;
+                line2 = `Người PV: ${respondentName}${dPos ? ' (' + dPos + ')' : ''} | ${timestampStr}`;
+                line3 = `Địa bàn: ${commune || "Toàn vùng Cư M'gar"} | ĐTV: ${surveyorName} (${surveyorId})`;
+            }
 
             ctx.fillStyle = '#ffffff';
             drawFittedWatermarkLine(ctx, line1, leftX, startY, fontSize, true, maxTextW);
@@ -5121,6 +5316,18 @@ async function handleSurveySubmit(e) {
     const respRelation = (currentTool !== 'P1')
         ? (currentDraftAnswers['_resp_relation'] || 'Đại diện đơn vị / Khác')
         : ((relSel === 'Khác') ? relOther : relSel);
+
+    if (currentTool === 'TT') {
+        if (!respondentName) {
+            alert('Vui lòng nhập Họ tên Người đại diện nhà tài trợ được phỏng vấn!');
+            document.getElementById('respondentNameInput')?.focus();
+            return;
+        }
+        currentDraftAnswers['_donor_tab'] = currentDonorTab;
+        currentDraftAnswers['_donor_org'] = document.getElementById('donorOrgInput')?.value || (currentDonorTab === 'JDE' ? "Nhà tài trợ JDE Peet's" : "Nhà tài trợ IDH");
+        currentDraftAnswers['_donor_position'] = document.getElementById('donorPositionInput')?.value || '';
+        currentDraftAnswers['_donor_method'] = document.getElementById('donorMethodSelect')?.value || 'Trực tuyến qua MS Teams / Zoom';
+    }
 
     if (currentTool === 'P1') {
         if (!headName) {

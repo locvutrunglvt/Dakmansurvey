@@ -3337,151 +3337,606 @@
   },
   "TT": {
     "name": "TT: Nhà tài trợ - IDH và JDE Peet’s (2)",
-    "questions": [
-      {
-        "tool_code": "TT",
-        "tool_name": "TT - Phỏng vấn nhà tài trợ",
-        "group": "Nhóm 4: Nhà tài trợ",
-        "code": "TT1",
-        "orig_code": "TT1",
-        "section": "Phỏng vấn IDH, JDE Peet's (trực tuyến, 60 phút)",
-        "text": "Khi quyết định tài trợ năm 2021, tổ chức kỳ vọng dự án đạt được điều gì?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "IDH; JDE Peet's",
-        "indicator": "",
-        "dac": "Phù hợp"
-      },
-      {
-        "tool_code": "TT",
-        "tool_name": "TT - Phỏng vấn nhà tài trợ",
-        "group": "Nhóm 4: Nhà tài trợ",
-        "code": "TT2",
-        "orig_code": "TT2",
-        "section": "Phỏng vấn IDH, JDE Peet's (trực tuyến, 60 phút)",
-        "text": "Dự án khớp đến đâu với chiến lược của tổ chức (cảnh quan của IDH; Common Grounds của JDE Peet's)?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "IDH; JDE Peet's",
-        "indicator": "",
-        "dac": "Nhất quán"
-      },
-      {
-        "tool_code": "TT",
-        "tool_name": "TT - Phỏng vấn nhà tài trợ",
-        "group": "Nhóm 4: Nhà tài trợ",
-        "code": "TT3",
-        "orig_code": "TT3",
-        "section": "Phỏng vấn IDH, JDE Peet's (trực tuyến, 60 phút)",
-        "text": "KPI nào quan trọng nhất và dự án đạt đến đâu?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "IDH; JDE Peet's",
-        "indicator": "",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "TT",
-        "tool_name": "TT - Phỏng vấn nhà tài trợ",
-        "group": "Nhóm 4: Nhà tài trợ",
-        "code": "TT4",
-        "orig_code": "TT4",
-        "section": "Phỏng vấn IDH, JDE Peet's (trực tuyến, 60 phút)",
-        "text": "Hệ thống theo dõi, khảo sát PPI của dự án đáp ứng yêu cầu đến đâu? Chỉ số nào cần mà chưa đo?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "IDH; JDE Peet's",
-        "indicator": "Hệ thống M&E",
-        "dac": "Hiệu quả"
-      },
-      {
-        "tool_code": "TT",
-        "tool_name": "TT - Phỏng vấn nhà tài trợ",
-        "group": "Nhóm 4: Nhà tài trợ",
-        "code": "TT5",
-        "orig_code": "TT5",
-        "section": "Phỏng vấn IDH, JDE Peet's (trực tuyến, 60 phút)",
-        "text": "So với dự án tương tự, chi phí so với kết quả thế nào?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "IDH; JDE Peet's",
-        "indicator": "",
-        "dac": "Hiệu suất"
-      },
-      {
-        "tool_code": "TT",
-        "tool_name": "TT - Phỏng vấn nhà tài trợ",
-        "group": "Nhóm 4: Nhà tài trợ",
-        "code": "TT6",
-        "orig_code": "TT6",
-        "section": "Phỏng vấn IDH, JDE Peet's (trực tuyến, 60 phút)",
-        "text": "Tổ chức cần những số liệu nào từ vùng này cho giai đoạn tới (đất, phát thải, che phủ, thu nhập)?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "IDH; JDE Peet's",
-        "indicator": "",
-        "dac": "Bền vững"
-      },
-      {
-        "tool_code": "TT",
-        "tool_name": "TT - Phỏng vấn nhà tài trợ",
-        "group": "Nhóm 4: Nhà tài trợ",
-        "code": "TT7",
-        "orig_code": "TT7",
-        "section": "Phỏng vấn IDH, JDE Peet's (trực tuyến, 60 phút)",
-        "text": "Kỳ vọng với dữ liệu tọa độ, truy xuất cho EUDR?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "IDH; JDE Peet's",
-        "indicator": "Sẵn sàng EUDR",
-        "dac": "Bền vững"
-      },
-      {
-        "tool_code": "TT",
-        "tool_name": "TT - Phỏng vấn nhà tài trợ",
-        "group": "Nhóm 4: Nhà tài trợ",
-        "code": "TT8",
-        "orig_code": "TT8",
-        "section": "Phỏng vấn IDH, JDE Peet's (trực tuyến, 60 phút)",
-        "text": "Định hướng chiến lược, ưu tiên nguồn vốn và điều kiện của Nhà tài trợ (IDH, JDE Peet's) đối với Dự án Giai đoạn 2: Nông nghiệp tái sinh (Regenerative Agriculture 2026–2030) tại vùng Compact Cư M'gar?",
-        "type": "MO",
-        "options_raw": "",
-        "options": [],
-        "condition": "IDH; JDE Peet's",
-        "indicator": "",
-        "dac": "Bền vững"
-      },
-      {
-        "tool_code": "TT",
-        "tool_name": "TT - Phỏng vấn nhà tài trợ",
-        "group": "Nhóm 4: Nhà tài trợ",
-        "code": "TT9",
-        "orig_code": "TT9",
-        "section": "Phỏng vấn IDH, JDE Peet's (trực tuyến, 60 phút)",
-        "text": "Chấm điểm 1-5 cho 6 tiêu chí",
-        "type": "LK",
-        "options_raw": "1=Rất kém/không hữu ích ... 5=Rất tốt/rất hữu ích",
-        "options": [
-          {
-            "value": "1",
-            "label": "Rất kém/không hữu ích ... 5=Rất tốt/rất hữu ích"
-          }
-        ],
-        "condition": "IDH; JDE Peet's",
-        "indicator": "",
-        "dac": "Phù hợp"
-      }
-    ],
     "tool_code": "TT",
     "tool_name": "Nhà tài trợ (IDH và JDE Peet’s)",
-    "target_count": "2 đơn vị"
+    "target_count": "2 đơn vị (1-5 phiếu/đơn vị)",
+    "donor_tabs": {
+      "IDH": {
+        "donor_code": "IDH",
+        "donor_name": "Nhà tài trợ IDH",
+        "survey_code_prefix": "TT-IDH",
+        "intro_title": "I. Giới thiệu & Thông tin nền",
+        "intro_text": [
+          "Phiếu phỏng vấn này được xây dựng riêng cho đại diện IDH trong khuôn khổ đánh giá cuối kỳ Dự án Compact Cư M’gar. Các câu hỏi tập trung ghi nhận góc nhìn của IDH về ngành cà phê, cách tiếp cận Compact, kết quả triển khai, vai trò của đơn vị thực hiện và các hợp tác xã liên kết, cũng như những khả năng tiếp nối sau khi dự án kết thúc.",
+          "Người trả lời không cần đọc trước báo cáo tổng kết hoặc ghi nhớ các chỉ số chi tiết. Có thể chia sẻ dựa trên trải nghiệm, quan sát và hiểu biết của mình; các thông tin nền dưới đây sẽ được người phỏng vấn cung cấp khi cần.",
+          "Thông tin nền: Compact Cư M’gar được triển khai giai đoạn 2021–2025 tại ba xã trước đây (Ea Kiết, Ea Tar và Cư Dliê M’nông), với quy mô khoảng 8.148 hộ và 11.048 ha cà phê. Báo cáo năm 2025 ghi nhận tổng chi lũy kế toàn dự án khoảng 1,13 triệu EUR trên ngân sách khoảng 1,21 triệu EUR. Đây là số liệu của toàn dự án, không phải phần tài trợ riêng của IDH."
+        ],
+        "questions": [
+          {
+            "code": "TT_IDH_01",
+            "num": 1,
+            "section": "II. Góc nhìn của IDH về ngành cà phê và cách tiếp cận Compact",
+            "text": "IDH đã có quá trình đồng hành với ngành cà phê Việt Nam trong nhiều năm, đặc biệt tại khu vực Tây Nguyên. Từ góc nhìn của IDH, đâu là những thay đổi lớn nhất của ngành cà phê Việt Nam trong khoảng 5–10 năm qua, và những thách thức nào hiện nay cần được quan tâm nhất?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_02",
+            "num": 2,
+            "section": "II. Góc nhìn của IDH về ngành cà phê và cách tiếp cận Compact",
+            "text": "IDH thường thúc đẩy cách tiếp cận có sự phối hợp giữa doanh nghiệp, chính quyền, hợp tác xã và nông hộ ở cấp cảnh quan. Theo IDH, cách tiếp cận này có giá trị gì so với việc từng doanh nghiệp triển khai các chương trình hỗ trợ nông hộ riêng lẻ?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_03",
+            "num": 3,
+            "section": "II. Góc nhìn của IDH về ngành cà phê và cách tiếp cận Compact",
+            "text": "Với quy mô khoảng 8.148 hộ và 11.048 ha cà phê, IDH nhìn nhận Compact Cư M’gar như thế nào trong bức tranh chung về phát triển cà phê bền vững tại Tây Nguyên? Đây là một mô hình có ý nghĩa hoặc có điểm gì đáng chú ý đối với IDH?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_04",
+            "num": 4,
+            "section": "II. Góc nhìn của IDH về ngành cà phê và cách tiếp cận Compact",
+            "text": "Trong quá trình đồng hành với Compact Cư M’gar, đâu là điều IDH đánh giá tích cực nhất? Có điểm nào trong cách thiết kế, phối hợp hoặc triển khai mà IDH cho rằng cần rút kinh nghiệm?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_05",
+            "num": 5,
+            "section": "III. Đánh giá kết quả và giá trị của dự án",
+            "text": "Dự án đã triển khai nhiều hoạt động như tập huấn canh tác, kiểm tra đất, sử dụng phân hữu cơ, trồng xen và cây che bóng, cải tạo vườn cà phê, tưới tiết kiệm và hỗ trợ hợp tác xã. Theo quan sát của IDH, những hoạt động nào có khả năng tạo ra thay đổi thiết thực và lâu dài nhất đối với nông hộ?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_06",
+            "num": 6,
+            "section": "III. Đánh giá kết quả và giá trị của dự án",
+            "text": "Dự án có quy mô tiếp cận lớn, với hàng nghìn lượt nông dân tham gia các hoạt động tập huấn và học tập. Theo IDH, yếu tố nào quyết định việc nông dân chuyển từ tham gia tập huấn sang thực sự áp dụng và duy trì các thực hành được giới thiệu trên vườn?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_07",
+            "num": 7,
+            "section": "III. Đánh giá kết quả và giá trị của dự án",
+            "text": "Theo IDH, dự án đã đóng góp như thế nào vào việc cải thiện sự phối hợp giữa các bên tại địa phương, đặc biệt là chính quyền, hợp tác xã, nhóm nông dân và các tác nhân trong chuỗi cung ứng?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_08",
+            "num": 8,
+            "section": "III. Đánh giá kết quả và giá trị của dự án",
+            "text": "Từ góc nhìn của IDH, giá trị nổi bật của Compact Cư M’gar nằm nhiều hơn ở những hỗ trợ trực tiếp cho nông hộ, ở cơ chế phối hợp cấp cảnh quan, hay ở khả năng tạo nền tảng cho các chương trình và hoạt động tiếp theo? Xin chia sẻ lý do.",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_09",
+            "num": 9,
+            "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+            "text": "Với vai trò là đơn vị triển khai Compact Cư M’gar, theo IDH, Dakman đã thể hiện những điểm mạnh nổi bật nào trong việc tổ chức và điều phối dự án tại địa phương?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_10",
+            "num": 10,
+            "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+            "text": "Trong quá trình phối hợp với Dakman, có khó khăn hoặc hạn chế nào về quản lý, điều phối, truyền thông, theo dõi kết quả hoặc phối hợp với các bên mà IDH nhận thấy cần được cải thiện?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_11",
+            "num": 11,
+            "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+            "text": "Theo IDH, mô hình Dakman liên kết và làm việc với ba hợp tác xã Tân Phát, Ea Kiết và Cư Dliê M’nông đã vận hành như thế nào? Vai trò thực tế của các hợp tác xã trong việc kết nối nông hộ và triển khai hoạt động của dự án ra sao?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_12",
+            "num": 12,
+            "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+            "text": "Từ góc nhìn của IDH, năng lực của các hợp tác xã tham gia Compact đã thay đổi như thế nào trong giai đoạn dự án? Những năng lực nào đã được củng cố tốt, và những điểm nào vẫn cần tiếp tục hỗ trợ?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_13",
+            "num": 13,
+            "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+            "text": "Mối liên kết giữa Dakman, các hợp tác xã và nông hộ có khả năng tiếp tục duy trì sau khi dự án kết thúc không? Theo IDH, những điều kiện nào cần có để các mối liên kết này hoạt động hiệu quả và mang lại lợi ích thực chất cho nông dân?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_14",
+            "num": 14,
+            "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+            "text": "Nếu có giai đoạn tiếp theo, theo IDH nên duy trì, điều chỉnh hay mở rộng cách thức hợp tác giữa Dakman và các hợp tác xã như thế nào? Vai trò và trách nhiệm của từng bên cần được làm rõ ra sao?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_15",
+            "num": 15,
+            "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+            "text": "Sau khi giai đoạn 2021–2025 kết thúc, theo ông/bà, Cư M’gar có nên tiếp tục có Giai đoạn 2 hay không? Vì sao? Những kết quả, nhu cầu hoặc vấn đề còn tồn tại nào cần được cân nhắc khi đưa ra quyết định?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_16",
+            "num": 16,
+            "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+            "text": "Nếu Cư M’gar triển khai Giai đoạn 2, theo IDH nên tập trung vào những vấn đề hoặc nhu cầu ưu tiên nào của địa phương và nông hộ? Vì sao nên lựa chọn những ưu tiên đó?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_17",
+            "num": 17,
+            "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+            "text": "Theo IDH, Giai đoạn 2 nên kế thừa những kết quả, kinh nghiệm hoặc cơ chế nào của Compact Cư M’gar; đồng thời cần thay đổi hoặc bổ sung những gì để phù hợp hơn với bối cảnh hiện nay?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_18",
+            "num": 18,
+            "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+            "text": "Từ kinh nghiệm của IDH trong ngành cà phê tại Việt Nam và quốc tế, những yếu tố nào cần được bảo đảm để một giai đoạn tiếp theo tạo ra kết quả thực chất và có khả năng duy trì sau khi hỗ trợ của dự án kết thúc?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_19",
+            "num": 19,
+            "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+            "text": "Theo ông/bà, một đề xuất Giai đoạn 2 dành cho Cư M’gar cần làm rõ những nội dung nào để IDH và các đối tác tiềm năng có thể xem xét, chẳng hạn như nhu cầu thực tế, nhóm nông hộ hưởng lợi, kết quả kỳ vọng, cách đo lường, vai trò đối tác, nguồn lực và tính khả thi?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_20",
+            "num": 20,
+            "section": "VI. Khuyến nghị và kết thúc",
+            "text": "Nếu được gửi một khuyến nghị quan trọng nhất tới nhóm đang đánh giá dự án và cân nhắc đề xuất Giai đoạn 2, IDH muốn nhấn mạnh điều gì?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_IDH_21",
+            "num": 21,
+            "section": "VI. Khuyến nghị và kết thúc",
+            "text": "IDH có thể chia sẻ thêm ví dụ, tài liệu, kinh nghiệm hoặc bài học từ các chương trình cà phê khác mà nhóm đánh giá cuối kỳ nên tham khảo khi hoàn thiện đánh giá Compact Cư M’gar và xem xét khả năng triển khai Giai đoạn 2 không?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          }
+        ]
+      },
+      "JDE": {
+        "donor_code": "JDE",
+        "donor_name": "Nhà tài trợ JDE Peet's",
+        "survey_code_prefix": "TT-JDE",
+        "intro_title": "I. Giới thiệu & Thông tin nền",
+        "intro_text": [
+          "Phiếu phỏng vấn này được xây dựng riêng cho đại diện JDE Peet’s trong khuôn khổ đánh giá cuối kỳ Dự án Compact Cư M’gar. Các câu hỏi tập trung ghi nhận góc nhìn của JDE Peet’s với tư cách là một doanh nghiệp trong chuỗi giá trị cà phê và nhà tài trợ của dự án: mục tiêu tham gia, giá trị đối với chuỗi cung ứng, kết quả triển khai, vai trò của Dakman và các hợp tác xã, cũng như khả năng tiếp nối sau khi dự án kết thúc.",
+          "Người trả lời không cần đọc trước báo cáo tổng kết hoặc ghi nhớ các chỉ số chi tiết. Có thể chia sẻ dựa trên trải nghiệm, quan sát và hiểu biết của mình; các thông tin nền dưới đây sẽ được người phỏng vấn cung cấp khi cần.",
+          "Thông tin nền: Compact Cư M’gar được triển khai giai đoạn 2021–2025 tại ba xã trước đây (Ea Kiết, Ea Tar và Cư Dliê M’nông), với quy mô khoảng 8.148 hộ và 11.048 ha cà phê. Dự án do Dakman Việt Nam triển khai, với sự tham gia tài trợ của IDH và JDE Peet’s. Các câu hỏi về tài trợ và kết quả sẽ được trao đổi ở góc độ toàn dự án hoặc góc độ JDE Peet’s tùy nội dung, không mặc định vai trò của hai nhà tài trợ là giống nhau."
+        ],
+        "questions": [
+          {
+            "code": "TT_JDE_01",
+            "num": 1,
+            "section": "II. Góc nhìn của JDE Peet’s về ngành cà phê và mục tiêu tham gia dự án",
+            "text": "JDE Peet’s có hoạt động thu mua và kinh doanh cà phê tại nhiều quốc gia, trong đó Việt Nam là một nguồn cung quan trọng. Từ góc nhìn của JDE Peet’s, những thay đổi và thách thức lớn nhất đối với ngành cà phê Việt Nam hiện nay là gì?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_02",
+            "num": 2,
+            "section": "II. Góc nhìn của JDE Peet’s về ngành cà phê và mục tiêu tham gia dự án",
+            "text": "Điều gì khiến JDE Peet’s quyết định tham gia tài trợ Compact Cư M’gar? Những mục tiêu hoặc kỳ vọng quan trọng nhất của JDE Peet’s khi tham gia dự án là gì?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_03",
+            "num": 3,
+            "section": "II. Góc nhìn của JDE Peet’s về ngành cà phê và mục tiêu tham gia dự án",
+            "text": "Theo JDE Peet’s, một dự án phát triển bền vững ở quy mô cảnh quan như Compact Cư M’gar có thể tạo ra giá trị gì đối với nông hộ, địa phương và các doanh nghiệp trong chuỗi cung ứng cà phê?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_04",
+            "num": 4,
+            "section": "II. Góc nhìn của JDE Peet’s về ngành cà phê và mục tiêu tham gia dự án",
+            "text": "Trong quá trình đồng hành với dự án, JDE Peet’s đánh giá đâu là điểm phù hợp nhất giữa mục tiêu của Compact Cư M’gar với các ưu tiên của JDE Peet’s đối với nguồn cung cà phê có trách nhiệm?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_05",
+            "num": 5,
+            "section": "III. Đánh giá kết quả và giá trị đối với nông hộ, chuỗi cung ứng",
+            "text": "Dự án đã triển khai nhiều hoạt động như tập huấn canh tác, kiểm tra đất, sử dụng phân hữu cơ, trồng xen và cây che bóng, cải tạo vườn cà phê, tưới tiết kiệm và hỗ trợ hợp tác xã. Theo JDE Peet’s, những hoạt động nào có khả năng tạo ra giá trị thiết thực và lâu dài nhất đối với nông hộ?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_06",
+            "num": 6,
+            "section": "III. Đánh giá kết quả và giá trị đối với nông hộ, chuỗi cung ứng",
+            "text": "Theo quan sát của JDE Peet’s, các hoạt động của dự án có góp phần cải thiện chất lượng cà phê, năng suất, hiệu quả sản xuất hoặc tính ổn định của nguồn cung hay không? Những thay đổi nào có thể nhận thấy rõ nhất?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_07",
+            "num": 7,
+            "section": "III. Đánh giá kết quả và giá trị đối với nông hộ, chuỗi cung ứng",
+            "text": "Dự án đã tiếp cận hàng nghìn lượt nông dân thông qua tập huấn và các hoạt động hỗ trợ. Theo JDE Peet’s, cần những điều kiện gì để kiến thức và thực hành được giới thiệu có thể chuyển thành thay đổi thực tế, được nông dân duy trì sau khi dự án kết thúc?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_08",
+            "num": 8,
+            "section": "III. Đánh giá kết quả và giá trị đối với nông hộ, chuỗi cung ứng",
+            "text": "JDE Peet’s nhìn nhận thế nào về mối liên hệ giữa các hoạt động hỗ trợ nông hộ tại Cư M’gar với yêu cầu của doanh nghiệp về nguồn cung cà phê có trách nhiệm, ổn định và đáp ứng các tiêu chuẩn ngày càng cao của thị trường?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_09",
+            "num": 9,
+            "section": "III. Đánh giá kết quả và giá trị đối với nông hộ, chuỗi cung ứng",
+            "text": "Đối với các yêu cầu về truy xuất nguồn gốc, dữ liệu vùng trồng và sản xuất không gây mất rừng, theo JDE Peet’s, dự án đã tạo được nền tảng hoặc đóng góp gì? Những vấn đề nào vẫn cần tiếp tục hoàn thiện để dữ liệu có thể được sử dụng hiệu quả trong chuỗi cung ứng?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_10",
+            "num": 10,
+            "section": "IV. Đánh giá đối tác triển khai Dakman và các hợp tác xã liên kết",
+            "text": "Với vai trò là nhà tài trợ và đối tác của dự án, JDE Peet’s đánh giá như thế nào về năng lực tổ chức, triển khai và quản lý dự án của Dakman?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_11",
+            "num": 11,
+            "section": "IV. Đánh giá đối tác triển khai Dakman và các hợp tác xã liên kết",
+            "text": "Trong quá trình phối hợp với Dakman, những điểm nào JDE Peet’s đánh giá cao? Có khó khăn hoặc hạn chế nào trong trao đổi thông tin, phối hợp, theo dõi kết quả hoặc quản lý dự án cần được rút kinh nghiệm?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_12",
+            "num": 12,
+            "section": "IV. Đánh giá đối tác triển khai Dakman và các hợp tác xã liên kết",
+            "text": "Theo JDE Peet’s, việc Dakman phối hợp với ba hợp tác xã Tân Phát, Ea Kiết và Cư Dliê M’nông đã hỗ trợ như thế nào cho việc kết nối nông hộ và triển khai các hoạt động tại địa phương?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_13",
+            "num": 13,
+            "section": "IV. Đánh giá đối tác triển khai Dakman và các hợp tác xã liên kết",
+            "text": "JDE Peet’s đánh giá ra sao về vai trò và năng lực của các hợp tác xã trong dự án? Những năng lực nào đã được cải thiện, và những nội dung nào vẫn cần được củng cố để các hợp tác xã có thể tiếp tục hỗ trợ thành viên?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_14",
+            "num": 14,
+            "section": "IV. Đánh giá đối tác triển khai Dakman và các hợp tác xã liên kết",
+            "text": "Theo JDE Peet’s, mối liên kết giữa Dakman, các hợp tác xã và nông hộ có khả năng duy trì sau khi dự án kết thúc không? Cần có những điều kiện hoặc cơ chế nào để duy trì mối liên kết này một cách thực chất?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_15",
+            "num": 15,
+            "section": "V. Ý kiến của JDE Peet’s về khả năng triển khai Giai đoạn 2",
+            "text": "Sau khi giai đoạn 2021–2025 kết thúc, theo JDE Peet’s, Cư M’gar có nên tiếp tục có Giai đoạn 2 hay không? Vì sao? Những kết quả, nhu cầu hoặc vấn đề còn tồn tại nào cần được cân nhắc khi đưa ra quyết định?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_16",
+            "num": 16,
+            "section": "V. Ý kiến của JDE Peet’s về khả năng triển khai Giai đoạn 2",
+            "text": "Nếu Cư M’gar triển khai Giai đoạn 2, theo JDE Peet’s nên tập trung vào những vấn đề hoặc nhu cầu ưu tiên nào của nông hộ và chuỗi cung ứng cà phê? Vì sao nên lựa chọn những ưu tiên đó?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_17",
+            "num": 17,
+            "section": "V. Ý kiến của JDE Peet’s về khả năng triển khai Giai đoạn 2",
+            "text": "Theo JDE Peet’s, Giai đoạn 2 nên kế thừa những kết quả, kinh nghiệm hoặc cơ chế nào của Compact Cư M’gar; đồng thời cần thay đổi hoặc bổ sung những gì để phù hợp hơn với bối cảnh hiện nay?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_18",
+            "num": 18,
+            "section": "V. Ý kiến của JDE Peet’s về khả năng triển khai Giai đoạn 2",
+            "text": "Từ kinh nghiệm của JDE Peet’s trong các chương trình hỗ trợ nông hộ và chuỗi cung ứng cà phê, những yếu tố nào cần được bảo đảm để một giai đoạn tiếp theo tạo ra kết quả thực chất và có khả năng duy trì sau khi hỗ trợ của dự án kết thúc?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_19",
+            "num": 19,
+            "section": "V. Ý kiến của JDE Peet’s về khả năng triển khai Giai đoạn 2",
+            "text": "Theo ông/bà, một đề xuất Giai đoạn 2 dành cho Cư M’gar cần làm rõ những nội dung nào để JDE Peet’s và các đối tác tiềm năng có thể xem xét, chẳng hạn như nhu cầu thực tế, nhóm nông hộ hưởng lợi, kết quả kỳ vọng, liên kết với chuỗi cung ứng, vai trò đối tác, nguồn lực và tính khả thi?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_20",
+            "num": 20,
+            "section": "VI. Khuyến nghị và kết thúc",
+            "text": "Nếu được gửi một khuyến nghị quan trọng nhất tới nhóm đang đánh giá dự án và cân nhắc đề xuất Giai đoạn 2, JDE Peet’s muốn nhấn mạnh điều gì?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          },
+          {
+            "code": "TT_JDE_21",
+            "num": 21,
+            "section": "VI. Khuyến nghị và kết thúc",
+            "text": "JDE Peet’s có thể chia sẻ thêm ví dụ, tài liệu, kinh nghiệm hoặc bài học từ các chương trình hỗ trợ nông hộ và chuỗi cung ứng cà phê khác mà nhóm đánh giá cuối kỳ nên tham khảo không?",
+            "type": "TX",
+            "rows": 5,
+            "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+          }
+        ]
+      }
+    },
+    "questions": [
+      {
+        "code": "TT_IDH_01",
+        "num": 1,
+        "section": "II. Góc nhìn của IDH về ngành cà phê và cách tiếp cận Compact",
+        "text": "IDH đã có quá trình đồng hành với ngành cà phê Việt Nam trong nhiều năm, đặc biệt tại khu vực Tây Nguyên. Từ góc nhìn của IDH, đâu là những thay đổi lớn nhất của ngành cà phê Việt Nam trong khoảng 5–10 năm qua, và những thách thức nào hiện nay cần được quan tâm nhất?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_02",
+        "num": 2,
+        "section": "II. Góc nhìn của IDH về ngành cà phê và cách tiếp cận Compact",
+        "text": "IDH thường thúc đẩy cách tiếp cận có sự phối hợp giữa doanh nghiệp, chính quyền, hợp tác xã và nông hộ ở cấp cảnh quan. Theo IDH, cách tiếp cận này có giá trị gì so với việc từng doanh nghiệp triển khai các chương trình hỗ trợ nông hộ riêng lẻ?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_03",
+        "num": 3,
+        "section": "II. Góc nhìn của IDH về ngành cà phê và cách tiếp cận Compact",
+        "text": "Với quy mô khoảng 8.148 hộ và 11.048 ha cà phê, IDH nhìn nhận Compact Cư M’gar như thế nào trong bức tranh chung về phát triển cà phê bền vững tại Tây Nguyên? Đây là một mô hình có ý nghĩa hoặc có điểm gì đáng chú ý đối với IDH?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_04",
+        "num": 4,
+        "section": "II. Góc nhìn của IDH về ngành cà phê và cách tiếp cận Compact",
+        "text": "Trong quá trình đồng hành với Compact Cư M’gar, đâu là điều IDH đánh giá tích cực nhất? Có điểm nào trong cách thiết kế, phối hợp hoặc triển khai mà IDH cho rằng cần rút kinh nghiệm?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_05",
+        "num": 5,
+        "section": "III. Đánh giá kết quả và giá trị của dự án",
+        "text": "Dự án đã triển khai nhiều hoạt động như tập huấn canh tác, kiểm tra đất, sử dụng phân hữu cơ, trồng xen và cây che bóng, cải tạo vườn cà phê, tưới tiết kiệm và hỗ trợ hợp tác xã. Theo quan sát của IDH, những hoạt động nào có khả năng tạo ra thay đổi thiết thực và lâu dài nhất đối với nông hộ?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_06",
+        "num": 6,
+        "section": "III. Đánh giá kết quả và giá trị của dự án",
+        "text": "Dự án có quy mô tiếp cận lớn, với hàng nghìn lượt nông dân tham gia các hoạt động tập huấn và học tập. Theo IDH, yếu tố nào quyết định việc nông dân chuyển từ tham gia tập huấn sang thực sự áp dụng và duy trì các thực hành được giới thiệu trên vườn?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_07",
+        "num": 7,
+        "section": "III. Đánh giá kết quả và giá trị của dự án",
+        "text": "Theo IDH, dự án đã đóng góp như thế nào vào việc cải thiện sự phối hợp giữa các bên tại địa phương, đặc biệt là chính quyền, hợp tác xã, nhóm nông dân và các tác nhân trong chuỗi cung ứng?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_08",
+        "num": 8,
+        "section": "III. Đánh giá kết quả và giá trị của dự án",
+        "text": "Từ góc nhìn của IDH, giá trị nổi bật của Compact Cư M’gar nằm nhiều hơn ở những hỗ trợ trực tiếp cho nông hộ, ở cơ chế phối hợp cấp cảnh quan, hay ở khả năng tạo nền tảng cho các chương trình và hoạt động tiếp theo? Xin chia sẻ lý do.",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_09",
+        "num": 9,
+        "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Với vai trò là đơn vị triển khai Compact Cư M’gar, theo IDH, Dakman đã thể hiện những điểm mạnh nổi bật nào trong việc tổ chức và điều phối dự án tại địa phương?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_10",
+        "num": 10,
+        "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Trong quá trình phối hợp với Dakman, có khó khăn hoặc hạn chế nào về quản lý, điều phối, truyền thông, theo dõi kết quả hoặc phối hợp với các bên mà IDH nhận thấy cần được cải thiện?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_11",
+        "num": 11,
+        "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Theo IDH, mô hình Dakman liên kết và làm việc với ba hợp tác xã Tân Phát, Ea Kiết và Cư Dliê M’nông đã vận hành như thế nào? Vai trò thực tế của các hợp tác xã trong việc kết nối nông hộ và triển khai hoạt động của dự án ra sao?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_12",
+        "num": 12,
+        "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Từ góc nhìn của IDH, năng lực của các hợp tác xã tham gia Compact đã thay đổi như thế nào trong giai đoạn dự án? Những năng lực nào đã được củng cố tốt, và những điểm nào vẫn cần tiếp tục hỗ trợ?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_13",
+        "num": 13,
+        "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Mối liên kết giữa Dakman, các hợp tác xã và nông hộ có khả năng tiếp tục duy trì sau khi dự án kết thúc không? Theo IDH, những điều kiện nào cần có để các mối liên kết này hoạt động hiệu quả và mang lại lợi ích thực chất cho nông dân?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_14",
+        "num": 14,
+        "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Nếu có giai đoạn tiếp theo, theo IDH nên duy trì, điều chỉnh hay mở rộng cách thức hợp tác giữa Dakman và các hợp tác xã như thế nào? Vai trò và trách nhiệm của từng bên cần được làm rõ ra sao?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_15",
+        "num": 15,
+        "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+        "text": "Sau khi giai đoạn 2021–2025 kết thúc, theo ông/bà, Cư M’gar có nên tiếp tục có Giai đoạn 2 hay không? Vì sao? Những kết quả, nhu cầu hoặc vấn đề còn tồn tại nào cần được cân nhắc khi đưa ra quyết định?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_16",
+        "num": 16,
+        "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+        "text": "Nếu Cư M’gar triển khai Giai đoạn 2, theo IDH nên tập trung vào những vấn đề hoặc nhu cầu ưu tiên nào của địa phương và nông hộ? Vì sao nên lựa chọn những ưu tiên đó?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_17",
+        "num": 17,
+        "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+        "text": "Theo IDH, Giai đoạn 2 nên kế thừa những kết quả, kinh nghiệm hoặc cơ chế nào của Compact Cư M’gar; đồng thời cần thay đổi hoặc bổ sung những gì để phù hợp hơn với bối cảnh hiện nay?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_18",
+        "num": 18,
+        "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+        "text": "Từ kinh nghiệm của IDH trong ngành cà phê tại Việt Nam và quốc tế, những yếu tố nào cần được bảo đảm để một giai đoạn tiếp theo tạo ra kết quả thực chất và có khả năng duy trì sau khi hỗ trợ của dự án kết thúc?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_19",
+        "num": 19,
+        "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+        "text": "Theo ông/bà, một đề xuất Giai đoạn 2 dành cho Cư M’gar cần làm rõ những nội dung nào để IDH và các đối tác tiềm năng có thể xem xét, chẳng hạn như nhu cầu thực tế, nhóm nông hộ hưởng lợi, kết quả kỳ vọng, cách đo lường, vai trò đối tác, nguồn lực và tính khả thi?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_20",
+        "num": 20,
+        "section": "VI. Khuyến nghị và kết thúc",
+        "text": "Nếu được gửi một khuyến nghị quan trọng nhất tới nhóm đang đánh giá dự án và cân nhắc đề xuất Giai đoạn 2, IDH muốn nhấn mạnh điều gì?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_21",
+        "num": 21,
+        "section": "VI. Khuyến nghị và kết thúc",
+        "text": "IDH có thể chia sẻ thêm ví dụ, tài liệu, kinh nghiệm hoặc bài học từ các chương trình cà phê khác mà nhóm đánh giá cuối kỳ nên tham khảo khi hoàn thiện đánh giá Compact Cư M’gar và xem xét khả năng triển khai Giai đoạn 2 không?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      }
+    ]
   },
   "MH": {
     "name": "MH: Chủ mô hình trình diễn (2)",
@@ -3595,5 +4050,413 @@
     "tool_code": "MH",
     "tool_name": "Chủ mô hình trình diễn",
     "target_count": "2 mô hình"
+  },
+  "TT_IDH": {
+    "name": "TT_IDH: Nhà tài trợ IDH (1-5)",
+    "tool_code": "TT_IDH",
+    "tool_name": "Nhà tài trợ IDH",
+    "target_count": "1-5 phiếu",
+    "donor_type": "IDH",
+    "intro_title": "I. Giới thiệu & Thông tin nền",
+    "intro_text": [
+      "Phiếu phỏng vấn này được xây dựng riêng cho đại diện IDH trong khuôn khổ đánh giá cuối kỳ Dự án Compact Cư M’gar. Các câu hỏi tập trung ghi nhận góc nhìn của IDH về ngành cà phê, cách tiếp cận Compact, kết quả triển khai, vai trò của đơn vị thực hiện và các hợp tác xã liên kết, cũng như những khả năng tiếp nối sau khi dự án kết thúc.",
+      "Người trả lời không cần đọc trước báo cáo tổng kết hoặc ghi nhớ các chỉ số chi tiết. Có thể chia sẻ dựa trên trải nghiệm, quan sát và hiểu biết của mình; các thông tin nền dưới đây sẽ được người phỏng vấn cung cấp khi cần.",
+      "Thông tin nền: Compact Cư M’gar được triển khai giai đoạn 2021–2025 tại ba xã trước đây (Ea Kiết, Ea Tar và Cư Dliê M’nông), với quy mô khoảng 8.148 hộ và 11.048 ha cà phê. Báo cáo năm 2025 ghi nhận tổng chi lũy kế toàn dự án khoảng 1,13 triệu EUR trên ngân sách khoảng 1,21 triệu EUR. Đây là số liệu của toàn dự án, không phải phần tài trợ riêng của IDH."
+    ],
+    "questions": [
+      {
+        "code": "TT_IDH_01",
+        "num": 1,
+        "section": "II. Góc nhìn của IDH về ngành cà phê và cách tiếp cận Compact",
+        "text": "IDH đã có quá trình đồng hành với ngành cà phê Việt Nam trong nhiều năm, đặc biệt tại khu vực Tây Nguyên. Từ góc nhìn của IDH, đâu là những thay đổi lớn nhất của ngành cà phê Việt Nam trong khoảng 5–10 năm qua, và những thách thức nào hiện nay cần được quan tâm nhất?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_02",
+        "num": 2,
+        "section": "II. Góc nhìn của IDH về ngành cà phê và cách tiếp cận Compact",
+        "text": "IDH thường thúc đẩy cách tiếp cận có sự phối hợp giữa doanh nghiệp, chính quyền, hợp tác xã và nông hộ ở cấp cảnh quan. Theo IDH, cách tiếp cận này có giá trị gì so với việc từng doanh nghiệp triển khai các chương trình hỗ trợ nông hộ riêng lẻ?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_03",
+        "num": 3,
+        "section": "II. Góc nhìn của IDH về ngành cà phê và cách tiếp cận Compact",
+        "text": "Với quy mô khoảng 8.148 hộ và 11.048 ha cà phê, IDH nhìn nhận Compact Cư M’gar như thế nào trong bức tranh chung về phát triển cà phê bền vững tại Tây Nguyên? Đây là một mô hình có ý nghĩa hoặc có điểm gì đáng chú ý đối với IDH?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_04",
+        "num": 4,
+        "section": "II. Góc nhìn của IDH về ngành cà phê và cách tiếp cận Compact",
+        "text": "Trong quá trình đồng hành với Compact Cư M’gar, đâu là điều IDH đánh giá tích cực nhất? Có điểm nào trong cách thiết kế, phối hợp hoặc triển khai mà IDH cho rằng cần rút kinh nghiệm?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_05",
+        "num": 5,
+        "section": "III. Đánh giá kết quả và giá trị của dự án",
+        "text": "Dự án đã triển khai nhiều hoạt động như tập huấn canh tác, kiểm tra đất, sử dụng phân hữu cơ, trồng xen và cây che bóng, cải tạo vườn cà phê, tưới tiết kiệm và hỗ trợ hợp tác xã. Theo quan sát của IDH, những hoạt động nào có khả năng tạo ra thay đổi thiết thực và lâu dài nhất đối với nông hộ?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_06",
+        "num": 6,
+        "section": "III. Đánh giá kết quả và giá trị của dự án",
+        "text": "Dự án có quy mô tiếp cận lớn, với hàng nghìn lượt nông dân tham gia các hoạt động tập huấn và học tập. Theo IDH, yếu tố nào quyết định việc nông dân chuyển từ tham gia tập huấn sang thực sự áp dụng và duy trì các thực hành được giới thiệu trên vườn?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_07",
+        "num": 7,
+        "section": "III. Đánh giá kết quả và giá trị của dự án",
+        "text": "Theo IDH, dự án đã đóng góp như thế nào vào việc cải thiện sự phối hợp giữa các bên tại địa phương, đặc biệt là chính quyền, hợp tác xã, nhóm nông dân và các tác nhân trong chuỗi cung ứng?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_08",
+        "num": 8,
+        "section": "III. Đánh giá kết quả và giá trị của dự án",
+        "text": "Từ góc nhìn của IDH, giá trị nổi bật của Compact Cư M’gar nằm nhiều hơn ở những hỗ trợ trực tiếp cho nông hộ, ở cơ chế phối hợp cấp cảnh quan, hay ở khả năng tạo nền tảng cho các chương trình và hoạt động tiếp theo? Xin chia sẻ lý do.",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_09",
+        "num": 9,
+        "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Với vai trò là đơn vị triển khai Compact Cư M’gar, theo IDH, Dakman đã thể hiện những điểm mạnh nổi bật nào trong việc tổ chức và điều phối dự án tại địa phương?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_10",
+        "num": 10,
+        "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Trong quá trình phối hợp với Dakman, có khó khăn hoặc hạn chế nào về quản lý, điều phối, truyền thông, theo dõi kết quả hoặc phối hợp với các bên mà IDH nhận thấy cần được cải thiện?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_11",
+        "num": 11,
+        "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Theo IDH, mô hình Dakman liên kết và làm việc với ba hợp tác xã Tân Phát, Ea Kiết và Cư Dliê M’nông đã vận hành như thế nào? Vai trò thực tế của các hợp tác xã trong việc kết nối nông hộ và triển khai hoạt động của dự án ra sao?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_12",
+        "num": 12,
+        "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Từ góc nhìn của IDH, năng lực của các hợp tác xã tham gia Compact đã thay đổi như thế nào trong giai đoạn dự án? Những năng lực nào đã được củng cố tốt, và những điểm nào vẫn cần tiếp tục hỗ trợ?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_13",
+        "num": 13,
+        "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Mối liên kết giữa Dakman, các hợp tác xã và nông hộ có khả năng tiếp tục duy trì sau khi dự án kết thúc không? Theo IDH, những điều kiện nào cần có để các mối liên kết này hoạt động hiệu quả và mang lại lợi ích thực chất cho nông dân?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_14",
+        "num": 14,
+        "section": "IV. Đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Nếu có giai đoạn tiếp theo, theo IDH nên duy trì, điều chỉnh hay mở rộng cách thức hợp tác giữa Dakman và các hợp tác xã như thế nào? Vai trò và trách nhiệm của từng bên cần được làm rõ ra sao?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_15",
+        "num": 15,
+        "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+        "text": "Sau khi giai đoạn 2021–2025 kết thúc, theo ông/bà, Cư M’gar có nên tiếp tục có Giai đoạn 2 hay không? Vì sao? Những kết quả, nhu cầu hoặc vấn đề còn tồn tại nào cần được cân nhắc khi đưa ra quyết định?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_16",
+        "num": 16,
+        "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+        "text": "Nếu Cư M’gar triển khai Giai đoạn 2, theo IDH nên tập trung vào những vấn đề hoặc nhu cầu ưu tiên nào của địa phương và nông hộ? Vì sao nên lựa chọn những ưu tiên đó?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_17",
+        "num": 17,
+        "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+        "text": "Theo IDH, Giai đoạn 2 nên kế thừa những kết quả, kinh nghiệm hoặc cơ chế nào của Compact Cư M’gar; đồng thời cần thay đổi hoặc bổ sung những gì để phù hợp hơn với bối cảnh hiện nay?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_18",
+        "num": 18,
+        "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+        "text": "Từ kinh nghiệm của IDH trong ngành cà phê tại Việt Nam và quốc tế, những yếu tố nào cần được bảo đảm để một giai đoạn tiếp theo tạo ra kết quả thực chất và có khả năng duy trì sau khi hỗ trợ của dự án kết thúc?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_19",
+        "num": 19,
+        "section": "V. Ý kiến của IDH về khả năng triển khai Giai đoạn 2",
+        "text": "Theo ông/bà, một đề xuất Giai đoạn 2 dành cho Cư M’gar cần làm rõ những nội dung nào để IDH và các đối tác tiềm năng có thể xem xét, chẳng hạn như nhu cầu thực tế, nhóm nông hộ hưởng lợi, kết quả kỳ vọng, cách đo lường, vai trò đối tác, nguồn lực và tính khả thi?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_20",
+        "num": 20,
+        "section": "VI. Khuyến nghị và kết thúc",
+        "text": "Nếu được gửi một khuyến nghị quan trọng nhất tới nhóm đang đánh giá dự án và cân nhắc đề xuất Giai đoạn 2, IDH muốn nhấn mạnh điều gì?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_IDH_21",
+        "num": 21,
+        "section": "VI. Khuyến nghị và kết thúc",
+        "text": "IDH có thể chia sẻ thêm ví dụ, tài liệu, kinh nghiệm hoặc bài học từ các chương trình cà phê khác mà nhóm đánh giá cuối kỳ nên tham khảo khi hoàn thiện đánh giá Compact Cư M’gar và xem xét khả năng triển khai Giai đoạn 2 không?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      }
+    ]
+  },
+  "TT_JDE": {
+    "name": "TT_JDE: Nhà tài trợ JDE Peet's (1-5)",
+    "tool_code": "TT_JDE",
+    "tool_name": "Nhà tài trợ JDE Peet's",
+    "target_count": "1-5 phiếu",
+    "donor_type": "JDE",
+    "intro_title": "I. Giới thiệu & Thông tin nền",
+    "intro_text": [
+      "Phiếu phỏng vấn này được xây dựng riêng cho đại diện JDE Peet’s trong khuôn khổ đánh giá cuối kỳ Dự án Compact Cư M’gar. Các câu hỏi tập trung ghi nhận góc nhìn của JDE Peet’s với tư cách là một doanh nghiệp trong chuỗi giá trị cà phê và nhà tài trợ của dự án: mục tiêu tham gia, giá trị đối với chuỗi cung ứng, kết quả triển khai, vai trò của Dakman và các hợp tác xã, cũng như khả năng tiếp nối sau khi dự án kết thúc.",
+      "Người trả lời không cần đọc trước báo cáo tổng kết hoặc ghi nhớ các chỉ số chi tiết. Có thể chia sẻ dựa trên trải nghiệm, quan sát và hiểu biết của mình; các thông tin nền dưới đây sẽ được người phỏng vấn cung cấp khi cần.",
+      "Thông tin nền: Compact Cư M’gar được triển khai giai đoạn 2021–2025 tại ba xã trước đây (Ea Kiết, Ea Tar và Cư Dliê M’nông), với quy mô khoảng 8.148 hộ và 11.048 ha cà phê. Dự án do Dakman Việt Nam triển khai, với sự tham gia tài trợ của IDH và JDE Peet’s. Các câu hỏi về tài trợ và kết quả sẽ được trao đổi ở góc độ toàn dự án hoặc góc độ JDE Peet’s tùy nội dung, không mặc định vai trò của hai nhà tài trợ là giống nhau."
+    ],
+    "questions": [
+      {
+        "code": "TT_JDE_01",
+        "num": 1,
+        "section": "II. Góc nhìn của JDE Peet’s về ngành cà phê và mục tiêu tham gia dự án",
+        "text": "JDE Peet’s có hoạt động thu mua và kinh doanh cà phê tại nhiều quốc gia, trong đó Việt Nam là một nguồn cung quan trọng. Từ góc nhìn của JDE Peet’s, những thay đổi và thách thức lớn nhất đối với ngành cà phê Việt Nam hiện nay là gì?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_02",
+        "num": 2,
+        "section": "II. Góc nhìn của JDE Peet’s về ngành cà phê và mục tiêu tham gia dự án",
+        "text": "Điều gì khiến JDE Peet’s quyết định tham gia tài trợ Compact Cư M’gar? Những mục tiêu hoặc kỳ vọng quan trọng nhất của JDE Peet’s khi tham gia dự án là gì?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_03",
+        "num": 3,
+        "section": "II. Góc nhìn của JDE Peet’s về ngành cà phê và mục tiêu tham gia dự án",
+        "text": "Theo JDE Peet’s, một dự án phát triển bền vững ở quy mô cảnh quan như Compact Cư M’gar có thể tạo ra giá trị gì đối với nông hộ, địa phương và các doanh nghiệp trong chuỗi cung ứng cà phê?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_04",
+        "num": 4,
+        "section": "II. Góc nhìn của JDE Peet’s về ngành cà phê và mục tiêu tham gia dự án",
+        "text": "Trong quá trình đồng hành với dự án, JDE Peet’s đánh giá đâu là điểm phù hợp nhất giữa mục tiêu của Compact Cư M’gar với các ưu tiên của JDE Peet’s đối với nguồn cung cà phê có trách nhiệm?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_05",
+        "num": 5,
+        "section": "III. Đánh giá kết quả và giá trị đối với nông hộ, chuỗi cung ứng",
+        "text": "Dự án đã triển khai nhiều hoạt động như tập huấn canh tác, kiểm tra đất, sử dụng phân hữu cơ, trồng xen và cây che bóng, cải tạo vườn cà phê, tưới tiết kiệm và hỗ trợ hợp tác xã. Theo JDE Peet’s, những hoạt động nào có khả năng tạo ra giá trị thiết thực và lâu dài nhất đối với nông hộ?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_06",
+        "num": 6,
+        "section": "III. Đánh giá kết quả và giá trị đối với nông hộ, chuỗi cung ứng",
+        "text": "Theo quan sát của JDE Peet’s, các hoạt động của dự án có góp phần cải thiện chất lượng cà phê, năng suất, hiệu quả sản xuất hoặc tính ổn định của nguồn cung hay không? Những thay đổi nào có thể nhận thấy rõ nhất?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_07",
+        "num": 7,
+        "section": "III. Đánh giá kết quả và giá trị đối với nông hộ, chuỗi cung ứng",
+        "text": "Dự án đã tiếp cận hàng nghìn lượt nông dân thông qua tập huấn và các hoạt động hỗ trợ. Theo JDE Peet’s, cần những điều kiện gì để kiến thức và thực hành được giới thiệu có thể chuyển thành thay đổi thực tế, được nông dân duy trì sau khi dự án kết thúc?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_08",
+        "num": 8,
+        "section": "III. Đánh giá kết quả và giá trị đối với nông hộ, chuỗi cung ứng",
+        "text": "JDE Peet’s nhìn nhận thế nào về mối liên hệ giữa các hoạt động hỗ trợ nông hộ tại Cư M’gar với yêu cầu của doanh nghiệp về nguồn cung cà phê có trách nhiệm, ổn định và đáp ứng các tiêu chuẩn ngày càng cao của thị trường?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_09",
+        "num": 9,
+        "section": "III. Đánh giá kết quả và giá trị đối với nông hộ, chuỗi cung ứng",
+        "text": "Đối với các yêu cầu về truy xuất nguồn gốc, dữ liệu vùng trồng và sản xuất không gây mất rừng, theo JDE Peet’s, dự án đã tạo được nền tảng hoặc đóng góp gì? Những vấn đề nào vẫn cần tiếp tục hoàn thiện để dữ liệu có thể được sử dụng hiệu quả trong chuỗi cung ứng?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_10",
+        "num": 10,
+        "section": "IV. Đánh giá đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Với vai trò là nhà tài trợ và đối tác của dự án, JDE Peet’s đánh giá như thế nào về năng lực tổ chức, triển khai và quản lý dự án của Dakman?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_11",
+        "num": 11,
+        "section": "IV. Đánh giá đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Trong quá trình phối hợp với Dakman, những điểm nào JDE Peet’s đánh giá cao? Có khó khăn hoặc hạn chế nào trong trao đổi thông tin, phối hợp, theo dõi kết quả hoặc quản lý dự án cần được rút kinh nghiệm?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_12",
+        "num": 12,
+        "section": "IV. Đánh giá đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Theo JDE Peet’s, việc Dakman phối hợp với ba hợp tác xã Tân Phát, Ea Kiết và Cư Dliê M’nông đã hỗ trợ như thế nào cho việc kết nối nông hộ và triển khai các hoạt động tại địa phương?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_13",
+        "num": 13,
+        "section": "IV. Đánh giá đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "JDE Peet’s đánh giá ra sao về vai trò và năng lực của các hợp tác xã trong dự án? Những năng lực nào đã được cải thiện, và những nội dung nào vẫn cần được củng cố để các hợp tác xã có thể tiếp tục hỗ trợ thành viên?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_14",
+        "num": 14,
+        "section": "IV. Đánh giá đối tác triển khai Dakman và các hợp tác xã liên kết",
+        "text": "Theo JDE Peet’s, mối liên kết giữa Dakman, các hợp tác xã và nông hộ có khả năng duy trì sau khi dự án kết thúc không? Cần có những điều kiện hoặc cơ chế nào để duy trì mối liên kết này một cách thực chất?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_15",
+        "num": 15,
+        "section": "V. Ý kiến của JDE Peet’s về khả năng triển khai Giai đoạn 2",
+        "text": "Sau khi giai đoạn 2021–2025 kết thúc, theo JDE Peet’s, Cư M’gar có nên tiếp tục có Giai đoạn 2 hay không? Vì sao? Những kết quả, nhu cầu hoặc vấn đề còn tồn tại nào cần được cân nhắc khi đưa ra quyết định?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_16",
+        "num": 16,
+        "section": "V. Ý kiến của JDE Peet’s về khả năng triển khai Giai đoạn 2",
+        "text": "Nếu Cư M’gar triển khai Giai đoạn 2, theo JDE Peet’s nên tập trung vào những vấn đề hoặc nhu cầu ưu tiên nào của nông hộ và chuỗi cung ứng cà phê? Vì sao nên lựa chọn những ưu tiên đó?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_17",
+        "num": 17,
+        "section": "V. Ý kiến của JDE Peet’s về khả năng triển khai Giai đoạn 2",
+        "text": "Theo JDE Peet’s, Giai đoạn 2 nên kế thừa những kết quả, kinh nghiệm hoặc cơ chế nào của Compact Cư M’gar; đồng thời cần thay đổi hoặc bổ sung những gì để phù hợp hơn với bối cảnh hiện nay?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_18",
+        "num": 18,
+        "section": "V. Ý kiến của JDE Peet’s về khả năng triển khai Giai đoạn 2",
+        "text": "Từ kinh nghiệm của JDE Peet’s trong các chương trình hỗ trợ nông hộ và chuỗi cung ứng cà phê, những yếu tố nào cần được bảo đảm để một giai đoạn tiếp theo tạo ra kết quả thực chất và có khả năng duy trì sau khi hỗ trợ của dự án kết thúc?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_19",
+        "num": 19,
+        "section": "V. Ý kiến của JDE Peet’s về khả năng triển khai Giai đoạn 2",
+        "text": "Theo ông/bà, một đề xuất Giai đoạn 2 dành cho Cư M’gar cần làm rõ những nội dung nào để JDE Peet’s và các đối tác tiềm năng có thể xem xét, chẳng hạn như nhu cầu thực tế, nhóm nông hộ hưởng lợi, kết quả kỳ vọng, liên kết với chuỗi cung ứng, vai trò đối tác, nguồn lực và tính khả thi?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_20",
+        "num": 20,
+        "section": "VI. Khuyến nghị và kết thúc",
+        "text": "Nếu được gửi một khuyến nghị quan trọng nhất tới nhóm đang đánh giá dự án và cân nhắc đề xuất Giai đoạn 2, JDE Peet’s muốn nhấn mạnh điều gì?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      },
+      {
+        "code": "TT_JDE_21",
+        "num": 21,
+        "section": "VI. Khuyến nghị và kết thúc",
+        "text": "JDE Peet’s có thể chia sẻ thêm ví dụ, tài liệu, kinh nghiệm hoặc bài học từ các chương trình hỗ trợ nông hộ và chuỗi cung ứng cà phê khác mà nhóm đánh giá cuối kỳ nên tham khảo không?",
+        "type": "TX",
+        "rows": 5,
+        "placeholder": "Ghi chép ý kiến, phản hồi chi tiết của người được phỏng vấn..."
+      }
+    ]
   }
 }
