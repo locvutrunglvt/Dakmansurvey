@@ -846,19 +846,20 @@ _AUTO_SURVEY_CODE_RE = re.compile(
 )
 
 def _is_minor_name_edit(old_name, new_name):
-    """Return True only when new_name looks like a small typo fix of old_name, not a different person."""
+    """Return True only when new_name is completing an incomplete name or a small typo of old_name."""
+    from difflib import SequenceMatcher
     a = normalize_vn_str(old_name)
     b = normalize_vn_str(new_name)
-    if not a or not b:
+    if not a or not b or a == b:
         return True
-    if a == b:
+    if b.startswith(a + ' ') or a.startswith(b + ' '):
         return True
-    wa = set(a.split())
-    wb = set(b.split())
-    if wa and wb and len(wa & wb) / max(len(wa), len(wb)) >= 0.5:
-        return True
-    from difflib import SequenceMatcher
-    return SequenceMatcher(None, a, b).ratio() >= 0.65
+    ta = a.split()
+    tb = b.split()
+    last_ratio = SequenceMatcher(None, ta[-1], tb[-1]).ratio()
+    if last_ratio < 0.75:
+        return False
+    return SequenceMatcher(None, a, b).ratio() >= 0.80
 
 def _generate_unique_fork_code(cur, tool_code, surveyor_id, orig_code=''):
     """Generate unique survey code avoiding drafts/surveys collisions (preserves TT-IDH-XX / TT-JDE-XX sequence for TT)."""
