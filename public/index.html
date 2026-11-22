@@ -2522,11 +2522,30 @@
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label>Cấp Mã Phiếu (+1)</label>
-                                <button type="button" class="btn-outline" onclick="generateNextDonorSurveyCode(currentDonorTab, true)"
+                                <button type="button" class="btn-outline" onclick="createNewDonorInterview(currentDonorTab)"
                                         style="width: 100%; height: 38px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 0.82rem; background: #f0fdf4; border-color: #86efac; color: #166534;">
                                     <i class="fa-solid fa-plus"></i> Cấp mã tự động kế tiếp
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- Thanh Cấp ID Tự Động Cho Đối Tượng Ngoài Hộ (NT, CQ, HTX, MH) -->
+                        <div id="nonP1AutoIdBar" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #15803d; border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                <div style="flex: 1; min-width: 220px;">
+                                    <div style="font-size: 0.83rem; font-weight: 700; color: #166534;">
+                                        <i class="fa-solid fa-id-badge"></i> CẤP MÃ PHIẾU TỰ ĐỘNG CHO NGƯỜI PHỎNG VẤN MỚI (<span id="nonP1ToolLabel">NT</span>)
+                                    </div>
+                                    <div style="font-size: 0.77rem; color: #1e293b; margin-top: 2px; line-height: 1.4;">
+                                        Sau khi phỏng vấn &amp; lưu tạm 1 người, bấm nút bên cạnh để <strong>cất phiếu hiện tại và tạo ID mới</strong> cho người tiếp theo (không đè mất phiếu trước).
+                                    </div>
+                                </div>
+                                <button type="button" id="btnNewNonP1Survey" onclick="createNewNonP1Interview()"
+                                    style="background: #15803d; color: #ffffff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(21,128,61,0.25); white-space: nowrap;">
+                                    <i class="fa-solid fa-user-plus"></i> Lưu tạm &amp; Tạo ID mới (+1)
+                                </button>
+                            </div>
+                            <div id="nonP1StatusBanner" style="display: none; margin-top: 8px; padding: 6px 10px; background: #dcfce7; border: 1px solid #86efac; border-radius: 4px; font-size: 0.79rem; color: #14532d;"></div>
                         </div>
 
                         <!-- Tra Cứu & Lọc Nông Hộ Theo Danh Sách Mẫu (Chỉ gồm 1: Tìm thông minh & 2: Người dẫn đường) -->
@@ -2568,9 +2587,16 @@
                         <div class="grid-4">
                             <div class="form-group" id="surveyCodeInputGroup">
                                 <label id="surveyCodeLabel">Mã Phiếu / ID Nông Hộ <span class="req">*</span></label>
-                                <input type="text" class="form-control" id="surveyCodeInput" required
-                                    onchange="tryAutofillBySurveyCode(this.value)"
-                                    placeholder="Ví dụ: EK-JV-001">
+                                <div style="display: flex; gap: 6px; align-items: stretch;">
+                                    <input type="text" class="form-control" id="surveyCodeInput" required
+                                        onchange="tryAutofillBySurveyCode(this.value)"
+                                        placeholder="Ví dụ: EK-JV-001" style="flex: 1; min-width: 0;">
+                                    <button type="button" id="btnQuickNewSurveyCode" onclick="onQuickNewSurveyCodeClick()"
+                                        title="Cất phiếu hiện tại (nếu có dữ liệu) và tạo mã ID phỏng vấn mới"
+                                        style="background: #f0fdf4; color: #166534; border: 1px solid #86efac; border-radius: 4px; padding: 0 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0;">
+                                        <i class="fa-solid fa-plus"></i> ID mới
+                                    </button>
+                                </div>
                             </div>
                             <div class="form-group" id="communeSelectGroup">
                                 <label id="communeSelectLabel">Địa Bàn Xã <span class="req">*</span></label>
@@ -2825,7 +2851,7 @@
                                 style="background: #d97706; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; font-size: 0.80rem; font-weight: 700; cursor: pointer;">
                                 <i class="fa-solid fa-floppy-disk"></i> Lưu Tạm (Giữ Trang Này)
                             </button>
-                            <button type="button" onclick="saveDraftAndNextHousehold()"
+                            <button type="button" id="btnSaveDraftAndNext" onclick="saveDraftAndNextHousehold()"
                                 style="background: #0369a1; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; font-size: 0.80rem; font-weight: 700; cursor: pointer;">
                                 <i class="fa-solid fa-forward-step"></i> Lưu Tạm &amp; Hộ Tiếp Theo
                             </button>
@@ -4031,7 +4057,7 @@
     <!-- Bundled Questions & Households Fallback + Application Logic -->
     <script src="questions_bundle.js?v=1"></script>
     <script src="sample_households_bundle.js?v=3"></script>
-    <script src="app.js?v=2.60"></script>
+    <script src="app.js?v=2.61"></script>
 
 </body>
 

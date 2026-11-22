@@ -840,7 +840,22 @@ def normalize_vn_str(text):
         return ''
     return ' '.join(unicodedata.normalize('NFC', str(text).strip()).lower().split())
 
-_AUTO_SURVEY_CODE_RE = re.compile(r'^P\d+_[A-Za-z0-9-]+_(?:\d{6}_\d+|\d{12})(?:_\d+)?$', re.I)
+_AUTO_SURVEY_CODE_RE = re.compile(r'^(?:P\d+|NT|CQ|HTX|MH|TT|KIP|SDM)_[A-Za-z0-9-]+_(?:\d{6}_\d+|\d{12})(?:_\d+)?$', re.I)
+
+def _is_minor_name_edit(old_name, new_name):
+    """Return True only when new_name looks like a small typo fix of old_name, not a different person."""
+    a = normalize_vn_str(old_name)
+    b = normalize_vn_str(new_name)
+    if not a or not b:
+        return True
+    if a == b:
+        return True
+    wa = set(a.split())
+    wb = set(b.split())
+    if wa and wb and len(wa & wb) / max(len(wa), len(wb)) >= 0.5:
+        return True
+    from difflib import SequenceMatcher
+    return SequenceMatcher(None, a, b).ratio() >= 0.65
 
 def _generate_unique_fork_code(cur, tool_code, surveyor_id):
     """Generate unique ddmmyyhhmmss survey code in VN timezone (UTC+7) avoiding drafts/surveys collisions."""
@@ -3131,11 +3146,16 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
             if existing_draft:
                 old_name_chk = (existing_draft[5] or '').strip()
                 is_auto_code = bool(data.get('is_auto_code')) or bool(_AUTO_SURVEY_CODE_RE.match(survey_code))
+                same_person_typo_edit = (
+                    orig_name_chk
+                    and normalize_vn_str(orig_name_chk) == normalize_vn_str(old_name_chk)
+                    and _is_minor_name_edit(old_name_chk, new_name_chk)
+                )
                 should_fork_name = (
                     old_name_chk and new_name_chk
                     and normalize_vn_str(old_name_chk) != normalize_vn_str(new_name_chk)
                     and is_auto_code
-                    and not (orig_name_chk and normalize_vn_str(orig_name_chk) == normalize_vn_str(old_name_chk))
+                    and not same_person_typo_edit
                 )
                 should_fork_photo = (
                     old_name_chk and not new_name_chk and bool(data.get('photo_data')) and is_auto_code
