@@ -840,7 +840,10 @@ def normalize_vn_str(text):
         return ''
     return ' '.join(unicodedata.normalize('NFC', str(text).strip()).lower().split())
 
-_AUTO_SURVEY_CODE_RE = re.compile(r'^(?:P\d+|NT|CQ|HTX|MH|TT|KIP|SDM)_[A-Za-z0-9-]+_(?:\d{6}_\d+|\d{12})(?:_\d+)?$', re.I)
+_AUTO_SURVEY_CODE_RE = re.compile(
+    r'^(?:(?:P\d+|NT|CQ|HTX|MH|TT|KIP|SDM)_[A-Za-z0-9-]+_(?:\d{6}_\d+|\d{12})(?:_\d+)?|TT[-_](?:IDH|JDE)[-_]\d+)$',
+    re.I
+)
 
 def _is_minor_name_edit(old_name, new_name):
     """Return True only when new_name looks like a small typo fix of old_name, not a different person."""
@@ -857,9 +860,21 @@ def _is_minor_name_edit(old_name, new_name):
     from difflib import SequenceMatcher
     return SequenceMatcher(None, a, b).ratio() >= 0.65
 
-def _generate_unique_fork_code(cur, tool_code, surveyor_id):
-    """Generate unique ddmmyyhhmmss survey code in VN timezone (UTC+7) avoiding drafts/surveys collisions."""
+def _generate_unique_fork_code(cur, tool_code, surveyor_id, orig_code=''):
+    """Generate unique survey code avoiding drafts/surveys collisions (preserves TT-IDH-XX / TT-JDE-XX sequence for TT)."""
     clean_tool = re.sub(r'[^A-Za-z0-9_-]', '', str(tool_code or 'P1')).strip() or 'P1'
+    m_tt = re.match(r'^(TT[-_](?:IDH|JDE)[-_])0*(\d+)$', str(orig_code or '').strip(), re.I)
+    if m_tt or clean_tool.upper() == 'TT':
+        prefix = m_tt.group(1).upper().replace('_', '-') if m_tt else 'TT-IDH-'
+        for seq in range(1, 100):
+            cand = f"{prefix}{seq:02d}"
+            cur.execute('SELECT 1 FROM survey_drafts WHERE UPPER(survey_code) = UPPER(?) LIMIT 1', (cand,))
+            if cur.fetchone():
+                continue
+            cur.execute('SELECT 1 FROM surveys WHERE UPPER(survey_code) = UPPER(?) LIMIT 1', (cand,))
+            if cur.fetchone():
+                continue
+            return cand
     clean_sid = re.sub(r'[^A-Za-z0-9-]', '', str(surveyor_id or 'DTV')).strip() or 'DTV'
     vn_dt = datetime.datetime.utcnow() + datetime.timedelta(hours=7)
     for offset in range(120):
@@ -3161,7 +3176,7 @@ class SurveyRequestHandler(SimpleHTTPRequestHandler):
                     old_name_chk and not new_name_chk and bool(data.get('photo_data')) and is_auto_code
                 )
                 if should_fork_name or should_fork_photo:
-                    survey_code = _generate_unique_fork_code(cur, tool_code, surveyor_id)
+                    survey_code = _generate_unique_fork_code(cur, tool_code, surveyor_id, survey_code)
                     draft_key = f"{tool_code}::{survey_code}"
                     existing_draft = None
                     forked = True

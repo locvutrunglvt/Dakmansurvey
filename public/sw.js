@@ -1,10 +1,10 @@
-const CACHE_NAME = 'dakman-survey-shell-v56';
+const CACHE_NAME = 'dakman-survey-shell-v57';
 const SHELL_FILES = [
   './',
   './index.html',
   './questions_bundle.js?v=1',
   './sample_households_bundle.js?v=3',
-  './app.js?v=2.61',
+  './app.js?v=2.62',
   './sample_households.json',
   './manifest.webmanifest',
   './img/pwa-icon-192.png',
